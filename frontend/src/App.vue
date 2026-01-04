@@ -4,13 +4,20 @@
 </template>
 
 <script>
+import WebApp from "@twa-dev/sdk";
 
 export default {
   name: 'App',
   components: {
-    
+    WebApp
   }
 }
+
+WebApp.ready()
+WebApp.expand()
+
+console.log('start_param:', WebApp.initDataUnsafe.start_param)
+
 </script>
 
 <style>
