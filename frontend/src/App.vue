@@ -1,22 +1,22 @@
 <template>
-  <title>Arbitration V1</title>
+  <div id="app">
+    <h1>Arbitration V1</h1>
+    <p>Start param: {{ startParam }}</p>
+  </div>
 </template>
 
-<script>
-import WebApp from "@twa-dev/sdk";
+<script setup>
+import { ref, onMounted } from 'vue'
+import WebApp from "@twa-dev/sdk"
 
-export default {
-  name: 'App',
-  components: {
-    WebApp
-  }
-}
+const startParam = ref('')
 
-WebApp.ready()
-WebApp.expand()
-
-console.log('start_param:', WebApp.initDataUnsafe.start_param)
-
+onMounted(() => {
+  WebApp.ready()
+  WebApp.expand()
+  startParam.value = WebApp.initDataUnsafe.start_param || 'none'
+  console.log('start_param:', WebApp.initDataUnsafe.start_param)
+})
 </script>
 
 <style>
