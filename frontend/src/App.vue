@@ -15,7 +15,7 @@
 
       <div class="form-group">
         <label for="order">Ордер (USDT):</label>
-        <input id="order" name="order" type="text" value="0.00" class="form_input">
+        <input id="order" name="order" type="number" value="0.00" class="form_input">
       </div>
     </form>
 
@@ -52,14 +52,15 @@ onMounted(() => {
 }
 
 .form_input {
-  padding: 18px;
+  padding: 15px;
   border: 1px solid #54555a;
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 14px;
   margin-top: 10px;
   background-color: #23262b;
+  outline: 1px solid #65666d;
 }
 
 #footer {
