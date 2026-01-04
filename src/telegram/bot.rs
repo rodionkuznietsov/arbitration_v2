@@ -24,9 +24,9 @@ async fn show_keyboard(bot: &Bot, chat_id: ChatId) -> anyhow::Result<()> {
         vec![KeyboardButton::new("Open")]
     ]);
 
-    bot.send_message(chat_id, "WoW")
-        .reply_markup(keyboard)
-        .await?;
+    // bot.send_message(chat_id, "WoW")
+    //     .reply_markup(keyboard)
+    //     .await?;
 
     Ok(())
 }
