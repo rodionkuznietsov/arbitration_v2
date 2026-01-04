@@ -7,17 +7,17 @@
       <span>Выход</span>
     </div> -->
 
-    <div id="form">
-      <div id="order_price">
-        <span>Тикер (BTC):</span>
-        <input id="form_input" type="text" name="" value="BTC">
+    <form id="form">
+      <div class="form-group">
+        <label for="ticker">Тикер (BTC):</label>
+        <input id="ticker" name="ticker" type="text" value="BTC" class="form_input">
       </div>
-      
-      <div id="order_price">
-        <span>Ордер (USDT):</span>
-        <input id="form_input" type="text" name="" value="0.00">
+
+      <div class="form-group">
+        <label for="order">Ордер (USDT):</label>
+        <input id="order" name="order" type="text" value="0.00" class="form_input">
       </div>
-    </div>
+    </form>
 
     <footer id="footer">
       <button id="start">Старт</button>
@@ -42,31 +42,24 @@ onMounted(() => {
 <style>
 #form {
   margin-top: 20px;
-  display: flex;
+  display: grid;
   gap: 20px;
+  top: 0;
   left: 20px;
   right: 20px;
   justify-content: space-around;
-  align-items: center;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
 }
 
-#order_price {
-  flex: 1;
-  display: flex;
-  justify-content: flex-start;
-  flex-direction: column;
-  gap: 10px;
-  color: rgb(134, 134, 134);
-}
-
-#form_input {
-  flex: 1;
-  padding: 15px;
-  border: none;
+.form_input {
+  padding: 18px;
+  border: 1px solid #54555a;
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
-  font-size: 20px;
+  font-size: 15px;
+  margin-top: 10px;
+  background-color: #23262b;
 }
 
 #footer {
