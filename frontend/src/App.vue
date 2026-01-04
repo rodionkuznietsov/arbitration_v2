@@ -1,6 +1,15 @@
 <template>
   <div id="app">
     <AppHeader />
+
+    <div>Вход</div>
+    <div>Выход</div>
+
+
+    <div>
+      <button>Старт</button>
+      <button>Стоп</button>
+    </div>
   </div>
 </template>
 
