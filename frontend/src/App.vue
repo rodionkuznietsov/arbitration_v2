@@ -60,12 +60,12 @@ onMounted(() => {
 }
 
 #form_input {
+  flex: 1;
   padding: 15px;
-  background-color: rgb(27, 27, 32);
-  border-radius: 8px;
   border: none;
-  outline: 1px solid #632929;
-  color: #fff;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 8px;
   font-size: 20px;
 }
 
