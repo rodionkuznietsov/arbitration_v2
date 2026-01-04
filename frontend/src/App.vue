@@ -25,14 +25,14 @@ onMounted(() => {
 <style>
 #footer {
   display: flex;
-  gap: 5px;
+  gap: 20px;
   align-items: center;
   margin-top: 5px;
   position: absolute;
   justify-content: space-around;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 20px;
+  right: 20px;
   padding: 10px;
 }
 

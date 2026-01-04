@@ -6,7 +6,7 @@
   })
 
   const workStatus = ref(props.online)
-  workStatus.value = true
+  workStatus.value = false
 </script>
 
 <template>
@@ -36,7 +36,7 @@
 
 #status {
   display: flex;
-  gap: 5px;
+  gap: 20px;
   align-items: center;
 }
 
