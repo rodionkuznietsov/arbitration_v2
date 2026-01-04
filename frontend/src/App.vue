@@ -52,7 +52,7 @@ onMounted(() => {
 }
 
 .form_input {
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #54555a;
   color: #ffffff;
   font-weight: 600;
