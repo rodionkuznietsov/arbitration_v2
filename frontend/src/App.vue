@@ -2,9 +2,6 @@
   <div id="app">
     <AppHeader />
 
-    <div>Вход</div>
-    <div>Выход</div>
-
     <footer id="footer">
       <button id="start">Старт</button>
       <button id="stop">Стоп</button>
@@ -41,11 +38,17 @@ onMounted(() => {
 
 #start, #stop {
   flex: 1;
-  padding: 8px;
+  padding: 15px;
   border: none;
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
+  font-size: 20px;
+}
+
+#start:hover, #stop:hover {
+  filter: opacity(75%);
+  cursor: pointer;
 }
 
 #start {
@@ -62,7 +65,7 @@ onMounted(() => {
   -moz-osx-font-smoothing: grayscale;
   text-align: left;
   color: #ffffff;
-  font-size: 16px;
+  font-size: 20px;
   margin-left: 5px;
   margin-top: 5px;
   margin-bottom: 5px;
