@@ -9,12 +9,12 @@
 
     <form id="form">
       <div class="form-group">
-        <label for="ticker">Тикер (BTC):</label>
+        <label for="ticker" id="form_label">Тикер (BTC):</label>
         <input id="ticker" name="ticker" type="text" value="BTC" class="form_input">
       </div>
 
       <div class="form-group">
-        <label for="order">Ордер (USDT):</label>
+        <label for="order" id="form_label">Ордер (USDT):</label>
         <input id="order" name="order" type="number" value="0.00" class="form_input">
       </div>
     </form>
@@ -52,7 +52,7 @@ onMounted(() => {
 }
 
 .form_input {
-  padding: 8px;
+  padding: 5px;
   border: 1px solid #54555a;
   color: #ffffff;
   font-weight: 600;
@@ -61,6 +61,12 @@ onMounted(() => {
   margin-top: 10px;
   background-color: #23262b;
   outline: 1px solid #65666d;
+}
+
+#form_label {
+  display: flex;
+  justify-content: center;
+  font-size: 14px;
 }
 
 #footer {
