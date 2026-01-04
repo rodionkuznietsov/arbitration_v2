@@ -20,6 +20,8 @@ onMounted(() => {
 <style>
 #header {
   display: flex;
+  margin-left: 10px;
+  margin-top: 10px;
 }
 
 #app {
