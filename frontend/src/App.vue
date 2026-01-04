@@ -32,21 +32,28 @@ onMounted(() => {
   align-items: center;
   margin-top: 5px;
   position: absolute;
-  bottom: 0px;
+  justify-content: space-around;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+}
+
+#start, #stop {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 8px;
 }
 
 #start {
   background-color: green;
-  padding: 8px;
-  border: none;
-
 }
 
 #stop {
   background-color: red;
-  padding: 8px;
-  border: none;
-
 }
 
 #app {
