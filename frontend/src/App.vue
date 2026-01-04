@@ -44,8 +44,8 @@ onMounted(() => {
   margin-top: 20px;
   display: flex;
   gap: 20px;
-  left: 0;
-  right: 0;
+  left: 20px;
+  right: 20px;
   justify-content: space-around;
   align-items: center;
 }
