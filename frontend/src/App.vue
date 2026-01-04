@@ -1,5 +1,5 @@
 <template>
-  
+  <title>Arbitration V1</title>
 </template>
 
 <script>
