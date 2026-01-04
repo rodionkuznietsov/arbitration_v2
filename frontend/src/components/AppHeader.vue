@@ -20,8 +20,6 @@
 
 <style scoped>
 #header {
-  margin-left: 20px;
-  margin-top: 20px;
   align-items: center;
 }
 

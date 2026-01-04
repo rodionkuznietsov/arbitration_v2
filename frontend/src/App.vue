@@ -5,11 +5,10 @@
     <div>Вход</div>
     <div>Выход</div>
 
-
-    <div>
-      <button>Старт</button>
-      <button>Стоп</button>
-    </div>
+    <footer id="footer">
+      <button id="start">Старт</button>
+      <button id="stop">Стоп</button>
+    </footer>
   </div>
 </template>
 
@@ -27,6 +26,29 @@ onMounted(() => {
 </script>
 
 <style>
+#footer {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 5px;
+  position: absolute;
+  bottom: 0px;
+}
+
+#start {
+  background-color: green;
+  padding: 8px;
+  border: none;
+
+}
+
+#stop {
+  background-color: red;
+  padding: 8px;
+  border: none;
+
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -34,6 +56,10 @@ onMounted(() => {
   text-align: left;
   color: #ffffff;
   font-size: 16px;
+  margin-left: 5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-right: 5px;
 }
 
 body {
