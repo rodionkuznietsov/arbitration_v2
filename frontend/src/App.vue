@@ -58,7 +58,7 @@ onMounted(() => {
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 20px;
   margin-top: 10px;
   background-color: #23262b;
   outline: 1px solid #65666d;
@@ -73,7 +73,7 @@ onMounted(() => {
 #form_label {
   display: flex;
   justify-content: center;
-  font-size: 14px;
+  font-size: 20px;
 }
 
 #footer {
