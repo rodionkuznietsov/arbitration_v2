@@ -13,7 +13,7 @@
     <div id="header">
       <div id="status">
         <div id="status_circle" :class="workStatus ? 'online' : 'offline'"></div>
-        <span>{{ workStatus ? 'Online' : 'Offline' }}</span>
+        <span>{{ workStatus ? 'Онлайн' : 'Офлайн' }}</span>
       </div>
       <div id="reight_element">
         <img id="header_icon" src="../assets/icons/update.svg" alt="">
@@ -38,6 +38,7 @@
   display: flex;
   gap: 20px;
   align-items: center;
+  color: rgb(158, 158, 157);
 }
 
 #status_circle {
@@ -51,7 +52,7 @@
 }
 
 .offline {
-  background-color: red;
+  background-color: rgb(151, 15, 15);
 }
 
 #reight_element {

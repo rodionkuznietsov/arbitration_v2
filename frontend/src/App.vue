@@ -17,6 +17,7 @@
         <label for="order" id="form_label">Ордер (USDT):</label>
         <input id="order" name="order" type="number" value="0.00" class="form_input">
       </div>
+      
     </form>
 
     <footer id="footer">
@@ -72,7 +73,7 @@ onMounted(() => {
 
 #form_label {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   font-size: 20px;
 }
 
@@ -109,7 +110,7 @@ onMounted(() => {
 }
 
 #stop {
-  background-color: red;
+  background-color: rgb(151, 15, 15);
 }
 
 #app {
