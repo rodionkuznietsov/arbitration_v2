@@ -44,15 +44,16 @@ onMounted(() => {
   margin-top: 20px;
   display: grid;
   gap: 20px;
-  top: 0;
-  left: 20px;
-  right: 20px;
+  padding: 0 20px;
+  width: 100%;
+  box-sizing: border-box;
   justify-content: space-around;
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
 }
 
 .form_input {
-  padding: 5px;
+  width: 100%;
+  padding: 15px;
   border: 1px solid #54555a;
   color: #ffffff;
   font-weight: 600;
@@ -61,6 +62,12 @@ onMounted(() => {
   margin-top: 10px;
   background-color: #23262b;
   outline: 1px solid #65666d;
+  box-sizing: border-box;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
 }
 
 #form_label {
