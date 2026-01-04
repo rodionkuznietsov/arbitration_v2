@@ -2,6 +2,23 @@
   <div id="app">
     <AppHeader />
 
+    <!-- <div id="order_price">
+      <span>Вход</span>
+      <span>Выход</span>
+    </div> -->
+
+    <div id="form">
+      <div id="order_price">
+        <span>Тикер (BTC):</span>
+        <input id="form_input" type="text" name="" value="BTC">
+      </div>
+      
+      <div id="order_price">
+        <span>Ордер (USDT):</span>
+        <input id="form_input" type="text" name="" value="0.00">
+      </div>
+    </div>
+
     <footer id="footer">
       <button id="start">Старт</button>
       <button id="stop">Стоп</button>
@@ -23,6 +40,35 @@ onMounted(() => {
 </script>
 
 <style>
+#form {
+  margin-top: 20px;
+  display: flex;
+  gap: 20px;
+  left: 0;
+  right: 0;
+  justify-content: space-around;
+  align-items: center;
+}
+
+#order_price {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 10px;
+  color: rgb(134, 134, 134);
+}
+
+#form_input {
+  padding: 15px;
+  background-color: rgb(27, 27, 32);
+  border-radius: 8px;
+  border: none;
+  outline: 1px solid #632929;
+  color: #fff;
+  font-size: 20px;
+}
+
 #footer {
   display: flex;
   gap: 20px;
