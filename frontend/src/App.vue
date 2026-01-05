@@ -130,7 +130,7 @@ onMounted(() => {
   margin-top: 20px;
   padding: 8px;
   height: 600px;
-  overflow-y: auto;
+  overflow-y: visible;
 }
 
 #run_buttons {
