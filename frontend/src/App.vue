@@ -8,16 +8,30 @@
     </div> -->
 
     <form id="form">
-      <div class="form-group">
-        <label for="ticker" id="form_label">Тикер (BTC):</label>
-        <input id="ticker" name="ticker" type="text" value="BTC" class="form_input">
+      <div id="form-grid">
+        <div class="form-group">
+          <label for="ticker" id="form_label">Тикер (BTC):</label>
+          <input id="ticker" name="ticker" type="text" value="BTC" class="form_input">
+        </div>
+
+        <div class="form-group">
+          <label for="order" id="form_label">Лонг:</label>
+          <input id="order" name="order" type="number" value="0.00" class="form_input">
+        </div>
       </div>
 
-      <div class="form-group">
-        <label for="order" id="form_label">Ордер (USDT):</label>
-        <input id="order" name="order" type="number" value="0.00" class="form_input">
-      </div>
-      
+        <div id="form-grid">
+          <div class="form-group">
+            <label for="ticker" id="form_label">Ордер (USDT):</label>
+            <input id="ticker" name="ticker" type="text" value="0.00" class="form_input">
+          </div>
+
+          <div class="form-group">
+            <label for="order" id="form_label">Шорт:</label>
+            <input id="order" name="order" type="number" value="0.00" class="form_input">
+          </div>
+        </div>
+
     </form>
 
     <footer id="footer">
@@ -45,11 +59,17 @@ onMounted(() => {
   margin-top: 20px;
   display: grid;
   gap: 20px;
-  padding: 0 20px;
+  padding: 0 10px;
   width: 100%;
   box-sizing: border-box;
   justify-content: space-around;
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+
+#form-grid {
+  display: flex;
+  gap: 20px;
+  flex-direction: column;
 }
 
 .form_input {
