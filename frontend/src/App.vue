@@ -26,6 +26,11 @@
         <div class="form-group">
           <FormCombobox placeholder="Фьючерс" :options="exchanges"/>
         </div>
+
+        <div class="form-group">
+          <label for="order" id="form_label">Порог входа (%):</label>
+          <input id="order" name="order" type="number" value="0.00" class="form_input">
+        </div>
       </div>
 
       <div id="form-column">
@@ -45,6 +50,11 @@
 
         <div class="form-group">
           <FormCombobox placeholder="Фьючерс" :options="exchanges"/>
+        </div>
+
+        <div class="form-group">
+          <label for="order" id="form_label">Порог выхода (%):</label>
+          <input id="order" name="order" type="number" value="0.00" class="form_input">
         </div>
       </div>
     </form>
@@ -120,12 +130,12 @@ onMounted(() => {
   gap: 20px;
   align-items: center;
   margin-top: 5px;
-  position: absolute;
   justify-content: space-around;
   bottom: 0;
   left: 20px;
   right: 20px;
   padding: 10px;
+  position: absolute;
 }
 
 #start, #stop {
@@ -164,6 +174,9 @@ onMounted(() => {
   margin-top: 5px;
   margin-bottom: 5px;
   margin-right: 5px;
+  overflow-y: hidden;
+  height: 100vh;
+  position: relative;
 }
 
 body {
