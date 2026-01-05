@@ -122,7 +122,7 @@ onMounted(() => {
 #form_label {
   display: flex;
   justify-content: flex-start;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 #footer {
@@ -145,7 +145,7 @@ onMounted(() => {
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
-  font-size: 20px;
+  font-size: 18px;
   transition: all 0.6s;
 }
 
@@ -169,7 +169,7 @@ onMounted(() => {
   -moz-osx-font-smoothing: grayscale;
   text-align: left;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 18px;
   margin-left: 5px;
   margin-top: 5px;
   margin-bottom: 5px;

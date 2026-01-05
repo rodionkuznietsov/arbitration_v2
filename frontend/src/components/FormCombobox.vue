@@ -66,7 +66,7 @@
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
-  font-size: 20px;
+  font-size: 18px;
   margin-top: 10px;
   background-color: #121212;
   outline: 1px solid #31312ddc;
