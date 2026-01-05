@@ -14,6 +14,9 @@
                 volumes: {
                     sell: [
                         16681, 12529, 9540, 6506, 3456, 354.84,
+                    ],
+                    buy: [
+                        67919, 4653, 6788, 8651, 11826, 14611
                     ]
                 }
             }
@@ -32,6 +35,9 @@
                 volumes: {
                     sell: [
                         45781, 43059, 35649, 27918, 19544, 10075,
+                    ],
+                    buy: [
+                        1371, 8586, 16414, 26018, 36150, 42231
                     ]
                 }
             }
@@ -46,21 +52,35 @@
             <div id="order_book_labels">
                 <div>
                     <span>Цена</span>
-                    <div id="order_book_prices" v-for="sell in data.order_book.prices.sell" :key="sell">
-                        <div id="sell_label">{{ sell }}</div>
+                    <div id="separator">
+                        <div id="order_book_prices" v-for="sell in data.order_book.prices.sell" :key="sell">
+                            <div id="sell_label">{{ sell }}</div>
+                        </div>
+
+                        <div id="mid_price">0.0913</div>
                     </div>
-
-                    <div id="mid_price">0.0913</div>
-
-                    <div id="order_book_prices" v-for="buy in data.order_book.prices.buy" :key="buy">
-                        <div id="buy_label">{{ buy }}</div>
+                    
+                    <div id="separator">
+                        <div id="order_book_prices" v-for="buy in data.order_book.prices.buy" :key="buy">
+                            <div id="buy_label">{{ buy }}</div>
+                        </div>
                     </div>
                 </div>
+                
                 <div>
                     <div>
-                        <span>Обьём $</span>
-                        <div id="order_book_prices" v-for="sell_volume in data.order_book.volumes.sell" :key="sell_volume">
-                            <div id="sell_label">{{ sell_volume }}</div>
+                        <span>Обьём$</span>
+                        <div id="separator">
+                            <div id="order_book_prices" v-for="sell_volume in data.order_book.volumes.sell" :key="sell_volume">
+                                <div id="sell_label">{{ sell_volume }}</div>
+                            </div>
+                            <div id="mid_price">(0.10%)</div>
+                        </div>
+
+                        <div id="separator">
+                            <div id="order_book_prices" v-for="buy_volume in data.order_book.volumes.buy" :key="buy_volume">
+                                <div id="buy_label">{{ buy_volume }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -74,13 +94,10 @@
         margin-top: 20px;
         display: flex;
         gap: 20px;
-        overflow-y: auto;
-        position: static;
-        height: 100%;
+        position: relative;
     }
 
     #order_book_element {
-        flex: 1;
         width: 100%;
         padding: 15px;
         border: 1px solid #31312ddc;
@@ -95,6 +112,7 @@
         cursor: pointer;
         text-transform: uppercase;
         text-align: end;
+        overflow-y: auto;
     }
 
     #exchange_name {
@@ -130,5 +148,9 @@
     #mid_price {
         margin-top: 20px;
         margin-bottom: 20px;
+    }
+
+    #separator {
+        margin-bottom: 30px;
     }
 </style>

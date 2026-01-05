@@ -129,6 +129,8 @@ onMounted(() => {
   flex-direction: column;
   margin-top: 20px;
   padding: 8px;
+  height: 600px;
+  overflow-y: auto;
 }
 
 #run_buttons {
@@ -172,13 +174,11 @@ onMounted(() => {
   margin-top: 5px;
   margin-bottom: 5px;
   margin-right: 5px;
-  overflow-y: hidden;
-  height: 100vh;
   position: relative;
 }
 
 body {
   background-color: #121212;
-  margin-bottom: 50px;
+  margin-bottom: 20px;
 }
 </style>
