@@ -52,8 +52,12 @@
     </form>
 
     <footer id="footer">
-      <button id="start">Старт</button>
-      <button id="stop">Стоп</button>
+      <div id="run_buttons">
+        <button id="start">Старт</button>
+        <button id="stop">Стоп</button>
+      </div>
+
+      <OrderBook />
     </footer>
   </div>
 </template>
@@ -63,6 +67,7 @@ import { onMounted } from 'vue'
 import WebApp from "@twa-dev/sdk"
 import AppHeader from './components/AppHeader.vue'
 import FormCombobox from './components/FormCombobox.vue';
+import OrderBook from './components/OrderBook.vue';
 
 const exchanges = ["Bybit", "Mexc"]
 const market_types = ["Спот", "Фьючерс"]
@@ -121,15 +126,14 @@ onMounted(() => {
 
 #footer {
   display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+  padding: 8px;
+}
+
+#run_buttons {
+  display: flex;
   gap: 20px;
-  align-items: center;
-  margin-top: 5px;
-  justify-content: space-around;
-  bottom: 0;
-  left: 20px;
-  right: 20px;
-  padding: 10px;
-  position:-ms-page;
 }
 
 #start, #stop {
