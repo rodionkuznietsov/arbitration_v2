@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, defineProps } from "vue"
+    import { ref, defineProps, onMounted, onUnmounted } from "vue"
 
     const props = defineProps({
         options: Array
@@ -7,25 +7,50 @@
 
     const show = ref(false)
     const exchange = ref("Bybit")
-    const arrow_rotate = ref("arrow")
+    const arrow_class = ref("arrow")
 
     const select = (value) => {
         exchange.value = value
         show.value = false
-        arrow_rotate.value = "arrow"
+        arrow_class.value = "arrow"
     }
+
+    const inside_div = ref({x: 0.0, y: 0.0})
+
+    function getPosInsideDiv(e) {
+      inside_div.value = {x: e.clientX, y: e.clientY}
+    }
+
+    function getPosInsideMouseClick(e) {
+      const x = e.clientX
+      const y = e.clientY
+
+      if (inside_div.value.x != x && inside_div.value.y != y) {
+        show.value = false
+        arrow_class.value = "arrow"
+      } 
+    }
+
+    onMounted(() => {
+      document.addEventListener('click', getPosInsideMouseClick)
+    })
+
+    onUnmounted(() => {
+      document.removeEventListener('click', getPosInsideMouseClick)
+    })
+
 </script>
 
 <template>
-<div>
-    <div :class="arrow_rotate">
-        <input id="combobox" :value="exchange" readonly="true" @click="show = true; arrow_rotate = 'arrow_rotate'">
-    </div>
+  <div @click="getPosInsideDiv">
+      <div :class="arrow_class">
+          <input id="combobox" :value="exchange" readonly="true" @click="show = true; arrow_class = 'arrow_rotate'">
+      </div>
 
-    <ul class="combobox-list" id="optionsList" v-show="show">
-        <li id="combobox_element" v-for="opt in props.options" :key="opt" @mousedown="select(opt)">{{ opt }}</li>
-    </ul>
-</div>
+      <ul class="combobox-list" id="optionsList" v-show="show">
+          <li id="combobox_element" v-for="opt in props.options" :key="opt" @mousedown="select(opt)">{{ opt }}</li>
+      </ul>
+  </div>
 </template>
 
 <style scoped>
@@ -56,6 +81,7 @@
   position: absolute;
   transform: translateY(100%) rotate(90deg);
   right: 20px;
+  transition: all 1s;
 }
 
 .arrow_rotate::after {
@@ -63,7 +89,7 @@
   position: absolute;
   transform: translateY(100%) rotate(-90deg);
   right: 20px;
-  transition: all 0.5ms;
+  transition: all 1s;
 }
 
 .combobox-list {
@@ -85,5 +111,6 @@
 #combobox_element:hover {
   filter: opacity(75%);
   background-color: #54555a;
+  transition: background 0.6s;
 } 
 </style>
