@@ -20,11 +20,7 @@
         </div>
 
         <div class="form-group">
-          <input id="combobox" v-model="type" type="text" @focus="show = true" @input="show = true" readonly="true" placeholder="Bybit">
-          <ul class="combobox-list" id="optionsList" v-show="show">
-            <li id="combobox_element" @mousedown="select('Bybit')">Bybit</li>
-            <li id="combobox_element" @mousedown="select('Mexc')">Mexc</li>
-          </ul>
+          <FormCombobox :options="exchanges"/>
         </div>
       </div>
 
@@ -40,11 +36,7 @@
         </div>
 
         <div class="form-group">
-          <input id="combobox" v-model="type" type="text" @focus="show = true" @input="show = true" readonly="true" placeholder="Mexc">
-          <ul class="combobox-list" id="optionsList" v-show="show">
-            <li id="combobox_element" @mousedown="select('Bybit')">Bybit</li>
-            <li id="combobox_element" @mousedown="select('Mexc')">Mexc</li>
-          </ul>
+          <FormCombobox :options="exchanges"/>
         </div>
       </div>
     </form>
@@ -57,12 +49,12 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import WebApp from "@twa-dev/sdk"
 import AppHeader from './components/AppHeader.vue'
+import FormCombobox from './components/FormCombobox.vue';
 
-const type = ref('')
-const show = ref(false)
+const exchanges = ["Bybit", "Mexc"]
 
 onMounted(() => {
   WebApp.ready()
@@ -70,51 +62,9 @@ onMounted(() => {
   console.log('start_param:', WebApp.initDataUnsafe.start_param)
 })
 
-const select = (v) => {
-  type.value = v
-  show.value = false
-}
-
 </script>
 
 <style>
-#combobox {
-  width: 100%;
-  padding: 15px;
-  border: 1px solid #54555a;
-  color: #ffffff;
-  font-weight: 600;
-  border-radius: 8px;
-  font-size: 20px;
-  margin-top: 10px;
-  background-color: #23262b;
-  outline: 1px solid #65666d;
-  box-sizing: border-box;
-  cursor: pointer;
-  text-transform: uppercase;
-}
-
-.combobox-list {
-  background-color: #23262b;
-  border-radius: 8px;
-  padding: 15px;
-}
-
-#combobox_element {
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 8px;
-  list-style: none;
-  margin: 0;
-  padding-left: 0;
-  text-align: left;
-}
-
-#combobox_element:hover {
-  filter: opacity(75%);
-  background-color: #54555a;
-}
-
 #form {
   margin-top: 20px;
   display: grid;
