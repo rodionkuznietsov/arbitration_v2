@@ -8,7 +8,7 @@
     </div> -->
 
     <form id="form">
-      <div id="form-grid">
+      <div id="form-column">
         <div class="form-group">
           <label for="ticker" id="form_label">Тикер (BTC):</label>
           <input id="ticker" name="ticker" type="text" value="BTC" class="form_input">
@@ -18,20 +18,35 @@
           <label for="order" id="form_label">Лонг:</label>
           <input id="order" name="order" type="number" value="0.00" class="form_input">
         </div>
+
+        <div class="form-group">
+          <input id="combobox" v-model="type" type="text" @focus="show = true" @input="show = true" readonly="true" placeholder="Bybit">
+          <ul class="combobox-list" id="optionsList" v-show="show">
+            <li id="combobox_element" @mousedown="select('Bybit')">Bybit</li>
+            <li id="combobox_element" @mousedown="select('Mexc')">Mexc</li>
+          </ul>
+        </div>
       </div>
 
-        <div id="form-grid">
-          <div class="form-group">
-            <label for="ticker" id="form_label">Ордер (USDT):</label>
-            <input id="ticker" name="ticker" type="text" value="0.00" class="form_input">
-          </div>
-
-          <div class="form-group">
-            <label for="order" id="form_label">Шорт:</label>
-            <input id="order" name="order" type="number" value="0.00" class="form_input">
-          </div>
+      <div id="form-column">
+        <div class="form-group">
+          <label for="ticker" id="form_label">Ордер (USDT):</label>
+          <input id="ticker" name="ticker" type="text" value="0.00" class="form_input">
         </div>
 
+        <div class="form-group">
+          <label for="order" id="form_label">Шорт:</label>
+          <input id="order" name="order" type="number" value="0.00" class="form_input">
+        </div>
+
+        <div class="form-group">
+          <input id="combobox" v-model="type" type="text" @focus="show = true" @input="show = true" readonly="true" placeholder="Mexc">
+          <ul class="combobox-list" id="optionsList" v-show="show">
+            <li id="combobox_element" @mousedown="select('Bybit')">Bybit</li>
+            <li id="combobox_element" @mousedown="select('Mexc')">Mexc</li>
+          </ul>
+        </div>
+      </div>
     </form>
 
     <footer id="footer">
@@ -42,9 +57,12 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import WebApp from "@twa-dev/sdk"
 import AppHeader from './components/AppHeader.vue'
+
+const type = ref('')
+const show = ref(false)
 
 onMounted(() => {
   WebApp.ready()
@@ -52,9 +70,51 @@ onMounted(() => {
   console.log('start_param:', WebApp.initDataUnsafe.start_param)
 })
 
+const select = (v) => {
+  type.value = v
+  show.value = false
+}
+
 </script>
 
 <style>
+#combobox {
+  width: 100%;
+  padding: 15px;
+  border: 1px solid #54555a;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 8px;
+  font-size: 20px;
+  margin-top: 10px;
+  background-color: #23262b;
+  outline: 1px solid #65666d;
+  box-sizing: border-box;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.combobox-list {
+  background-color: #23262b;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+#combobox_element {
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 8px;
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+  text-align: left;
+}
+
+#combobox_element:hover {
+  filter: opacity(75%);
+  background-color: #54555a;
+}
+
 #form {
   margin-top: 20px;
   display: grid;
@@ -66,7 +126,7 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
 }
 
-#form-grid {
+#form-column{
   display: flex;
   gap: 20px;
   flex-direction: column;
