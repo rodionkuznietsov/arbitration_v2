@@ -44,15 +44,30 @@
       document.removeEventListener('click', getPosInsideMouseClick)
     })
 
+    const arrowInput = ref(null)
+    const comboboxList = ref(null)
+
+    function popup() {
+      if (arrowInput.value) {
+        const inputWidth = arrowInput.value.offsetWidth
+        if (comboboxList.value) {
+          comboboxList.value.style.width = inputWidth + 'px'
+        }
+      }
+
+      show.value = true; 
+      arrow_class.value = 'arrow_rotate'
+    }
+
 </script>
 
 <template>
   <div @click="getPosInsideDiv">
       <div :class="arrow_class">
-          <input id="combobox" :value="localPlaceholder" readonly="true" @click="show = true; arrow_class = 'arrow_rotate'">
+          <input id="combobox" :value="localPlaceholder" readonly="true" @click="popup" ref="arrowInput">
       </div>
 
-      <ul class="combobox-list" id="optionsList" v-show="show">
+      <ul class="combobox-list" id="optionsList" v-show="show" ref="comboboxList">
           <li id="combobox_element" v-for="opt in props.options" :key="opt" @mousedown="select(opt)">{{ opt }}</li>
       </ul>
   </div>
@@ -98,19 +113,22 @@
 }
 
 .combobox-list {
-  background-color: #23262b;
+  position: absolute;
+  background-color: #121212;
   border-radius: 8px;
   padding: 15px;
+  z-index: 9999;
+  box-sizing: border-box;
+  box-shadow: 0px 0px 3px #ffffffb7;
 }
 
 #combobox_element {
   cursor: pointer;
-  padding: 5px;
-  border-radius: 8px;
+  padding: 8px;
   list-style: none;
   margin: 0;
-  padding-left: 0;
   text-align: left;
+  border-radius: 8px;
 }
 
 #combobox_element:hover {
