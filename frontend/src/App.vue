@@ -16,15 +16,11 @@
 
         <div class="form-group">
           <label for="order" id="form_label">Лонг:</label>
-          <input id="order" name="order" type="number" value="0.00" class="form_input">
-        </div>
-
-        <div class="form-group">
           <FormCombobox placeholder="Bybit" :options="exchanges"/>
         </div>
 
         <div class="form-group">
-          <FormCombobox placeholder="Фьючерс" :options="exchanges"/>
+          <FormCombobox placeholder="Фьючерс" :options="market_types"/>
         </div>
 
         <div class="form-group">
@@ -41,15 +37,11 @@
 
         <div class="form-group">
           <label for="order" id="form_label">Шорт:</label>
-          <input id="order" name="order" type="number" value="0.00" class="form_input">
-        </div>
-
-        <div class="form-group">
           <FormCombobox placeholder="Mexc" :options="exchanges"/>
         </div>
 
         <div class="form-group">
-          <FormCombobox placeholder="Фьючерс" :options="exchanges"/>
+          <FormCombobox placeholder="Фьючерс" :options="market_types"/>
         </div>
 
         <div class="form-group">
@@ -73,6 +65,7 @@ import AppHeader from './components/AppHeader.vue'
 import FormCombobox from './components/FormCombobox.vue';
 
 const exchanges = ["Bybit", "Mexc"]
+const market_types = ["Спот", "Фьючерс"]
 
 onMounted(() => {
   WebApp.ready()
