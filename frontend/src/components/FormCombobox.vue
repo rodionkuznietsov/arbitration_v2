@@ -1,18 +1,23 @@
 <script setup>
-    import { ref, defineProps, onMounted, onUnmounted } from "vue"
+    import { ref, defineProps, defineEmits, onMounted, onUnmounted } from "vue"
 
     const props = defineProps({
+        placeholder: String,
         options: Array
     })
 
     const show = ref(false)
-    const exchange = ref("Bybit")
     const arrow_class = ref("arrow")
+    const emit = defineEmits(['update:placeholder'])
+    const localPlaceholder = ref(props.placeholder)
+
+    console.log('placeholder:', props.placeholder)
 
     const select = (value) => {
-        exchange.value = value
+        emit('update:placeholder', value)
         show.value = false
         arrow_class.value = "arrow"
+        localPlaceholder.value = value
     }
 
     const inside_div = ref({x: 0.0, y: 0.0})
@@ -44,7 +49,7 @@
 <template>
   <div @click="getPosInsideDiv">
       <div :class="arrow_class">
-          <input id="combobox" :value="exchange" readonly="true" @click="show = true; arrow_class = 'arrow_rotate'">
+          <input id="combobox" :value="localPlaceholder" readonly="true" @click="show = true; arrow_class = 'arrow_rotate'">
       </div>
 
       <ul class="combobox-list" id="optionsList" v-show="show">
@@ -57,14 +62,14 @@
 #combobox { 
   width: 100%;
   padding: 15px;
-  border: 1px solid #54555a;
+  border: 1px solid #31312ddc;
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
   font-size: 20px;
   margin-top: 10px;
-  background-color: #23262b;
-  outline: 1px solid #65666d;
+  background-color: #121212;
+  outline: 1px solid #31312ddc;
   box-sizing: border-box;
   cursor: pointer;
   text-transform: uppercase;
@@ -77,7 +82,7 @@
 }
 
 .arrow::after {
-  content: "→";
+  content: "➤";
   position: absolute;
   transform: translateY(100%) rotate(90deg);
   right: 20px;
@@ -85,7 +90,7 @@
 }
 
 .arrow_rotate::after {
-  content: "→";
+  content: "➤";
   position: absolute;
   transform: translateY(100%) rotate(-90deg);
   right: 20px;

@@ -20,7 +20,11 @@
         </div>
 
         <div class="form-group">
-          <FormCombobox :options="exchanges"/>
+          <FormCombobox placeholder="Bybit" :options="exchanges"/>
+        </div>
+
+        <div class="form-group">
+          <FormCombobox placeholder="Фьючерс" :options="exchanges"/>
         </div>
       </div>
 
@@ -36,7 +40,11 @@
         </div>
 
         <div class="form-group">
-          <FormCombobox :options="exchanges"/>
+          <FormCombobox placeholder="Mexc" :options="exchanges"/>
+        </div>
+
+        <div class="form-group">
+          <FormCombobox placeholder="Фьючерс" :options="exchanges"/>
         </div>
       </div>
     </form>
@@ -85,14 +93,14 @@ onMounted(() => {
 .form_input {
   width: 100%;
   padding: 15px;
-  border: 1px solid #54555a;
+  border: 1px solid #31312ddc;
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
   font-size: 20px;
   margin-top: 10px;
-  background-color: #23262b;
-  outline: 1px solid #65666d;
+  background-color: #121212;
+  outline: 1px solid #31312ddc;
   box-sizing: border-box;
 }
 
