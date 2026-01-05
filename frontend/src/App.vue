@@ -89,7 +89,7 @@ onMounted(() => {
 
 #form-column{
   display: flex;
-  gap: 20px;
+  gap: 5px;
   flex-direction: column;
 }
 
@@ -116,6 +116,7 @@ onMounted(() => {
   display: flex;
   justify-content: flex-start;
   font-size: 18px;
+  margin-top: 10px;
 }
 
 #footer {
