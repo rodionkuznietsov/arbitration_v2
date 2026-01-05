@@ -44,8 +44,9 @@
 }
 
 .combo {
- position: relative;
- display: inline-block; 
+    position: relative;
+    display: inline-block; 
+    width: 100%;
 }
 
 .combo::after {
@@ -74,5 +75,5 @@
 #combobox_element:hover {
   filter: opacity(75%);
   background-color: #54555a;
-}
+} 
 </style>
