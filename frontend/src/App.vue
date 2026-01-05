@@ -179,5 +179,6 @@ onMounted(() => {
 
 body {
   background-color: #121212;
+  margin-bottom: 50px;
 }
 </style>

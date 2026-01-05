@@ -6,6 +6,9 @@
                 prices: {
                     sell: [
                         0.0918, 0.0917, 0.0916, 0.0915, 0.0914, 0.0913,
+                    ],
+                    buy: [
+                        0.0912, 0.0911, 0.0910, 0.0909, 0.0908, 0.0907, 
                     ]
                 },
                 volumes: {
@@ -21,6 +24,9 @@
                 prices: {
                     sell: [
                         0.1029, 0.1028, 0.1027, 0.1026, 0.1026, 0.1024,
+                    ],
+                    buy: [
+                        0.1023, 0.1022, 0.1021, 0.1020, 0.1019, 0.1018,
                     ]
                 },
                 volumes: {
@@ -43,6 +49,12 @@
                     <div id="order_book_prices" v-for="sell in data.order_book.prices.sell" :key="sell">
                         <div id="sell_label">{{ sell }}</div>
                     </div>
+
+                    <div id="mid_price">0.0913</div>
+
+                    <div id="order_book_prices" v-for="buy in data.order_book.prices.buy" :key="buy">
+                        <div id="buy_label">{{ buy }}</div>
+                    </div>
                 </div>
                 <div>
                     <div>
@@ -54,36 +66,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- <div id="order_book_element">
-            <div id="exchange_name">{{ exchangeName2 }}</div>
-            <div id="order_book_labels">
-                <div>
-                    <span>Цена</span>
-                    <div id="order_book_prices">
-                        <div id="sell_label">0.1029</div>
-                        <div id="sell_label">0.1028</div>
-                        <div id="sell_label">0.1027</div>
-                        <div id="sell_label">0.1026</div>
-                        <div id="sell_label">0.1026</div>
-                        <div id="sell_label">0.1024</div>
-                    </div>
-                </div>
-                <div>
-                    <div>
-                        <span>Обьём $</span>
-                        <div id="order_book_prices">
-                            <div id="sell_label">45,781</div>
-                            <div id="sell_label">43,059</div>
-                            <div id="sell_label">35,649</div>
-                            <div id="sell_label">27,918</div>
-                            <div id="sell_label">19,544</div>
-                            <div id="sell_label">10,075</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> -->
     </div>
 </template>
 
@@ -92,6 +74,9 @@
         margin-top: 20px;
         display: flex;
         gap: 20px;
+        overflow-y: auto;
+        position: static;
+        height: 100%;
     }
 
     #order_book_element {
@@ -140,5 +125,10 @@
 
     #sell_label {
         color: rgb(151, 15, 15);
+    }
+
+    #mid_price {
+        margin-top: 20px;
+        margin-bottom: 20px;
     }
 </style>
