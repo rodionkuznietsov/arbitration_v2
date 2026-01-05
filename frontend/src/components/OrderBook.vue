@@ -139,10 +139,12 @@
 
     #buy_label {
         color: green;
+        box-shadow: 1px 1px 80px green;
     }
 
     #sell_label {
         color: rgb(151, 15, 15);
+        box-shadow: 1px 1px 80px rgb(151, 15, 15);
     }
 
     #mid_price {
