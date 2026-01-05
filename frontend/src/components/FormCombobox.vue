@@ -7,17 +7,19 @@
 
     const show = ref(false)
     const exchange = ref("Bybit")
+    const arrow_rotate = ref("arrow")
 
     const select = (value) => {
         exchange.value = value
         show.value = false
+        arrow_rotate.value = "arrow"
     }
 </script>
 
 <template>
 <div>
-    <div class="combo">
-        <input id="combobox" :value="exchange" readonly="true" @click="show = true">
+    <div :class="arrow_rotate">
+        <input id="combobox" :value="exchange" readonly="true" @click="show = true; arrow_rotate = 'arrow_rotate'">
     </div>
 
     <ul class="combobox-list" id="optionsList" v-show="show">
@@ -43,17 +45,25 @@
   text-transform: uppercase;
 }
 
-.combo {
+.arrow, .arrow_rotate {
     position: relative;
     display: inline-block; 
     width: 100%;
 }
 
-.combo::after {
+.arrow::after {
   content: "➤";
   position: absolute;
   transform: translateY(100%) rotate(90deg);
   right: 20px;
+}
+
+.arrow_rotate::after {
+  content: "➤";
+  position: absolute;
+  transform: translateY(100%) rotate(-90deg);
+  right: 20px;
+  transition: all 0.5ms;
 }
 
 .combobox-list {
