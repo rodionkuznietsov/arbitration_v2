@@ -2,11 +2,6 @@
   <div id="app">
     <AppHeader />
 
-    <!-- <div id="order_price">
-      <span>Вход</span>
-      <span>Выход</span>
-    </div> -->
-
     <form id="form">
       <div id="form-column">
         <div class="form-group">
@@ -52,10 +47,10 @@
     </form>
 
     <footer id="footer">
-      <div id="run_buttons">
-        <button id="start">Старт</button>
-        <button id="stop">Стоп</button>
-      </div>
+        <div id="run_buttons">
+          <button id="start">Старт</button>
+          <button id="stop">Стоп</button>
+        </div>
 
       <OrderBook />
     </footer>
@@ -136,6 +131,7 @@ onMounted(() => {
 #run_buttons {
   display: flex;
   gap: 20px;
+  margin-top: 10px;
 }
 
 #start, #stop {

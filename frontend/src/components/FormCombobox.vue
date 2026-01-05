@@ -114,12 +114,12 @@
 
 .combobox-list {
   position: absolute;
-  background-color: #121212;
+  background-color: rgba(18, 18, 18, 0.97);
   border-radius: 8px;
   padding: 15px;
   z-index: 9999;
   box-sizing: border-box;
-  box-shadow: 0px 0px 3px #ffffffb7;
+  border: 1px solid #31312ddc;
 }
 
 #combobox_element {
