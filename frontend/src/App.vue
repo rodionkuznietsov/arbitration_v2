@@ -128,11 +128,13 @@ onMounted(() => {
   font-weight: 600;
   border-radius: 8px;
   font-size: 20px;
+  transition: all 0.6s;
 }
 
 #start:hover, #stop:hover {
   filter: opacity(75%);
   cursor: pointer;
+  transition: all 0.6s;
 }
 
 #start {

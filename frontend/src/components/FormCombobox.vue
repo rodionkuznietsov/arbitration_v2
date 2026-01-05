@@ -77,7 +77,7 @@
 }
 
 .arrow::after {
-  content: "➤";
+  content: "→";
   position: absolute;
   transform: translateY(100%) rotate(90deg);
   right: 20px;
@@ -85,7 +85,7 @@
 }
 
 .arrow_rotate::after {
-  content: "➤";
+  content: "→";
   position: absolute;
   transform: translateY(100%) rotate(-90deg);
   right: 20px;
