@@ -135,7 +135,7 @@ onMounted(() => {
   left: 20px;
   right: 20px;
   padding: 10px;
-  position: absolute;
+  position:-ms-page;
 }
 
 #start, #stop {
