@@ -26,8 +26,8 @@
         box-sizing: border-box;
         left: 0;
         right: 0;
-        margin-left: 100px;
-        margin-right: 100px;
+        margin-left: 50px;
+        margin-right: 50px;
         border-radius: 8px;
         font-size: 16px;
     }
