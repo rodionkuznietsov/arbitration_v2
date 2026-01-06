@@ -70,19 +70,22 @@ import { ref } from 'vue';
         display: flex;
         gap: 20px;
         position: relative;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.7);
     }
 
     #order_book_element {
         width: 100%;
         padding: 8px;
-        border: 1px solid #31312ddc;
-        color: #ffffff;
+        border: 1px solid transparent;
+        color: #121212;
         font-weight: 600;
         border-radius: 8px;
         font-size: 16px;
         margin-top: 10px;
-        background-color: #121212;
-        outline: 1px solid #31312ddc;
+        backdrop-filter: blur(8px); 
+        -webkit-backdrop-filter: blur(8px);
+        outline: none;
         box-sizing: border-box;
         cursor: pointer;
         text-transform: uppercase;
@@ -112,12 +115,12 @@ import { ref } from 'vue';
 
     #buy_label {
         color: green;
-        box-shadow: 1px 1px 80px green;
+        /* box-shadow: 1px 1px 80px green; */
     }
 
     #sell_label {
         color: rgb(151, 15, 15);
-        box-shadow: 1px 1px 80px rgb(151, 15, 15);
+        /* box-shadow: 1px 1px 80px rgb(151, 15, 15); */
     }
 
     #mid_price {

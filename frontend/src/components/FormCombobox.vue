@@ -77,13 +77,13 @@
 #combobox { 
   width: 100%;
   padding: 8px;
-  border: 1px solid #31312ddc;
+  border: 1px solid #303c51;
   color: #ffffff;
   border-radius: 8px;
   font-size: 16px;
   margin-top: 10px;
-  background-color: #121212;
-  outline: 1px solid #31312ddc;
+  background-color: #303c51;
+  outline: 1px solid #303c51;
   box-sizing: border-box;
   cursor: pointer;
   text-transform: capitalize;
@@ -96,19 +96,19 @@
 }
 
 .arrow::after {
-  content: "➤";
+  content: "▾";
   position: absolute;
-  transform: translateY(100%) rotate(90deg);
+  transform: translateY(75%);
   right: 20px;
   transition: all 1s;
 }
 
 .arrow_rotate::after {
-  content: "➤";
+  content: "▾";
   position: absolute;
-  transform: translateY(100%) rotate(-90deg);
+  transform: translateY(100%) rotate(180deg);
   right: 20px;
-  transition: all 1s;
+  transition: all 0.9s;
 }
 
 .combobox-list {

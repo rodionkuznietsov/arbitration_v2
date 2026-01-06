@@ -100,14 +100,13 @@ onMounted(() => {
   .form_input {
     width: 100%;
     padding: 8px;
-    border: 1px solid #31312ddc;
+    border: 1px solid #303c51;
     color: #ffffff;
-    font-weight: 600;
     border-radius: 8px;
     font-size: 16px;
     margin-top: 10px;
-    background-color: #121212;
-    outline: 1px solid #31312ddc;
+    background-color: #303c51;
+    outline: 1px solid #303c51;
     box-sizing: border-box;
   }
 
@@ -180,7 +179,7 @@ onMounted(() => {
   }
 
   body {
-    background-color: #121212;
+    background-color: #222a39;
     margin-bottom: 20px;
   }
 </style>
