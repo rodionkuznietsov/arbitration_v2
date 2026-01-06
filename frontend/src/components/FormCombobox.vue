@@ -79,7 +79,6 @@
   padding: 8px;
   border: 1px solid #31312ddc;
   color: #ffffff;
-  font-weight: 600;
   border-radius: 8px;
   font-size: 16px;
   margin-top: 10px;

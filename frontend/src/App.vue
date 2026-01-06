@@ -78,105 +78,109 @@ onMounted(() => {
 </script>
 
 <style>
-#form {
-  margin-top: 20px;
-  display: grid;
-  gap: 20px;
-  padding: 0 10px;
-  width: 100%;
-  box-sizing: border-box;
-  justify-content: space-around;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-}
+  @import url('https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Vollkorn+SC:wght@400;600;700;900&display=swap');
 
-#form-column{
-  display: flex;
-  gap: 5px;
-  flex-direction: column;
-}
+  #form {
+    margin-top: 20px;
+    display: grid;
+    gap: 20px;
+    padding: 0 10px;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: space-around;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
 
-.form_input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #31312ddc;
-  color: #ffffff;
-  font-weight: 600;
-  border-radius: 8px;
-  font-size: 16px;
-  margin-top: 10px;
-  background-color: #121212;
-  outline: 1px solid #31312ddc;
-  box-sizing: border-box;
-}
+  #form-column{
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+  }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
+  .form_input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #31312ddc;
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-top: 10px;
+    background-color: #121212;
+    outline: 1px solid #31312ddc;
+    box-sizing: border-box;
+  }
 
-#form_label {
-  display: flex;
-  justify-content: flex-start;
-  font-size: 16px;
-  margin-top: 10px;
-}
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
 
-#footer {
-  display: flex;
-  flex-direction: column;
-  margin-top: 20px;
-  padding: 8px;
-  height: 600px;
-  overflow-y: visible;
-}
+  #form_label {
+    display: flex;
+    justify-content: flex-start;
+    font-size: 16px;
+    margin-top: 10px;
+  }
 
-#run_buttons {
-  display: flex;
-  gap: 20px;
-  margin-top: 10px;
-}
+  #footer {
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
+    padding: 8px;
+    height: 600px;
+    overflow-y: visible;
+  }
 
-#start, #stop {
-  flex: 1;
-  padding: 8px;
-  border: none;
-  color: #ffffff;
-  font-weight: 600;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: all 0.6s;
-}
+  #run_buttons {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+  }
 
-#start:hover, #stop:hover {
-  filter: opacity(75%);
-  cursor: pointer;
-  transition: all 0.6s;
-}
+  #start, #stop {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    color: #ffffff;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.6s;
+  }
 
-#start {
-  background-color: green;
-}
+  #start:hover, #stop:hover {
+    filter: opacity(75%);
+    cursor: pointer;
+    transition: all 0.6s;
+  }
 
-#stop {
-  background-color: rgb(151, 15, 15);
-}
+  #start {
+    background-color: green;
+  }
 
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: left;
-  color: #ffffff;
-  font-size: 16px;
-  margin-left: 5px;
-  margin-top: 5px;
-  margin-bottom: 5px;
-  margin-right: 5px;
-  position: relative;
-}
+  #stop {
+    background-color: rgb(151, 15, 15);
+  }
 
-body {
-  background-color: #121212;
-  margin-bottom: 20px;
-}
+  #app {
+    font-family: Avenir, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: left;
+    color: #ffffff;
+    font-size: 16px;
+    margin-left: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-right: 5px;
+    position: relative;
+    font-family: "PT Serif", serif;
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  body {
+    background-color: #121212;
+    margin-bottom: 20px;
+  }
 </style>
