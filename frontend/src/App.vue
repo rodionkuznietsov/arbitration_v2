@@ -100,13 +100,13 @@ onMounted(() => {
   .form_input {
     width: 100%;
     padding: 8px;
-    border: 1px solid #303c51;
+    border: 1px solid rgba(48, 60, 81, 0.6);;
     color: #ffffff;
     border-radius: 8px;
     font-size: 16px;
     margin-top: 10px;
-    background-color: #303c51;
-    outline: 1px solid #303c51;
+    background-color: rgba(48, 60, 81, 0.6);
+    outline: none;
     box-sizing: border-box;
   }
 

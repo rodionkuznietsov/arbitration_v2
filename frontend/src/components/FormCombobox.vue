@@ -77,13 +77,13 @@
 #combobox { 
   width: 100%;
   padding: 8px;
-  border: 1px solid #303c51;
+  border: 1px solid rgba(48, 60, 81, 0.6);;
   color: #ffffff;
   border-radius: 8px;
   font-size: 16px;
   margin-top: 10px;
-  background-color: #303c51;
-  outline: 1px solid #303c51;
+  background-color: rgba(48, 60, 81, 0.6);
+  outline: none;
   box-sizing: border-box;
   cursor: pointer;
   text-transform: capitalize;
@@ -113,12 +113,15 @@
 
 .combobox-list {
   position: absolute;
-  background-color: rgba(18, 18, 18, 0.97);
+  background-color: rgba(48, 60, 81, 0.6);
   border-radius: 8px;
   padding: 8px;
   z-index: 9999;
   box-sizing: border-box;
-  border: 1px solid #31312ddc;
+  border: 1px solid rgba(48, 60, 81, 0.6);
+  backdrop-filter: blur(8px);
+  transition: flex 0.5s;
+  pointer-events: auto;
 }
 
 #combobox_element {
@@ -132,7 +135,9 @@
 
 #combobox_element:hover {
   filter: opacity(75%);
-  background-color: #54555a;
-  transition: background 0.6s;
+  background-color: rgba(255, 255, 255, 0.7);
+  filter: opacity(0.5) contrast(2px);
+  transition: background 0.25s ease;
+  color: #121212;
 } 
 </style>
