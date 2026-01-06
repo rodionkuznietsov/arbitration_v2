@@ -1,28 +1,54 @@
 <script setup>
-import { ref } from 'vue';
+    import { ref, defineExpose } from 'vue';
+    let isVisible = ref("display: block;")
 
-    let websoket = new WebSocket("ws://127.0.0.1:9000");
+    function show() {
+        isVisible.value = "display: block;"
+    }
 
     let ask_data = ref([])
     let bid_data = ref([])
 
-    websoket.onmessage = (event) => {
-        const data = JSON.parse(event.data)
-        ask_data.value = data.a.map(x => ({
-            price: x[0],
-            volume: x[1]
-        }))
+    let websoket = null
+    function start() {
+        if (websoket) return
 
-        bid_data.value = data.b.map(x => ({
-            price: x[0],
-            volume: x[1]
-        }))
-        console.log(ask_data.value)
+        websoket = new WebSocket("ws://127.0.0.1:9000")
+
+        websoket.onmessage = (event) => {
+            const data = JSON.parse(event.data)
+            ask_data.value = data.a.map(x => ({
+                price: x[0],
+                volume: x[1]
+            }))
+
+            bid_data.value = data.b.map(x => ({
+                price: x[0],
+                volume: x[1]
+            }))
+            console.log(ask_data.value)
+        }
+
+        websoket.onclose = () => {
+            websoket = null
+        }
     }
+
+    function stop() {
+        if (websoket) {
+            websoket.close()
+            websoket = null
+        }
+
+        ask_data.value = []
+        bid_data.value = []
+    }
+
+    defineExpose({ show, start, stop })
 </script>
 
 <template>
-    <div id="order_book">
+    <div id="order_book" :style="isVisible">
         <div id="order_book_element">
             <div id="exchange_name">Bybit</div>
             <div id="order_book_labels">

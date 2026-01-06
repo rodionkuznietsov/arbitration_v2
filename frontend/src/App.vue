@@ -48,18 +48,18 @@
 
     <footer id="footer">
         <div id="run_buttons">
-          <button id="start">Старт</button>
-          <button id="stop">Стоп</button>
+          <button id="start" @click="start">Старт</button>
+          <button id="stop" @click="stop">Стоп</button>
         </div>
 
-      <OrderBook />
+      <OrderBook ref="orderBook"/>
       <AppMenu />
     </footer>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import WebApp from "@twa-dev/sdk"
 import AppHeader from './components/AppHeader.vue'
 import FormCombobox from './components/FormCombobox.vue';
@@ -74,6 +74,17 @@ onMounted(() => {
   WebApp.expand()
   console.log('start_param:', WebApp.initDataUnsafe.start_param)
 })
+
+const orderBook = ref(null)
+
+function start() {
+  orderBook.value.show()
+  orderBook.value.start()
+}
+
+function stop() {
+  orderBook.value.stop()
+}
 
 </script>
 
