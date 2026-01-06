@@ -1,68 +1,43 @@
 <script setup>
-    const order_book_data = {
-        exchange1: {
-            name: "Bybit",
-            order_book: {
-                prices: {
-                    sell: [
-                        0.0918, 0.0917, 0.0916, 0.0915, 0.0914, 0.0913,
-                    ],
-                    buy: [
-                        0.0912, 0.0911, 0.0910, 0.0909, 0.0908, 0.0907, 
-                    ]
-                },
-                volumes: {
-                    sell: [
-                        16681, 12529, 9540, 6506, 3456, 354.84,
-                    ],
-                    buy: [
-                        67919, 4653, 6788, 8651, 11826, 14611
-                    ]
-                }
-            }
-        },  
-        exchange2: {
-            name: "Mexc",
-            order_book: {
-                prices: {
-                    sell: [
-                        0.1029, 0.1028, 0.1027, 0.1026, 0.1026, 0.1024,
-                    ],
-                    buy: [
-                        0.1023, 0.1022, 0.1021, 0.1020, 0.1019, 0.1018,
-                    ]
-                },
-                volumes: {
-                    sell: [
-                        45781, 43059, 35649, 27918, 19544, 10075,
-                    ],
-                    buy: [
-                        1371, 8586, 16414, 26018, 36150, 42231
-                    ]
-                }
-            }
-        } 
+import { ref } from 'vue';
+
+    let websoket = new WebSocket("ws://127.0.0.1:9000");
+
+    let ask_data = ref([])
+    let bid_data = ref([])
+
+    websoket.onmessage = (event) => {
+        const data = JSON.parse(event.data)
+        ask_data.value = data.a.map(x => ({
+            price: x[0],
+            volume: x[1]
+        }))
+
+        bid_data.value = data.b.map(x => ({
+            price: x[0],
+            volume: x[1]
+        }))
+        console.log(ask_data.value)
     }
 </script>
 
 <template>
     <div id="order_book">
-        <div id="order_book_element" v-for="data in order_book_data" :key="data">
-            <div id="exchange_name">{{ data.name }}</div>
+        <div id="order_book_element">
+            <div id="exchange_name">Bybit</div>
             <div id="order_book_labels">
                 <div>
                     <span>Цена</span>
                     <div id="separator">
-                        <div id="order_book_prices" v-for="sell in data.order_book.prices.sell" :key="sell">
-                            <div id="sell_label">{{ sell }}</div>
+                        <div id="order_book_prices" v-for="(row, i) in ask_data.splice(0, 5)" :key="i">
+                            <div id="sell_label">{{ row.price  }}</div>
                         </div>
 
                         <div id="mid_price">0.0913</div>
                     </div>
-                    
                     <div id="separator">
-                        <div id="order_book_prices" v-for="buy in data.order_book.prices.buy" :key="buy">
-                            <div id="buy_label">{{ buy }}</div>
+                        <div id="order_book_prices" v-for="(row, i) in bid_data.splice(0, 5)" :key="i">
+                            <div id="buy_label">{{ row.price }}</div>
                         </div>
                     </div>
                 </div>
@@ -71,20 +46,20 @@
                     <div>
                         <span>Обьём$</span>
                         <div id="separator">
-                            <div id="order_book_prices" v-for="sell_volume in data.order_book.volumes.sell" :key="sell_volume">
-                                <div id="sell_label">{{ sell_volume }}</div>
+                            <div id="order_book_prices" v-for="(row, i) in ask_data.splice(0, 5)" :key="i">
+                                <div id="sell_label">{{ row.volume }}</div>
                             </div>
                             <div id="mid_price">(0.10%)</div>
                         </div>
 
                         <div id="separator">
-                            <div id="order_book_prices" v-for="buy_volume in data.order_book.volumes.buy" :key="buy_volume">
-                                <div id="buy_label">{{ buy_volume }}</div>
+                            <div id="order_book_prices" v-for="(row, i) in ask_data.splice(0, 5)" :key="i"> 
+                                <div id="buy_label">{{ row.volume }}</div> 
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> 
         </div>
     </div>
 </template>

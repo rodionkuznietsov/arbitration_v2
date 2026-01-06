@@ -11,3 +11,6 @@ tokio = { version="1", features=["full"] }
 teloxide = { version = "0.12", features = ["full"] }
 anyhow = "1.0.100"
 dotenv = "0.15.0"
+tokio-tungstenite = {version="0.28.0", features=["rustls-tls-webpki-roots"]}
+url = "2.5.8"
+futures-util = "0.3.31"
