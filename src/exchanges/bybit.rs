@@ -36,7 +36,7 @@ pub async fn connect(ticker: &str, channel_type: &str, local_ask_order_book: Arc
 
     println!("🌐 [Bybit-Websocket] is running");
 
-    let ticker_target = format!("orderbook.1000.{}USDT", ticker.to_uppercase());
+    let ticker_target = format!("orderbook.50.{}USDT", ticker.to_uppercase());
     
     write.send(Message::Text(
         serde_json::json!({
