@@ -23,12 +23,11 @@
         position: fixed;
         bottom: 10px;
         background-color: rgba(255, 255, 255, 0.05);
-        box-sizing: border-box;
         left: 0;
         right: 0;
-        margin-left: 70px;
-        margin-right: 70px;
-        border-radius: 8px;
+        margin-left: 60px;
+        margin-right: 60px;
+        border-radius: 30px;
         font-size: 16px;
     }
 
@@ -37,14 +36,14 @@
         gap: 50px;
         background-color: rgba(255, 255, 255, 0.02);
         position: relative;
-        backdrop-filter: blur(20px); 
-        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(8px); 
+        -webkit-backdrop-filter: blur(8px);
         width: 100%;
         height: 100%;
         padding: 8px;
-        border-radius: 8px;
         box-sizing: border-box;
         justify-content: center;
+        border-radius: 30px;
     }
 
     #menu_element {
