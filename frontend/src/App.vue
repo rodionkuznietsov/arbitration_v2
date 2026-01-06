@@ -53,6 +53,7 @@
         </div>
 
       <OrderBook />
+      <AppMenu />
     </footer>
   </div>
 </template>
@@ -63,6 +64,7 @@ import WebApp from "@twa-dev/sdk"
 import AppHeader from './components/AppHeader.vue'
 import FormCombobox from './components/FormCombobox.vue';
 import OrderBook from './components/OrderBook.vue';
+import AppMenu from './components/AppMenu.vue';
 
 const exchanges = ["Bybit", "Mexc"]
 const market_types = ["Спот", "Фьючерс"]
@@ -95,12 +97,12 @@ onMounted(() => {
 
 .form_input {
   width: 100%;
-  padding: 15px;
+  padding: 8px;
   border: 1px solid #31312ddc;
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
-  font-size: 20px;
+  font-size: 16px;
   margin-top: 10px;
   background-color: #121212;
   outline: 1px solid #31312ddc;
@@ -115,7 +117,7 @@ onMounted(() => {
 #form_label {
   display: flex;
   justify-content: flex-start;
-  font-size: 18px;
+  font-size: 16px;
   margin-top: 10px;
 }
 
@@ -136,12 +138,12 @@ onMounted(() => {
 
 #start, #stop {
   flex: 1;
-  padding: 15px;
+  padding: 8px;
   border: none;
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 16px;
   transition: all 0.6s;
 }
 
@@ -165,7 +167,7 @@ onMounted(() => {
   -moz-osx-font-smoothing: grayscale;
   text-align: left;
   color: #ffffff;
-  font-size: 18px;
+  font-size: 16px;
   margin-left: 5px;
   margin-top: 5px;
   margin-bottom: 5px;

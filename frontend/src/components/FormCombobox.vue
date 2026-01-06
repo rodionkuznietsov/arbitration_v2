@@ -76,18 +76,18 @@
 <style scoped>
 #combobox { 
   width: 100%;
-  padding: 15px;
+  padding: 8px;
   border: 1px solid #31312ddc;
   color: #ffffff;
   font-weight: 600;
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 16px;
   margin-top: 10px;
   background-color: #121212;
   outline: 1px solid #31312ddc;
   box-sizing: border-box;
   cursor: pointer;
-  text-transform: uppercase;
+  text-transform: capitalize;
 }
 
 .arrow, .arrow_rotate {
@@ -116,7 +116,7 @@
   position: absolute;
   background-color: rgba(18, 18, 18, 0.97);
   border-radius: 8px;
-  padding: 15px;
+  padding: 8px;
   z-index: 9999;
   box-sizing: border-box;
   border: 1px solid #31312ddc;

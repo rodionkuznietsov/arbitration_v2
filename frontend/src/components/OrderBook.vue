@@ -33,7 +33,7 @@ import { ref } from 'vue';
                             <div id="sell_label">{{ row.price  }}</div>
                         </div>
 
-                        <div id="mid_price">0.0913</div>
+                        <div id="mid_price"></div>
                     </div>
                     <div id="separator">
                         <div id="order_book_prices" v-for="(row, i) in bid_data.splice(0, 5)" :key="i">
@@ -49,7 +49,7 @@ import { ref } from 'vue';
                             <div id="order_book_prices" v-for="(row, i) in ask_data.splice(0, 5)" :key="i">
                                 <div id="sell_label">{{ row.volume }}</div>
                             </div>
-                            <div id="mid_price">(0.10%)</div>
+                            <div id="mid_price"></div>
                         </div>
 
                         <div id="separator">
@@ -74,12 +74,12 @@ import { ref } from 'vue';
 
     #order_book_element {
         width: 100%;
-        padding: 15px;
+        padding: 8px;
         border: 1px solid #31312ddc;
         color: #ffffff;
         font-weight: 600;
         border-radius: 8px;
-        font-size: 18px;
+        font-size: 16px;
         margin-top: 10px;
         background-color: #121212;
         outline: 1px solid #31312ddc;
@@ -93,7 +93,6 @@ import { ref } from 'vue';
     #exchange_name {
         text-align: center;
         text-transform: capitalize;
-        font-size: 18px;
     }
 
     #order_book_labels {
@@ -101,7 +100,6 @@ import { ref } from 'vue';
         justify-content: space-evenly;
         gap: 20px;
         text-transform: capitalize;
-        font-size: 18px;
     }
 
     #order_book_prices {

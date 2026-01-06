@@ -42,8 +42,8 @@
 }
 
 #status_circle {
-  width: 25px;
-  height: 25px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
 }
 
@@ -61,7 +61,7 @@
 }
 
 #header_icon {
-  width: 25px;
-  height: 25px;
+  width: 16px;
+  height: 16px;
 }
 </style>
