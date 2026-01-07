@@ -1,12 +1,13 @@
 <script setup>
-  import { defineProps, ref } from 'vue';
+  import { defineExpose, ref } from 'vue';
 
-  const props = defineProps({
-    online: Boolean
-  })
+  const workStatus = ref(false)
 
-  const workStatus = ref(props.online)
-  workStatus.value = false
+  function change_work_status(status) {
+    workStatus.value = status
+  }
+
+  defineExpose({ change_work_status })
 </script>
 
 <template>

@@ -34,10 +34,9 @@
         if (websoket) {
             websoket.close()
             websoket = null
-
-            snapshot_ask.value = []
-            isVisible.value = "display: none;"
         }
+        snapshot_ask.value = []
+        isVisible.value = "display: none;"
     }
 
     defineExpose({ show, start, stop })

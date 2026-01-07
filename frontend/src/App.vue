@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <AppHeader />
+    <AppHeader ref="header"/>
 
     <form id="form">
       <div id="form-column">
@@ -82,14 +82,21 @@ onMounted(() => {
 })
 
 const orderBook = ref(null)
+const header = ref(null)
 
 function start() {
   orderBook.value.show()
   orderBook.value.start()
+  if (header.value) {
+    header.value.change_work_status(true)
+  }
 }
 
 function stop() {
   orderBook.value.stop()
+    if (header.value) {
+      header.value.change_work_status(false)
+    }
 }
 
 </script>
