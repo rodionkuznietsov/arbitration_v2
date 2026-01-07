@@ -1,16 +1,16 @@
 <script setup>
     import { ref, defineExpose } from 'vue';
-    let isVisible = ref("display: block;")
+    let isVisible = ref("display: none;")
 
     function show() {
         isVisible.value = "display: block;"
     }
 
-    let ask_data = ref([])
-    let bid_data = ref([])
     let snapshot_ask = ref([])
 
     let websoket = null
+    const exchanges = ["Bybit", "Mexc"]
+
     function start() {
         if (websoket) return
 
@@ -23,16 +23,6 @@
                 price: x[0],
                 volume: x[1]
             }))
-
-            // ask_data.value = data.a.map(x => ({
-            //     price: x[0],
-            //     volume: x[1]
-            // }))
-
-            // bid_data.value = data.b.map(x => ({
-            //     price: x[0],
-            //     volume: x[1]
-            // }))
         }
 
         websoket.onclose = () => {
@@ -44,51 +34,30 @@
         if (websoket) {
             websoket.close()
             websoket = null
-        }
 
-        ask_data.value = []
-        bid_data.value = []
+            snapshot_ask.value = []
+            isVisible.value = "display: none;"
+        }
     }
 
     defineExpose({ show, start, stop })
 </script>
 
 <template>
-    <div id="order_book" :style="isVisible">
+    <div id="order_book" :style="isVisible" v-for="exchange_name in exchanges" :key="exchange_name">
         <div id="order_book_element">
-            <div id="exchange_name">Bybit</div>
+            <div id="exchange_name">{{ exchange_name }}</div>
             <div id="order_book_labels">
                 <div>
                     <span>Цена</span>
-                    <div id="separator">
-                        <div class="order_book_prices" v-for="(row, i) in snapshot_ask" :key="i">
-                            <div class="sell_label">{{ row.price  }}</div>
-                        </div>
-
-                        <div id="mid_price"></div>
+                    <div id="sell_label" v-for="(row, i) in snapshot_ask.splice(-6)" :key="i">
+                        {{ row.price }}
                     </div>
-                    <!-- <div id="separator">
-                        <div class="order_book_prices" v-for="(row, i) in bid_data" :key="i">
-                            <div class="buy_label">{{ row.price }}</div>
-                        </div>
-                    </div> -->
                 </div>
-                
                 <div>
-                    <div>
-                        <span>Обьём$</span>
-                        <!-- <div id="separator">
-                            <div class="order_book_prices" v-for="(row, i) in ask_data" :key="i">
-                                <div class="sell_label">{{ row.volume }}</div>
-                            </div>
-                            <div id="mid_price"></div>
-                        </div>
-
-                        <div id="separator">
-                            <div class="order_book_prices" v-for="(row, i) in ask_data" :key="i"> 
-                                <div class="buy_label">{{ row.volume }}</div> 
-                            </div>
-                        </div> -->
+                    <span>Обьем $</span>
+                    <div id="sell_label" v-for="(row, i) in snapshot_ask.splice(-6)" :key="i">
+                        {{ row.volume }}
                     </div>
                 </div>
             </div> 
@@ -104,6 +73,7 @@
         position: relative;
         border-radius: 8px;
         background-color: rgba(255, 255, 255, 0.7);
+        flex-direction: row;
     }
 
     #order_book_element {
@@ -141,8 +111,10 @@
         margin-top: 10px;
     }
 
-    .buy_label, .sell_label {
+    .buy_label, #sell_label {
         margin-top: 10px;
+        display: flex;
+        flex-direction: column;
     }
 
     .buy_label {
