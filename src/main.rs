@@ -1,10 +1,8 @@
 mod telegram;
 use std::sync::{Arc};
 
-use telegram::bot;
+// use telegram::bot;
 use tokio::sync::RwLock;
-
-use crate::exchanges::bybit::OrderbookLocal;
 
 mod exchanges;
 mod websocket;
@@ -12,7 +10,16 @@ mod websocket;
 #[tokio::main]
 async fn main() {
 
-    let local_orderbook = Arc::new(RwLock::new(OrderbookLocal { a: vec![], b: vec![] }));
+    let bybit_orderbook = exchanges::orderbook::OrderbookLocal { 
+        snapshot: exchanges::orderbook::Snapshot 
+        { 
+            a: vec![], b: vec![] 
+        }, 
+        a: vec![], 
+        b: vec![] 
+    };
+
+    let local_orderbook = Arc::new(RwLock::new(bybit_orderbook));
 
     tokio::spawn({
        let book = local_orderbook.clone();

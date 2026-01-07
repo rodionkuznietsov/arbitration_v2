@@ -138,8 +138,8 @@ function stop() {
     flex-direction: column;
     margin-top: 20px;
     padding: 8px;
-    height: 600px;
     overflow-y: visible;
+    margin-bottom: 70px;
   }
 
   #run_buttons {

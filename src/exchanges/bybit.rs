@@ -1,10 +1,11 @@
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc};
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use tokio::{io::AsyncWriteExt, sync::RwLock};
+use tokio::{sync::RwLock};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
+
+use crate::exchanges::orderbook::OrderbookLocal;
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct Orderbook {
@@ -20,12 +21,6 @@ pub struct Data {
     pub symbol:  Option<String>,
     a: Option<Vec<Vec<String>>>,
     b: Option<Vec<Vec<String>>>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct OrderbookLocal {
-    pub a: Vec<(f64, f64)>,
-    pub b: Vec<(f64, f64)>,
 }
 
 pub async fn connect(ticker: &str, channel_type: &str, local_ask_order_book: Arc<RwLock<OrderbookLocal>>) {
@@ -64,54 +59,66 @@ async fn parsing_the_data(data: Orderbook, local_ask_order_book: Arc<RwLock<Orde
     };
     
     if let Some(d) = data.data {
-        let asks = d.a;
-        if let Some(ask) = asks {
-            if ask.len() > 0 {
-                for a in ask {
-                    let price = a[0].parse::<f64>().unwrap();
-                    let volume = a[1].parse::<f64>().unwrap();
+        if let Some(order_type) = data.order_type {
 
-                    println!("Ask: {}; {}", price, volume);
+            // Snapshot processing
+            if order_type == "snapshot" {
+                println!("Order Type: {}", order_type);
+                if let Some(asks) = d.a {
+                    for ask in asks {
+                        let price = ask[0].parse::<f64>().unwrap();
+                        let volume = ask[1].parse::<f64>().unwrap();
 
-                    if volume == 0.0 {
-                        book.a.retain(|(local_price, _)| *local_price != price);
-                    } else {
-                        if let Some(l) = book.a.iter_mut().find(|(p, _)| *p == price) {
-                            l.1 = volume
-                        } else {
-                            // book.a.clear();
-                            book.a.push((price, volume));
-                        }
-                    }
-                }
-            }
-        }
-
-        let bids = d.b;
-        if let Some(bid) = bids {
-            if bid.len() > 0 {
-                for b in bid {
-                    let price = b[0].parse::<f64>().unwrap();
-                    let volume = b[1].parse::<f64>().unwrap();
-
-                    println!("Bid: {}; {}", price, volume);
-
-                    if volume == 0.0 {
-                        book.b.retain(|(local_price, _)| *local_price != price);
-                        
-                    } else {
-                        if let Some(l) = book.b.iter_mut().find(|(p, _)| *p == price) {
-                            l.1 = volume
-                        } else {
-                            // book.b.clear();
-                            book.b.push((price, volume));
-                        }
+                        println!("Snapshot price: {price} volume: {volume}");
+                        book.snapshot.a.push((price, volume));
                     }
                 }
             }
         }
     }
+        // let asks = d.a;
+        // if let Some(ask) = asks {
+        //     if ask.len() > 0 {
+        //         for a in ask {
+        //             let price = a[0].parse::<f64>().unwrap();
+        //             let volume = a[1].parse::<f64>().unwrap();
 
+        //             if volume == 0.0 {
+        //                 book.a.retain(|(local_price, _)| *local_price != price);
+        //             } else if volume >= 0.1 && book.a.len() > 6 {
+        //                 book.a.clear();
+        //             } else {
+        //                 if let Some(l) = book.a.iter_mut().find(|(p, _)| *p == price) {
+        //                     l.1 = volume
+        //                 } else {
+        //                     book.a.push((price, volume));
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        // let bids = d.b;
+        // if let Some(bid) = bids {
+        //     if bid.len() > 0 {
+        //         for b in bid {
+        //             let price = b[0].parse::<f64>().unwrap();
+        //             let volume = b[1].parse::<f64>().unwrap();
+
+        //             if volume == 0.0 {
+        //                 book.b.retain(|(local_price, _)| *local_price != price);
+                        
+        //             } else if volume > 0.1 {
+        //                 if let Some(l) = book.b.iter_mut().find(|(p, _)| *p == price) {
+        //                     l.1 = volume
+        //                 } else {
+        //                     book.b.push((price, volume));
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+    book.snapshot.a.sort_by(|a, b| b.0.total_cmp(&a.0));
     book.a.sort_by(|a, b| b.0.total_cmp(&a.0));
     book.b.sort_by(|a, b| b.0.total_cmp(&a.0));
 

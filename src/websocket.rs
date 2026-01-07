@@ -4,10 +4,13 @@ use futures_util::{StreamExt, SinkExt};
 use tokio::{net::TcpListener, sync::RwLock};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 
-use crate::exchanges::bybit::OrderbookLocal;
+use crate::exchanges;
+use exchanges::orderbook::OrderbookLocal;
 
 pub async fn connect_async(book: Arc<RwLock<OrderbookLocal>>) {
-    let listener = TcpListener::bind("127.0.0.1:9000").await.unwrap();
+    let addr = "127.0.0.1:9000";
+
+    let listener = TcpListener::bind(addr).await.unwrap();
     println!("🌐 [Arbitration-Websocket] is running",);
 
     while let Ok((stream, _)) = listener.accept().await {
@@ -17,7 +20,7 @@ pub async fn connect_async(book: Arc<RwLock<OrderbookLocal>>) {
 
 async fn handle_connection(stream: tokio::net::TcpStream, book: Arc<RwLock<OrderbookLocal>>) {
     let ws_stream: tokio_tungstenite::WebSocketStream<tokio::net::TcpStream> = accept_async(stream).await.unwrap();
-    let (mut ws_sender, mut ws_stream) = ws_stream.split();
+    let (mut ws_sender, _) = ws_stream.split();
     println!("🟢 [Arbitration-Websocket] Client connected");
 
     loop {
@@ -29,6 +32,6 @@ async fn handle_connection(stream: tokio::net::TcpStream, book: Arc<RwLock<Order
             break;
         }
 
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     }
 }

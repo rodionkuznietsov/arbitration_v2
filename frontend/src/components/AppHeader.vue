@@ -38,7 +38,7 @@
   display: flex;
   gap: 20px;
   align-items: center;
-  color: #9e9e9d;
+  color: #ffff;
 }
 
 #status_circle {

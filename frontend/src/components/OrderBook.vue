@@ -8,6 +8,7 @@
 
     let ask_data = ref([])
     let bid_data = ref([])
+    let snapshot_ask = ref([])
 
     let websoket = null
     function start() {
@@ -17,16 +18,21 @@
 
         websoket.onmessage = (event) => {
             const data = JSON.parse(event.data)
-            ask_data.value = data.a.map(x => ({
+
+            snapshot_ask.value = data.snapshot.a.map(x => ({
                 price: x[0],
                 volume: x[1]
             }))
 
-            bid_data.value = data.b.map(x => ({
-                price: x[0],
-                volume: x[1]
-            }))
-            console.log(ask_data.value)
+            // ask_data.value = data.a.map(x => ({
+            //     price: x[0],
+            //     volume: x[1]
+            // }))
+
+            // bid_data.value = data.b.map(x => ({
+            //     price: x[0],
+            //     volume: x[1]
+            // }))
         }
 
         websoket.onclose = () => {
@@ -55,34 +61,34 @@
                 <div>
                     <span>Цена</span>
                     <div id="separator">
-                        <div id="order_book_prices" v-for="(row, i) in ask_data.splice(0, 5)" :key="i">
-                            <div id="sell_label">{{ row.price  }}</div>
+                        <div class="order_book_prices" v-for="(row, i) in snapshot_ask" :key="i">
+                            <div class="sell_label">{{ row.price  }}</div>
                         </div>
 
                         <div id="mid_price"></div>
                     </div>
-                    <div id="separator">
-                        <div id="order_book_prices" v-for="(row, i) in bid_data.splice(0, 5)" :key="i">
-                            <div id="buy_label">{{ row.price }}</div>
+                    <!-- <div id="separator">
+                        <div class="order_book_prices" v-for="(row, i) in bid_data" :key="i">
+                            <div class="buy_label">{{ row.price }}</div>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
                 
                 <div>
                     <div>
                         <span>Обьём$</span>
-                        <div id="separator">
-                            <div id="order_book_prices" v-for="(row, i) in ask_data.splice(0, 5)" :key="i">
-                                <div id="sell_label">{{ row.volume }}</div>
+                        <!-- <div id="separator">
+                            <div class="order_book_prices" v-for="(row, i) in ask_data" :key="i">
+                                <div class="sell_label">{{ row.volume }}</div>
                             </div>
                             <div id="mid_price"></div>
                         </div>
 
                         <div id="separator">
-                            <div id="order_book_prices" v-for="(row, i) in ask_data.splice(0, 5)" :key="i"> 
-                                <div id="buy_label">{{ row.volume }}</div> 
+                            <div class="order_book_prices" v-for="(row, i) in ask_data" :key="i"> 
+                                <div class="buy_label">{{ row.volume }}</div> 
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div> 
@@ -131,20 +137,20 @@
         text-transform: capitalize;
     }
 
-    #order_book_prices {
+    .order_book_prices {
         margin-top: 10px;
     }
 
-    #buy_label, #sell_label {
+    .buy_label, .sell_label {
         margin-top: 10px;
     }
 
-    #buy_label {
+    .buy_label {
         color: green;
         /* box-shadow: 1px 1px 80px green; */
     }
 
-    #sell_label {
+    .sell_label {
         color: rgb(151, 15, 15);
         /* box-shadow: 1px 1px 80px rgb(151, 15, 15); */
     }
