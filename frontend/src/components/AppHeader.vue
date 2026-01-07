@@ -1,10 +1,21 @@
 <script setup>
   import { defineExpose, ref } from 'vue';
+  import soundOn from '../assets/icons/sound_on.svg'
+  import soundOff from '../assets/icons/sound_off.svg'
 
   const workStatus = ref(false)
+  const img_sound = ref(null)
+  const isOn = ref(false)
 
   function change_work_status(status) {
     workStatus.value = status
+  }
+
+  function is_sound_on() {
+    if (img_sound.value) {
+      isOn.value = !isOn.value
+      img_sound.value.src = isOn.value ? soundOn : soundOff
+    }
   }
 
   defineExpose({ change_work_status })
@@ -18,7 +29,7 @@
       </div>
       <div id="reight_element">
         <img id="header_icon" src="../assets/icons/update.svg" alt="">
-        <img id="header_icon" src="../assets/icons/sound_off.svg" alt="">
+        <img id="header_icon" :src="soundOff" alt="" ref="img_sound" @click="is_sound_on">
       </div>
     </div>
 </template>
@@ -64,5 +75,6 @@
 #header_icon {
   width: 16px;
   height: 16px;
+  cursor: pointer;
 }
 </style>
