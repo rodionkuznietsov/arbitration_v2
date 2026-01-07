@@ -59,8 +59,16 @@
   border-radius: 50%;
 }
 
+@keyframes GlitchAnimation {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 .online {
   background-color: green;
+  animation-name: GlitchAnimation;
+  animation-duration: 1.6s;
+  animation-iteration-count:  infinite;
 }
 
 .offline {
