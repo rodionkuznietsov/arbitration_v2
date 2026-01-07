@@ -12,7 +12,7 @@
         <div class="form-group">
           <div id="form_label-with_icon">
             <label for="order" id="form_label">Лонг:</label>
-            <img src="./assets/icons/up.svg" alt="">
+            <img src="./assets/icons/up.svg" alt="" draggable="false">
           </div>
           <FormCombobox placeholder="Bybit" :options="exchanges"/>
         </div>
@@ -36,7 +36,7 @@
         <div class="form-group">
           <div id="form_label-with_icon">
             <label for="order" id="form_label">Шорт:</label>
-            <img class="img_reverse" src="./assets/icons/up.svg" alt="">
+            <img class="img_reverse" src="./assets/icons/up.svg" alt="" draggable="false">
           </div>
           <FormCombobox placeholder="Mexc" :options="exchanges"/>
         </div>
