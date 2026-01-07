@@ -10,7 +10,10 @@
         </div>
 
         <div class="form-group">
-          <label for="order" id="form_label">Лонг:</label>
+          <div id="form_label-with_icon">
+            <label for="order" id="form_label">Лонг:</label>
+            <img src="./assets/icons/up.svg" alt="">
+          </div>
           <FormCombobox placeholder="Bybit" :options="exchanges"/>
         </div>
 
@@ -31,7 +34,10 @@
         </div>
 
         <div class="form-group">
-          <label for="order" id="form_label">Шорт:</label>
+          <div id="form_label-with_icon">
+            <label for="order" id="form_label">Шорт:</label>
+            <img class="img_reverse" src="./assets/icons/up.svg" alt="">
+          </div>
           <FormCombobox placeholder="Mexc" :options="exchanges"/>
         </div>
 
@@ -100,6 +106,24 @@ function stop() {
     box-sizing: border-box;
     justify-content: space-around;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+
+  #form_label-with_icon {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  #form_label-with_icon img {
+    width: 16px;
+    height: 16px;
+    margin-top: 12px;
+  }
+
+  .img_reverse {
+    transform: rotate(60deg);
   }
 
   #form-column{
