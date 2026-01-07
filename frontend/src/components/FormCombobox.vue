@@ -102,7 +102,7 @@
   content: "▾";
   position: absolute;
   transform: translateY(75%);
-  right: 20px;
+  right: 10px;
   transition: all 1s;
 }
 
@@ -110,7 +110,7 @@
   content: "▾";
   position: absolute;
   transform: translateY(100%) rotate(180deg);
-  right: 20px;
+  right: 10px;
   transition: all 0.9s;
 }
 

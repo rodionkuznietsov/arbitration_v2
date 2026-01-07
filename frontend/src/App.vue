@@ -118,7 +118,7 @@ function stop() {
   #form {
     margin-top: 20px;
     display: grid;
-    gap: 20px;
+    gap: 10px;
     padding: 0 10px;
     width: 100%;
     box-sizing: border-box;
@@ -186,7 +186,7 @@ function stop() {
 
   #run_buttons {
     display: flex;
-    gap: 20px;
+    gap: 10px;
   }
 
   #start, #stop {
@@ -231,6 +231,6 @@ function stop() {
 
   body {
     background-color: #222a39;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
 </style>

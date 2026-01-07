@@ -48,7 +48,7 @@
 
 #status {
   display: flex;
-  gap: 20px;
+  gap: 10px;
   align-items: center;
   color: #ffff;
 }
@@ -69,7 +69,7 @@
 
 #reight_element {
   display: flex;
-  gap: 20px;
+  gap: 10px;
 }
 
 #header_icon {

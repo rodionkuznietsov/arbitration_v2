@@ -18,7 +18,7 @@
     function start() {
         if (websoket) return
 
-        websoket = new WebSocket("ws://127.0.0.1:9000")
+        websoket = new WebSocket("ws://localhost:9000")
 
         websoket.onmessage = (event) => {
             const data = JSON.parse(event.data)
@@ -76,8 +76,8 @@
 <style scoped>
     #stakan {
         display: flex;
-        gap: 20px;
-        margin-top: 20px;
+        gap: 10px;
+        margin-top: 10px;
     }
 
     #order_book {
@@ -107,7 +107,7 @@
     }
 
     #exchange_name {
-        margin-top: 20px;
+        margin-top: 10px;
         text-align: center;
         text-transform: capitalize;
         color: #121212;
@@ -140,8 +140,8 @@
     }
 
     #mid_price {
-        margin-top: 20px;
-        margin-bottom: 20px;
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
 
     #separator {

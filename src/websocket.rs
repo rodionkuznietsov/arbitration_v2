@@ -1,4 +1,4 @@
-use std::sync::{Arc};
+use std::{sync::Arc};
 
 use futures_util::{StreamExt, SinkExt};
 use serde::Deserialize;
