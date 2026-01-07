@@ -119,7 +119,8 @@ function stop() {
     margin-top: 20px;
     display: grid;
     gap: 10px;
-    padding: 0 10px;
+    padding-left: 10px;
+    padding-right: 10px;
     width: 100%;
     box-sizing: border-box;
     justify-content: space-around;
@@ -219,10 +220,6 @@ function stop() {
     text-align: left;
     color: #ffffff;
     font-size: 16px;
-    margin-left: 5px;
-    margin-top: 5px;
-    margin-bottom: 5px;
-    margin-right: 5px;
     position: relative;
     font-family: "PT Serif", serif;
     font-weight: 400;
