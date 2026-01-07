@@ -14,11 +14,11 @@
             <label for="order" id="form_label">Лонг:</label>
             <img src="./assets/icons/up.svg" alt="" draggable="false">
           </div>
-          <FormCombobox placeholder="Bybit" :options="exchanges"/>
+          <FormCombobox v-model="longExchange" placeholder="Bybit" :options="exchanges"/>
         </div>
 
         <div class="form-group">
-          <FormCombobox placeholder="Фьючерс" :options="market_types"/>
+          <FormCombobox v-model="longOrderType" placeholder="Фьючерс" :options="market_types"/>
         </div>
 
         <div class="form-group">
@@ -38,11 +38,11 @@
             <label for="order" id="form_label">Шорт:</label>
             <img class="img_reverse" src="./assets/icons/up.svg" alt="" draggable="false">
           </div>
-          <FormCombobox placeholder="Mexc" :options="exchanges"/>
+          <FormCombobox v-model="shortExchange" placeholder="Mexc" :options="exchanges"/>
         </div>
 
         <div class="form-group">
-          <FormCombobox placeholder="Фьючерс" :options="market_types"/>
+          <FormCombobox v-model="shortOrderType" placeholder="Фьючерс" :options="market_types"/>
         </div>
 
         <div class="form-group">
@@ -78,18 +78,29 @@ const market_types = ["Спот", "Фьючерс"]
 onMounted(() => {
   WebApp.ready()
   WebApp.expand()
-  console.log('start_param:', WebApp.initDataUnsafe.start_param)
 })
 
 const orderBook = ref(null)
 const header = ref(null)
+const longExchange = ref("")
+const longOrderType = ref("")
+
+const shortExchange = ref("")
+const shortOrderType = ref("")
 
 function start() {
-  orderBook.value.show()
-  orderBook.value.start()
   if (header.value) {
     header.value.change_work_status(true)
   }
+  console.log("Long Exchange: ", longExchange.value)
+  console.log("Long OrderType: ", longOrderType.value)
+
+  console.log("Short Exchange: ", shortExchange.value)
+  console.log("Short OrderType: ", shortOrderType.value)
+
+  orderBook.value.exchanges(longExchange.value, shortExchange.value)
+  orderBook.value.show()  
+  orderBook.value.start()
 }
 
 function stop() {

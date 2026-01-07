@@ -9,7 +9,11 @@
     let snapshot_ask = ref([])
     let websoket = null
 
-    let exchanges = ['bybit', 'mexc']
+    let exchanges_list = ref([])
+
+    function exchanges(longExchange, shortExchange) {
+        exchanges_list.value = [longExchange, shortExchange]
+    }
 
     function start() {
         if (websoket) return
@@ -22,6 +26,13 @@
             snapshot_ask.value = data.snapshot.a.map(x => ({
                 price: x[0],
                 volume: x[1]
+            }))
+        }
+
+        websoket.onopen = () => {
+            websoket.send(JSON.stringify({
+                exchange: "bybit".toLowerCase(),
+                symbol: "btc"
             }))
         }
 
@@ -39,12 +50,12 @@
         isVisible.value = "display: none;"
     }
 
-    defineExpose({ show, start, stop })
+    defineExpose({ show, start, stop, exchanges })
 </script>
 
 <template>
     <div id="stakan">
-        <div id="order_book" :style="isVisible" v-for="exchange_name in exchanges" :key="exchange_name">
+        <div id="order_book" :style="isVisible" v-for="exchange_name in exchanges_list" :key="exchange_name">
             <div id="exchange_name">{{ exchange_name }}</div>
             <div id="order_book_element">
                 <table class="orderbook_table">
