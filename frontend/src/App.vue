@@ -167,7 +167,7 @@ function stop() {
   #footer {
     display: flex;
     flex-direction: column;
-    margin-top: 20px;
+    margin-top: 10px;
     padding: 8px;
     overflow-y: visible;
     margin-bottom: 70px;
@@ -176,7 +176,6 @@ function stop() {
   #run_buttons {
     display: flex;
     gap: 20px;
-    margin-top: 10px;
   }
 
   #start, #stop {
@@ -204,7 +203,6 @@ function stop() {
   }
 
   #app {
-    font-family: Avenir, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-align: left;
