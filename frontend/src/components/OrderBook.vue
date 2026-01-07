@@ -7,9 +7,9 @@
     }
 
     let snapshot_ask = ref([])
-
     let websoket = null
-    const exchanges = ["Bybit", "Mexc"]
+
+    let exchanges = ['bybit', 'mexc']
 
     function start() {
         if (websoket) return
@@ -44,36 +44,38 @@
 </script>
 
 <template>
-    <div id="order_book" :style="isVisible" v-for="exchange_name in exchanges" :key="exchange_name">
-        <div id="order_book_element">
+    <div id="stakan">
+        <div id="order_book" :style="isVisible" v-for="exchange_name in exchanges" :key="exchange_name">
             <div id="exchange_name">{{ exchange_name }}</div>
-            <div id="order_book_labels">
-                <div>
-                    <span>Цена</span>
-                    <div id="sell_label" v-for="(row, i) in snapshot_ask.splice(-6)" :key="i">
-                        {{ row.price }}
-                    </div>
-                </div>
-                <div>
-                    <span>Обьем $</span>
-                    <div id="sell_label" v-for="(row, i) in snapshot_ask.splice(-6)" :key="i">
-                        {{ row.volume }}
-                    </div>
-                </div>
-            </div> 
+            <div id="order_book_element">
+                <table class="orderbook_table">
+                    <tr>
+                        <th>Цена</th>
+                        <th>Обьем</th>
+                    </tr>
+                    <tr v-for="(row, i) in snapshot_ask.splice(-6)" :key="i">
+                        <td>{{ row.price }}</td>
+                        <td>{{ row.volume }}</td>
+                    </tr>
+                </table>
+            </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-    #order_book {
-        margin-top: 20px;
+    #stakan {
         display: flex;
         gap: 20px;
+        margin-top: 20px;
+    }
+
+    #order_book {
+        width: 100%;
+        box-sizing: border-box;
         position: relative;
         border-radius: 8px;
         background-color: rgba(255, 255, 255, 0.7);
-        flex-direction: row;
     }
 
     #order_book_element {
@@ -84,27 +86,29 @@
         font-weight: 600;
         border-radius: 8px;
         font-size: 16px;
-        margin-top: 10px;
         backdrop-filter: blur(8px); 
         -webkit-backdrop-filter: blur(8px);
         outline: none;
         box-sizing: border-box;
         cursor: pointer;
         text-transform: uppercase;
-        text-align: end;
         overflow-y: auto;
+        display: flex;
     }
 
     #exchange_name {
+        margin-top: 20px;
         text-align: center;
         text-transform: capitalize;
+        color: #121212;
+        font-weight: 600;
+        font-size: 16px;
     }
 
-    #order_book_labels {
-        display: flex;
-        justify-content: space-evenly;
-        gap: 20px;
+    .orderbook_table {
+        width: 100%;
         text-transform: capitalize;
+        text-align: end;
     }
 
     .order_book_prices {
@@ -113,8 +117,6 @@
 
     .buy_label, #sell_label {
         margin-top: 10px;
-        display: flex;
-        flex-direction: column;
     }
 
     .buy_label {
