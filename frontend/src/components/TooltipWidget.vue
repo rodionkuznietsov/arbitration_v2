@@ -72,6 +72,7 @@
 
     .status_img:hover {
         filter: invert(1);
-        transition: all 0.5s ease
+        transition: all 0.5s ease;
+        cursor: pointer;
     }
 </style>
