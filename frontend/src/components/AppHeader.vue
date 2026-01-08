@@ -7,7 +7,7 @@
   const workStatus = ref('offline')
   const img_sound = ref(null)
   const isOn = ref(false)
-  const warningMsg = "Связь с сервером потеряна. Повторите попытку позже."
+  const warningMsg = 'Связь с сервером потеряна. Повторите попытку позже.'
 
   const isVisibleTooltip = ref(false)
 
@@ -15,8 +15,8 @@
     workStatus.value = status
   }
 
-  function showTooltip() {
-    isVisibleTooltip.value = true
+  function showTooltip(value) {
+    isVisibleTooltip.value = value
   }
 
   function is_sound_on() {
@@ -35,7 +35,7 @@
         <div id="status_circle" :class="workStatus == 'online' ? 'online' : workStatus == 'warning' ? 'warning' : 'offline'"></div>
         <span>{{ workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? 'Неполадки' : 'Офлайн' }}</span>
         <div>
-          <img class="status_img" :src="workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? prompt : 'Офлайн'" alt="" @click="showTooltip">
+          <img class="status_img" :src="workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? prompt : 'Офлайн'" alt="" @click="showTooltip(!isVisibleTooltip)">
           <div id="tooltip_overlay" v-show="isVisibleTooltip">{{ warningMsg }}</div>
         </div>
       </div>
