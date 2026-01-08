@@ -13,7 +13,8 @@ async fn main() {
     let bybit_orderbook = exchanges::orderbook::OrderbookLocal { 
         snapshot: exchanges::orderbook::Snapshot 
         { 
-            a: vec![], b: vec![] 
+            a: vec![], b: vec![],
+            last_price: 0.0
         }, 
         a: vec![], 
         b: vec![] 

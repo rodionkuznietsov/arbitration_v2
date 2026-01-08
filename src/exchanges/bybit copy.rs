@@ -1,13 +1,15 @@
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc};
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use tokio::{io::AsyncWriteExt, sync::RwLock};
+use tokio::{sync::RwLock};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 
+use crate::exchanges::orderbook::OrderbookLocal;
+
 #[derive(Deserialize, Debug, Serialize)]
-pub struct Orderbook {
+pub struct OrderbookResponse {
+    pub topic: Option<String>,
     #[serde(rename = "data")]
     pub data: Option<Data>,
     #[serde(rename = "type")]
@@ -16,16 +18,13 @@ pub struct Orderbook {
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct Data {
-    #[serde(rename = "s")]
+    #[serde(rename = "symbol", alias="s")]
     pub symbol:  Option<String>,
     a: Option<Vec<Vec<String>>>,
     b: Option<Vec<Vec<String>>>,
-}
 
-#[derive(Debug, Clone, Serialize)]
-pub struct OrderbookLocal {
-    pub a: Vec<(f64, f64)>,
-    pub b: Vec<(f64, f64)>,
+    #[serde(rename = "lastPrice")]
+    pub last_price: Option<String>
 }
 
 pub async fn connect(ticker: &str, channel_type: &str, local_ask_order_book: Arc<RwLock<OrderbookLocal>>) {
@@ -36,82 +35,76 @@ pub async fn connect(ticker: &str, channel_type: &str, local_ask_order_book: Arc
 
     println!("🌐 [Bybit-Websocket] is running");
 
-    let ticker_target = format!("orderbook.1.{}USDT", ticker.to_uppercase());
+    let order_book = format!("orderbook.50.{}USDT", ticker.to_uppercase());
+    let price = format!("tickers.{}USDT", ticker.to_uppercase());
     
     write.send(Message::Text(
         serde_json::json!({
             "op": "subscribe",
             "channel_type": channel_type,
-            "args": [ticker_target]
+            "args": [
+                order_book,
+                price
+
+            ]
         }).to_string().into()
     )).await.unwrap();
 
     let read_future = read.for_each(|msg| async {
         let data = msg.unwrap().into_data();
         let data_string = String::from_utf8(data.to_vec()).unwrap();
-        let json: Orderbook = serde_json::from_str(&data_string).unwrap();
+        let json: OrderbookResponse = serde_json::from_str(&data_string).unwrap();
     
-        parsing_the_data(json, local_ask_order_book.clone()).await;
+        fetch_data(json, local_ask_order_book.clone()).await;
     });
 
     read_future.await;
 }
 
-async fn parsing_the_data(data: Orderbook, local_ask_order_book: Arc<RwLock<OrderbookLocal>>) {
+async fn fetch_data(data: OrderbookResponse, local_ask_order_book: Arc<RwLock<OrderbookLocal>>) {
     let mut book = {
         let current = local_ask_order_book.read().await;
         current.clone()
     };
-    
-    if let Some(d) = data.data {
-        let asks = d.a;
-        if let Some(ask) = asks {
-            if ask.len() > 0 {
-                for a in ask {
-                    let price = a[0].parse::<f64>().unwrap();
-                    let volume = a[1].parse::<f64>().unwrap();
-
-                    if volume == 0.0 {
-                        book.a.retain(|(local_price, _)| *local_price != price);
-                    } else if volume > 0.1 {
-                        println!("Ask: {}; {}", price, volume);
-
-                        if let Some(l) = book.a.iter_mut().find(|(p, _)| *p == price) {
-                            l.1 = volume
-                        } else {
-                            book.a.push((price, volume));
-                        }
-                    }
-                }
+ 
+    if let (Some(topic), Some(d)) = (data.topic, data.data) {
+        if topic.contains("tickers") {
+            if let Some(last_price) = d.last_price {
+                book.snapshot.last_price = last_price.parse::<f64>().expect("[Bybit] Failed to parse");
             }
-        }
+        } else if topic.contains("orderbook") {
+            if let Some(order_type) = data.order_type {
+                // Snapshot processing
+                println!("Order Type: {}", order_type);
+                if order_type == "snapshot" {
+                    if let Some(asks) = d.a {
+                        for ask in asks {
+                            let price = ask[0].parse::<f64>().unwrap();
+                            let volume = ask[1].parse::<f64>().unwrap();
 
-        let bids = d.b;
-        if let Some(bid) = bids {
-            if bid.len() > 0 {
-                for b in bid {
-                    let price = b[0].parse::<f64>().unwrap();
-                    let volume = b[1].parse::<f64>().unwrap();
-
-                    if volume == 0.0 {
-                        book.b.retain(|(local_price, _)| *local_price != price);
-                        
-                    } else {
-                        println!("Bid: {}; {}", price, volume);
-
-                        if let Some(l) = book.b.iter_mut().find(|(p, _)| *p == price) {
-                            l.1 = volume
-                        } else {
-                            book.b.push((price, volume));
+                            // println!("Ask Snapshot price: {price} volume: {volume}");
+                            book.snapshot.a.push((price, volume));
                         }
-                    }
+                    } 
+
+                    if let Some(bids) = d.b {
+                        for bid in bids {
+                            let price = bid[0].parse::<f64>().unwrap();
+                            let volume = bid[1].parse::<f64>().unwrap();
+
+                            // println!("Bid Snapshot price: {price} volume: {volume}");
+                            book.snapshot.b.push((price, volume));
+                        }
+                    } 
+                } else if order_type == "delta" {
+                    
                 }
             }
         }
     }
 
-    book.a.sort_by(|a, b| b.0.total_cmp(&a.0));
-    book.b.sort_by(|a, b| b.0.total_cmp(&a.0));
+    book.snapshot.a.sort_by(|a, b| b.0.total_cmp(&a.0));
+    book.snapshot.b.sort_by(|a, b| b.0.total_cmp(&a.0));
 
     let mut book_lock = local_ask_order_book.write().await;
     *book_lock = book;
