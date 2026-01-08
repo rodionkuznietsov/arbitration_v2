@@ -58,7 +58,7 @@
           <button id="stop" @click="stop">Стоп</button>
         </div>
 
-      <OrderBook ref="orderBook"/>
+      <OrderBook ref="orderBook" v-model="isWarning"/>
       <AppMenu />
     </footer>
   </div>
@@ -74,6 +74,7 @@ import AppMenu from './components/AppMenu.vue';
 
 const exchanges = ["Bybit", "Mexc"]
 const market_types = ["Спот", "Фьючерс"]
+const isWarning = ref(false)
 
 onMounted(() => {
   WebApp.ready()
@@ -89,9 +90,6 @@ const shortExchange = ref("")
 const shortOrderType = ref("")
 
 function start() {
-  if (header.value) {
-    header.value.change_work_status(true)
-  }
   console.log("Long Exchange: ", longExchange.value)
   console.log("Long OrderType: ", longOrderType.value)
 
@@ -101,6 +99,14 @@ function start() {
   orderBook.value.exchanges(longExchange.value, shortExchange.value)
   orderBook.value.show()  
   orderBook.value.start()
+
+  setTimeout(() => {
+    if (isWarning.value) {
+      header.value.change_work_status("warning")
+    } else {
+      header.value.change_work_status("online")
+    }
+  }, 10)
 }
 
 function stop() {
@@ -154,7 +160,7 @@ function stop() {
   .form_input {
     width: 100%;
     padding: 8px;
-    border: 1px solid rgba(48, 60, 81, 0.6);;
+    border: 1px solid #303c5199;
     color: #ffffff;
     border-radius: 8px;
     font-size: 16px;

@@ -2,6 +2,7 @@
   import { defineExpose, ref } from 'vue';
   import soundOn from '../assets/icons/sound_on.svg'
   import soundOff from '../assets/icons/sound_off.svg'
+  import prompt from '../assets/icons/prompt.svg'
 
   const workStatus = ref(false)
   const img_sound = ref(null)
@@ -24,8 +25,9 @@
 <template>
     <div id="header">
       <div id="status">
-        <div id="status_circle" :class="workStatus ? 'online' : 'offline'"></div>
-        <span>{{ workStatus ? 'Онлайн' : 'Офлайн' }}</span>
+        <div id="status_circle" :class="workStatus == 'online' ? 'online' : workStatus == 'warning' ? 'warning' : 'offline'"></div>
+        <span>{{ workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? 'Неполадки' : 'Офлайн' }}</span>
+        <img class="status_img" :src="workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? prompt : 'Офлайн'" title="Временные неполадки на сервере. Повторите попытку позже" alt="">
       </div>
       <div id="reight_element">
         <img id="header_icon" src="../assets/icons/update.svg" alt="">
@@ -73,6 +75,26 @@
 
 .offline {
   background-color: rgb(151, 15, 15);
+}
+
+.warning {
+  background-color: rgb(214 180 14);
+  animation-name: GlitchAnimation;  
+  animation-duration: 1.6s;
+  animation-iteration-count:  infinite;
+}
+
+.status_img {
+  width: 16px;
+  height: 16px;
+  margin-top: -3px;
+  margin-left: -3px;
+  transition: all 0.5s ease
+}
+
+.status_img:hover {
+  filter: invert(1);
+  transition: all 0.5s ease
 }
 
 #reight_element {

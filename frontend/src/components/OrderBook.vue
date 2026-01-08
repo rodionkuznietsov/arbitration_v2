@@ -1,10 +1,12 @@
 <script setup>
-import { ref, defineExpose } from 'vue';
-    let isVisible = ref("display: none;")
+import { ref, defineExpose, defineProps, defineEmits } from 'vue';
+    const props = defineProps({
+        modelValue: Boolean
+    })
 
-    function show() {
-        isVisible.value = "display: block;"
-    }
+    const isVisible = ref("display: none;")
+    const emit = defineEmits(["update:modelValue"])
+    const isWarningStatus = ref(props.modelValue)
 
     let websoket = null
     let snapshot_ask = ref([])
@@ -20,6 +22,11 @@ import { ref, defineExpose } from 'vue';
         if (websoket) return
 
         websoket = new WebSocket("ws://localhost:9000")
+
+        websoket.onerror = () => {
+            console.log("[Websocket] Прервано соединение")
+            emit("update:modelValue", true)
+        }
 
         websoket.onmessage = (event) => {
             const data = JSON.parse(event.data)
@@ -50,6 +57,10 @@ import { ref, defineExpose } from 'vue';
         }
     }
 
+    function show() {
+        isVisible.value = "display: block;"
+    }
+
     function stop() {
         if (websoket) {
             websoket.close()
@@ -69,7 +80,7 @@ import { ref, defineExpose } from 'vue';
         ).format(value)
     }
 
-    defineExpose({ show, start, stop, exchanges })
+    defineExpose({ show, start, stop, exchanges, isWarningStatus })
 </script>
 
 <template>
