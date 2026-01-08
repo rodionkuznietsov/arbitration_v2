@@ -118,6 +118,7 @@ async fn fetch_data(data: OrderbookResponse, local_ask_order_book: Arc<RwLock<Or
                                     // Добавляем запись
                                     book.snapshot.b.push((price, volume));
                                 } else {
+                                    // Обновляем запись
                                     if let Some(x) = book.snapshot.b.iter_mut().find(|x| x.0 == price) {
                                         x.0 = price;
                                         x.1 = volume;
