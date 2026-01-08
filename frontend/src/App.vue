@@ -83,11 +83,12 @@ onMounted(() => {
 
 const orderBook = ref(null)
 const header = ref(null)
-const longExchange = ref("")
-const longOrderType = ref("")
 
-const shortExchange = ref("")
-const shortOrderType = ref("")
+// Данные с полей
+const longExchange = ref("Bybit")
+const longOrderType = ref("Спот")
+const shortExchange = ref("Mexc")
+const shortOrderType = ref("Спот")
 
 function start() {
   console.log("Long Exchange: ", longExchange.value)
