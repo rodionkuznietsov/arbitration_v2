@@ -11,7 +11,8 @@ use exchanges::orderbook::OrderbookLocal;
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebsocketReceiverParams {
     pub exchange: String,
-    pub symbol: String
+    pub symbol: String,
+    pub order_type: String,
 }
 
 type UserMessageParams = Arc<RwLock<Option<WebsocketReceiverParams>>>;

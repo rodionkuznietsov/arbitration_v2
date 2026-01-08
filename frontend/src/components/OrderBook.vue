@@ -39,8 +39,9 @@ import { ref, defineExpose } from 'vue';
 
         websoket.onopen = () => {
             websoket.send(JSON.stringify({
-                exchange: "bybit".toLowerCase(),
-                symbol: "btc"
+                order_type: "spot".toLowerCase(),
+                exchange: exchanges_list.value[0].toLowerCase(),
+                symbol: "btc".toLowerCase()
             }))
         }
 
