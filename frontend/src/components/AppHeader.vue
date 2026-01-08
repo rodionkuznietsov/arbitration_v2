@@ -2,21 +2,14 @@
   import { defineExpose, ref } from 'vue';
   import soundOn from '../assets/icons/sound_on.svg'
   import soundOff from '../assets/icons/sound_off.svg'
-  import prompt from '../assets/icons/prompt.svg'
+  import Tooltip from './TooltipWidget.vue';
 
   const workStatus = ref('offline')
   const img_sound = ref(null)
   const isOn = ref(false)
-  const warningMsg = 'Связь с сервером потеряна. Повторите попытку позже.'
-
-  const isVisibleTooltip = ref(false)
 
   function change_work_status(status) {
     workStatus.value = status
-  }
-
-  function showTooltip(value) {
-    isVisibleTooltip.value = value
   }
 
   function is_sound_on() {
@@ -34,9 +27,8 @@
       <div id="status">
         <div id="status_circle" :class="workStatus == 'online' ? 'online' : workStatus == 'warning' ? 'warning' : 'offline'"></div>
         <span>{{ workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? 'Неполадки' : 'Офлайн' }}</span>
-        <div>
-          <img class="status_img" :src="workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? prompt : 'Офлайн'" alt="" @click="showTooltip(!isVisibleTooltip)">
-          <div id="tooltip_overlay" v-show="isVisibleTooltip">{{ warningMsg }}</div>
+        <div v-if="workStatus == 'warning'">
+          <Tooltip :work-status="workStatus"/>
         </div>
       </div>
       <div id="reight_element">
@@ -92,33 +84,6 @@
   animation-name: GlitchAnimation;  
   animation-duration: 1.6s;
   animation-iteration-count:  infinite;
-}
-
-.status_img {
-  width: 16px;
-  height: 16px;
-  margin-top: -3px;
-  margin-left: -3px;
-  transition: all 0.5s ease
-}
-
-.status_img:hover {
-  filter: invert(1);
-  transition: all 0.5s ease
-}
-
-#tooltip_overlay {
-  position: absolute;
-  background-color: rgba(48, 60, 81, 0.6);
-  border-radius: 8px;
-  padding: 8px;
-  z-index: 9999;
-  box-sizing: border-box;
-  border: 1px solid rgba(48, 60, 81, 0.6);
-  backdrop-filter: blur(8px);
-  transition: flex 0.5s;
-  pointer-events: auto;
-  font-size: 12px;
 }
 
 #reight_element {

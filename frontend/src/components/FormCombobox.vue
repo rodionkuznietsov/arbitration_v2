@@ -67,7 +67,7 @@
 <template>
   <div @click="getPosInsideDiv">
       <div :class="arrow_class">
-          <input id="combobox" :value="props.modelValue.value ? props.modelValue.value : localPlaceholder " readonly="true" @click="popup" ref="arrowInput">
+          <input id="combobox" :value="props.modelValue ? props.modelValue : localPlaceholder " readonly="true" @click="popup" ref="arrowInput">
       </div>
 
       <ul class="combobox-list" id="optionsList" v-show="show" ref="comboboxList">
