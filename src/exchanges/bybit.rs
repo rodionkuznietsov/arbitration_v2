@@ -45,7 +45,6 @@ pub async fn connect(ticker: &str, channel_type: &str, local_ask_order_book: Arc
             "args": [
                 order_book,
                 price
-
             ]
         }).to_string().into()
     )).await.unwrap();
@@ -75,8 +74,6 @@ async fn fetch_data(data: OrderbookResponse, local_ask_order_book: Arc<RwLock<Or
         } else if topic.contains("orderbook") {
             if let Some(order_type) = data.order_type {
                 // Snapshot processing
-                // println!("Order Type: {}", order_type);
-
                 if let Some(asks) = d.a {
                     for ask in asks {
                         let price = ask[0].parse::<f64>().unwrap();
@@ -85,19 +82,18 @@ async fn fetch_data(data: OrderbookResponse, local_ask_order_book: Arc<RwLock<Or
                         // println!("Ask Snapshot price: {price} volume: {volume}");
                         if order_type == "snapshot" {
                             book.snapshot.a.push((price, volume));
-                        } else if order_type == "delta" {
-                            if volume == 0.0 {
-                                // Удаляем запись
-                                book.snapshot.a.retain(|&a| a.0 != price);
-                            } else if !book.snapshot.a.iter().any(|x| x.0 == price) {
+                        } 
+
+                        // Удаляем запись
+                        if volume == 0.0 {
+                            book.snapshot.a.retain(|&a| a.0 != price);
+                        } else {
+                            // Ищем запись
+                            if let Some(x) = book.snapshot.a.iter_mut().find(|x| x.0 == price) {
+                                x.1 = volume;
+                            } else {
                                 // Добавляем запись
                                 book.snapshot.a.push((price, volume));
-                            } else {
-                                // Обновляем запись
-                                if let Some(x) = book.snapshot.a.iter_mut().find(|x| x.0 == price) {
-                                    x.0 = price;
-                                    x.1 = volume;
-                                }
                             }
                         }
                     }
@@ -110,19 +106,18 @@ async fn fetch_data(data: OrderbookResponse, local_ask_order_book: Arc<RwLock<Or
                             // println!("Bid Snapshot price: {price} volume: {volume}");
                             if order_type == "snapshot" {
                                 book.snapshot.b.push((price, volume));
-                            } else if order_type == "delta" {
-                                if volume == 0.0 {
-                                    // Удаляем запись
-                                    book.snapshot.b.retain(|&a| a.0 != price);
-                                } else if !book.snapshot.b.iter().any(|x| x.0 == price) {
+                            } 
+                            
+                            // Удаляем запись
+                            if volume == 0.0 {
+                                book.snapshot.b.retain(|&a| a.0 != price);
+                            } else {
+                                // Ищем запись
+                                if let Some(x) = book.snapshot.b.iter_mut().find(|x| x.0 == price) {
+                                    x.1 = volume;
+                                } else {
                                     // Добавляем запись
                                     book.snapshot.b.push((price, volume));
-                                } else {
-                                    // Обновляем запись
-                                    if let Some(x) = book.snapshot.b.iter_mut().find(|x| x.0 == price) {
-                                        x.0 = price;
-                                        x.1 = volume;
-                                    }
                                 }
                             }
                         }

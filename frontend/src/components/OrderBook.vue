@@ -25,13 +25,13 @@ import { ref, defineExpose } from 'vue';
             const data = JSON.parse(event.data)
 
             snapshot_ask.value = data.snapshot.a.map(x => ({
-                price: formatCurrency(x[0]),
-                volume: formatCurrency(x[1])
+                price: x[0],
+                volume: x[1]
             }))
 
             snapshot_bid.value = data.snapshot.b.map(x => ({
-                price: formatCurrency(x[0]),
-                volume: formatCurrency(x[1])
+                price: x[0],
+                volume: x[1]
             }))
 
             snapshot_last_price.value = formatCurrency(data.snapshot.last_price)
@@ -79,18 +79,18 @@ import { ref, defineExpose } from 'vue';
                 <table class="orderbook_table">
                     <tr>
                         <th>Цена</th>
-                        <th>Обьем</th>
+                        <th>Обьем $</th>
                     </tr>
                     <tr v-for="(row, i) in snapshot_ask.splice(-6)" :key="i">
-                        <td class="sell_label">{{ row.price }}</td>
-                        <td class="sell_label">{{ row.volume }}</td>
+                        <td class="sell_label">{{ formatCurrency(row.price) }}</td>
+                        <td class="sell_label">{{ formatCurrency(row.volume * row.price) }}</td>
                     </tr>
                     <tr>
                         <td colspan="2" class="center_label"> ⬇ {{ snapshot_last_price }}</td>
                     </tr>
                     <tr v-for="(row, i) in snapshot_bid.splice(0, 6)" :key="i">
-                        <td class="buy_label">{{ row.price }}</td>
-                        <td class="buy_label">{{ row.volume }}</td>
+                        <td class="buy_label">{{ formatCurrency(row.price) }}</td>
+                        <td class="buy_label">{{ formatCurrency(row.volume * row.price) }}</td>
                     </tr>
                 </table>
             </div>
@@ -176,5 +176,7 @@ import { ref, defineExpose } from 'vue';
     .center_label {
         text-align: center;
         color: rgb(151, 15, 15);
+        border-top: 1px dashed #121212;
+        border-bottom: 1px dashed #121212;
     }
 </style>

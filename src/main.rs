@@ -14,7 +14,7 @@ async fn main() {
         snapshot: exchanges::orderbook::Snapshot 
         { 
             a: vec![], b: vec![],
-            last_price: 0.0
+            last_price: 0.0,
         }, 
         a: vec![], 
         b: vec![] 

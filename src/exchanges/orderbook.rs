@@ -11,5 +11,5 @@ pub struct OrderbookLocal {
 pub struct Snapshot {
     pub a: Vec<(f64, f64)>,
     pub b: Vec<(f64, f64)>,
-    pub last_price: f64
+    pub last_price: f64,
 }
