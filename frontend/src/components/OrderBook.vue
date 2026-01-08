@@ -1,14 +1,15 @@
 <script setup>
-    import { ref, defineExpose } from 'vue';
+import { ref, defineExpose } from 'vue';
     let isVisible = ref("display: none;")
 
     function show() {
         isVisible.value = "display: block;"
     }
 
-    let snapshot_ask = ref([])
     let websoket = null
-
+    let snapshot_ask = ref([])
+    let snapshot_bid = ref([])
+    let snapshot_last_price = ref(0.0)
     let exchanges_list = ref([])
 
     function exchanges(longExchange, shortExchange) {
@@ -24,9 +25,16 @@
             const data = JSON.parse(event.data)
 
             snapshot_ask.value = data.snapshot.a.map(x => ({
-                price: x[0],
-                volume: x[1]
+                price: formatCurrency(x[0]),
+                volume: formatCurrency(x[1])
             }))
+
+            snapshot_bid.value = data.snapshot.b.map(x => ({
+                price: formatCurrency(x[0]),
+                volume: formatCurrency(x[1])
+            }))
+
+            snapshot_last_price.value = formatCurrency(data.snapshot.last_price)
         }
 
         websoket.onopen = () => {
@@ -50,6 +58,16 @@
         isVisible.value = "display: none;"
     }
 
+    function formatCurrency(value) {
+        if (typeof value != 'number') {
+            return value;
+        }
+
+        return new Intl.NumberFormat(
+            "en-US"
+        ).format(value)
+    }
+
     defineExpose({ show, start, stop, exchanges })
 </script>
 
@@ -64,8 +82,15 @@
                         <th>Обьем</th>
                     </tr>
                     <tr v-for="(row, i) in snapshot_ask.splice(-6)" :key="i">
-                        <td>{{ row.price }}</td>
-                        <td>{{ row.volume }}</td>
+                        <td class="sell_label">{{ row.price }}</td>
+                        <td class="sell_label">{{ row.volume }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="center_label"> ⬇ {{ snapshot_last_price }}</td>
+                    </tr>
+                    <tr v-for="(row, i) in snapshot_bid.splice(0, 6)" :key="i">
+                        <td class="buy_label">{{ row.price }}</td>
+                        <td class="buy_label">{{ row.volume }}</td>
                     </tr>
                 </table>
             </div>
@@ -118,7 +143,7 @@
     .orderbook_table {
         width: 100%;
         text-transform: capitalize;
-        text-align: end;
+        text-align: center;
     }
 
     .order_book_prices {
@@ -146,5 +171,10 @@
 
     #separator {
         margin-bottom: 30px;
+    }
+
+    .center_label {
+        text-align: center;
+        color: rgb(151, 15, 15);
     }
 </style>
