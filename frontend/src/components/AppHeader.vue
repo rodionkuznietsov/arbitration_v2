@@ -4,12 +4,19 @@
   import soundOff from '../assets/icons/sound_off.svg'
   import prompt from '../assets/icons/prompt.svg'
 
-  const workStatus = ref(false)
+  const workStatus = ref('offline')
   const img_sound = ref(null)
   const isOn = ref(false)
+  const warningMsg = "Связь с сервером потеряна. Повторите попытку позже."
+
+  const isVisibleTooltip = ref(false)
 
   function change_work_status(status) {
     workStatus.value = status
+  }
+
+  function showTooltip() {
+    isVisibleTooltip.value = true
   }
 
   function is_sound_on() {
@@ -27,7 +34,10 @@
       <div id="status">
         <div id="status_circle" :class="workStatus == 'online' ? 'online' : workStatus == 'warning' ? 'warning' : 'offline'"></div>
         <span>{{ workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? 'Неполадки' : 'Офлайн' }}</span>
-        <img class="status_img" :src="workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? prompt : 'Офлайн'" title="Связь с сервером потеряна. Повторите попытку позже." alt="">
+        <div>
+          <img class="status_img" :src="workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? prompt : 'Офлайн'" alt="" @click="showTooltip">
+          <div id="tooltip_overlay" v-show="isVisibleTooltip">{{ warningMsg }}</div>
+        </div>
       </div>
       <div id="reight_element">
         <img id="header_icon" src="../assets/icons/update.svg" alt="">
@@ -95,6 +105,20 @@
 .status_img:hover {
   filter: invert(1);
   transition: all 0.5s ease
+}
+
+#tooltip_overlay {
+  position: absolute;
+  background-color: rgba(48, 60, 81, 0.6);
+  border-radius: 8px;
+  padding: 8px;
+  z-index: 9999;
+  box-sizing: border-box;
+  border: 1px solid rgba(48, 60, 81, 0.6);
+  backdrop-filter: blur(8px);
+  transition: flex 0.5s;
+  pointer-events: auto;
+  font-size: 12px;
 }
 
 #reight_element {
