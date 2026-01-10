@@ -132,16 +132,26 @@ function stop() {
 <style>
   @import url('https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Vollkorn+SC:wght@400;600;700;900&display=swap');
 
+  :root {
+    --basic-Bg: #202630;
+    --color-input-border: #b7bcc4;
+    --color-popup: #333B47;
+    --color-success: #2EBD85;
+    --color-error: #F6465D;
+    --default-font-color: #EAECEF;
+  }
+
   #form {
     margin-top: 20px;
     display: grid;
     gap: 10px;
-    padding-left: 10px;
-    padding-right: 10px;
     width: 100%;
     box-sizing: border-box;
     justify-content: space-around;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    background-color: #303c5199;
+    border-radius: 8px;
+    padding: 10px;
   }
 
   #form_label-with_icon {
@@ -171,12 +181,12 @@ function stop() {
   .form_input {
     width: 100%;
     padding: 8px;
-    border: 1px solid #303c5199;
-    color: #ffffff;
+    border: 1px solid var(--color-input-border);
+    color: var(--default-font-color);
     border-radius: 8px;
     font-size: 16px;
     margin-top: 10px;
-    background-color: rgba(48, 60, 81, 0.6);
+    background-color: transparent;
     outline: none;
     box-sizing: border-box;
   }
@@ -211,7 +221,7 @@ function stop() {
     flex: 1;
     padding: 8px;
     border: none;
-    color: #ffffff;
+    color: var(--default-font-color);
     border-radius: 8px;
     font-size: 16px;
     transition: all 0.6s;
@@ -224,18 +234,18 @@ function stop() {
   }
 
   #start {
-    background-color: green;
+    background-color: var(--color-success);
   }
 
   #stop {
-    background-color: rgb(151, 15, 15);
+    background-color: var(--color-error);
   }
 
   #app {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-align: left;
-    color: #ffffff;
+    color: var(--default-font-color);
     font-size: 16px;
     position: relative;
     font-family: "PT Serif", serif;
@@ -244,7 +254,8 @@ function stop() {
   }
 
   body {
-    background-color: #222a39;
+    background-color: var(--basic-Bg);
     margin-bottom: 10px;
+    color: var(--default-font-color);
   }
 </style>

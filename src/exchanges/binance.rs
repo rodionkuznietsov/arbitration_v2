@@ -5,7 +5,7 @@ use tokio::sync::RwLock;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use url::Url;
 
-use crate::exchanges::orderbook::{BinanceOrderbookLocal, LocalOrderBook};
+use crate::exchanges::orderbook::{LocalOrderBook};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct SnapshotResponse {
@@ -156,7 +156,7 @@ async fn fetch_data(str_data: String, local_book: Arc<RwLock<LocalOrderBook>>) {
         .position(|x| x.0 > book.snapshot.last_price)
         .unwrap_or(book.snapshot.a.len());
 
-    book.snapshot.a = book.snapshot.a[start..].to_vec();
+    book.snapshot.a = book.snapshot.a[start+1..].to_vec();
 
     book.snapshot.b.sort_by(|x, y| y.0.total_cmp(&x.0));
 

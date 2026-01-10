@@ -5,7 +5,7 @@ use tokio::{sync::RwLock};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 
-use crate::exchanges::orderbook::{BybitOrderbookLocal, LocalOrderBook};
+use crate::exchanges::orderbook::{LocalOrderBook};
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct OrderbookResponse {

@@ -72,70 +72,70 @@
 </template>
 
 <style scoped>
-#combobox { 
-  width: 100%;
-  padding: 8px;
-  border: 1px solid rgba(48, 60, 81, 0.6);;
-  color: #ffffff;
-  border-radius: 8px;
-  font-size: 16px;
-  margin-top: 10px;
-  background-color: rgba(48, 60, 81, 0.6);
-  outline: none;
-  box-sizing: border-box;
-  cursor: pointer;
-  text-transform: capitalize;
-}
-
-.arrow, .arrow_rotate {
-    position: relative;
-    display: inline-block; 
+  #combobox { 
     width: 100%;
-}
+    padding: 8px;
+    border: 1px solid var(--color-input-border);
+    color: var(--default-font-color);
+    border-radius: 8px;
+    font-size: 16px;
+    margin-top: 10px;
+    background-color: transparent;
+    outline: none;
+    box-sizing: border-box;
+    cursor: pointer;
+    text-transform: capitalize;
+  }
 
-.arrow::after {
-  content: "▾";
-  position: absolute;
-  transform: translateY(75%);
-  right: 10px;
-  transition: all 1s;
-}
+  .arrow, .arrow_rotate {
+      position: relative;
+      display: inline-block; 
+      width: 100%;
+  }
 
-.arrow_rotate::after {
-  content: "▾";
-  position: absolute;
-  transform: translateY(100%) rotate(180deg);
-  right: 10px;
-  transition: all 0.9s;
-}
+  .arrow::after {
+    content: "▾";
+    position: absolute;
+    transform: translateY(75%);
+    right: 10px;
+    transition: all 1s;
+  }
 
-.combobox-list {
-  position: absolute;
-  background-color: rgba(48, 60, 81, 0.6);
-  border-radius: 8px;
-  padding: 8px;
-  z-index: 9999;
-  box-sizing: border-box;
-  border: 1px solid rgba(48, 60, 81, 0.6);
-  backdrop-filter: blur(8px);
-  transition: flex 0.5s;
-  pointer-events: auto;
-}
+  .arrow_rotate::after {
+    content: "▾";
+    position: absolute;
+    transform: translateY(100%) rotate(180deg);
+    right: 10px;
+    transition: all 0.9s;
+  }
 
-#combobox_element {
-  cursor: pointer;
-  padding: 8px;
-  list-style: none;
-  margin: 0;
-  text-align: left;
-  border-radius: 8px;
-}
+  .combobox-list {
+    position: absolute;
+    background-color: transparent;
+    border-radius: 8px;
+    padding: 8px;
+    z-index: 9999;
+    box-sizing: border-box;
+    border: 1px solid rgba(48, 60, 81, 0.6);
+    backdrop-filter: blur(8px);
+    transition: flex 0.5s;
+    pointer-events: auto;
+  }
 
-#combobox_element:hover {
-  filter: opacity(75%);
-  background-color: rgba(255, 255, 255, 0.7);
-  filter: opacity(0.5) contrast(2px);
-  transition: background 0.25s ease;
-  color: #121212;
-} 
+  #combobox_element {
+    cursor: pointer;
+    padding: 8px;
+    list-style: none;
+    margin: 0;
+    text-align: left;
+    border-radius: 8px;
+  }
+
+  #combobox_element:hover {
+    filter: opacity(75%);
+    background-color: rgba(255, 255, 255, 0.7);
+    filter: opacity(0.5) contrast(2px);
+    transition: background 0.25s ease;
+    color: #121212;
+  } 
 </style>

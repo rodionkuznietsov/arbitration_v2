@@ -1,17 +1,7 @@
-use std::{marker::PhantomData, sync::{Arc}};
+use std::{sync::{Arc}};
 
 use serde::{Serialize};
 use tokio::sync::RwLock;
-
-#[derive(Debug, Clone, Serialize)]
-pub struct BybitOrderbookLocal {
-    pub snapshot: Snapshot,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct BinanceOrderbookLocal {
-    pub snapshot: Snapshot,
-}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LocalOrderBook {

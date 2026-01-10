@@ -39,61 +39,61 @@
 </template>
 
 <style scoped>
-#header {
-  display: flex;
-  margin-bottom: 5px;
-  align-items: center;
-  justify-content: space-between;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding: 8px;
-}
+  #header {
+    display: flex;
+    margin-bottom: 5px;
+    align-items: center;
+    justify-content: space-between;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 8px;
+  }
 
-#status {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  color: #ffff;
-}
+  #status {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    color: var(--default-font-color);
+  }
 
-#status_circle {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-}
+  #status_circle {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+  }
 
-@keyframes GlitchAnimation {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
+  @keyframes GlitchAnimation {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
 
-.online {
-  background-color: green;
-  animation-name: GlitchAnimation;
-  animation-duration: 1.6s;
-  animation-iteration-count:  infinite;
-}
+  .online {
+    background-color: var(--color-success);
+    animation-name: GlitchAnimation;
+    animation-duration: 1.6s;
+    animation-iteration-count:  infinite;
+  }
 
-.offline {
-  background-color: rgb(151, 15, 15);
-}
+  .offline {
+    background-color: var(--color-error);
+  }
 
-.warning {
-  background-color: rgb(214 180 14);
-  animation-name: GlitchAnimation;  
-  animation-duration: 1.6s;
-  animation-iteration-count:  infinite;
-}
+  .warning {
+    background-color: rgb(214 180 14);
+    animation-name: GlitchAnimation;  
+    animation-duration: 1.6s;
+    animation-iteration-count:  infinite;
+  }
 
-#reight_element {
-  display: flex;
-  gap: 10px;
-}
+  #reight_element {
+    display: flex;
+    gap: 10px;
+  }
 
-#header_icon {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
+  #header_icon {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
 </style>

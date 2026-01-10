@@ -1,11 +1,11 @@
-use std::{collections::{HashMap}, sync::Arc};
-
+use std::{collections::{HashMap}};
 use futures_util::{StreamExt, SinkExt};
 use serde::Deserialize;
-use tokio::{net::TcpListener, sync::{RwLock}};
+use tokio::{net::TcpListener};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 
-use crate::exchanges::{self, orderbook::{LocalOrderBook}};
+use crate::exchanges::{orderbook::{LocalOrderBook}};
+use crate::exchange::*;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebsocketReceiverParams {
@@ -38,24 +38,6 @@ pub async fn connect_async() {
 
     while let Ok((stream, _)) = listener.accept().await {
         tokio::spawn(handle_connection(stream));
-    }
-}
-
-enum Exchange {
-    Bybit,
-    Binance
-}
-
-impl Exchange {
-    async fn connect(&self, ticker: &str, order_type: &str, book: Arc<RwLock<LocalOrderBook>>) {
-        match self {
-            Exchange::Binance => {
-                exchanges::binance::connect(ticker, order_type, book.clone()).await;
-            }
-            Exchange::Bybit => {
-                exchanges::bybit::connect(ticker, order_type, book.clone()).await;
-            }
-        }
     }
 }
 
