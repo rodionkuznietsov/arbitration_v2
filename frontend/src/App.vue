@@ -149,7 +149,6 @@ function stop() {
     box-sizing: border-box;
     justify-content: space-around;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    background-color: #303c5199;
     border-radius: 8px;
     padding: 10px;
   }
@@ -181,12 +180,12 @@ function stop() {
   .form_input {
     width: 100%;
     padding: 8px;
-    border: 1px solid var(--color-input-border);
+    border: none;
     color: var(--default-font-color);
     border-radius: 8px;
     font-size: 16px;
     margin-top: 10px;
-    background-color: transparent;
+    background-color: #303c5199;
     outline: none;
     box-sizing: border-box;
   }

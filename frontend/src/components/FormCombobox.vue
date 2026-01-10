@@ -75,12 +75,12 @@
   #combobox { 
     width: 100%;
     padding: 8px;
-    border: 1px solid var(--color-input-border);
+    border: none;
     color: var(--default-font-color);
     border-radius: 8px;
     font-size: 16px;
     margin-top: 10px;
-    background-color: transparent;
+    background-color: #303c5199;
     outline: none;
     box-sizing: border-box;
     cursor: pointer;
