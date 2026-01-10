@@ -2,10 +2,10 @@ use std::{collections::{HashMap}, sync::Arc};
 
 use futures_util::{StreamExt, SinkExt};
 use serde::Deserialize;
-use tokio::{net::TcpListener, sync::RwLock};
+use tokio::{net::TcpListener, sync::{RwLock}};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 
-use crate::exchanges::{self, orderbook::{BinanceOrderbookLocal, BybitOrderbookLocal}};
+use crate::exchanges::{self, orderbook::{LocalOrderBook}};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebsocketReceiverParams {
@@ -41,6 +41,24 @@ pub async fn connect_async() {
     }
 }
 
+enum Exchange {
+    Bybit,
+    Binance
+}
+
+impl Exchange {
+    async fn connect(&self, ticker: &str, order_type: &str, book: Arc<RwLock<LocalOrderBook>>) {
+        match self {
+            Exchange::Binance => {
+                exchanges::binance::connect(ticker, order_type, book.clone()).await;
+            }
+            Exchange::Bybit => {
+                exchanges::bybit::connect(ticker, order_type, book.clone()).await;
+            }
+        }
+    }
+}
+
 async fn handle_connection(
     stream: tokio::net::TcpStream, 
 ) {
@@ -48,71 +66,60 @@ async fn handle_connection(
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
     println!("🟢 [Arbitration-Websocket] Client connected");
 
-    let binance_order_book = BinanceOrderbookLocal {
-        snapshot: exchanges::orderbook::Snapshot 
-        { 
-            a: vec![], b: vec![],
-            last_price: 0.0,
-        }
-    };
+    let long_book = LocalOrderBook::new();
+    let long_book_cl = long_book.clone();
 
-    let bybit_order_book = BybitOrderbookLocal {
-        snapshot: exchanges::orderbook::Snapshot 
-        { 
-            a: vec![], b: vec![],
-            last_price: 0.0,
-        }
-    };
-
-    let binance_book = Arc::new(RwLock::new(binance_order_book));
-    let binance_book_cl = binance_book.clone();
-
-    let bybit_book = Arc::new(RwLock::new(bybit_order_book));
-    let bybit_book_cl = bybit_book.clone();
+    let short_book = LocalOrderBook::new();
+    let short_book_cl = short_book.clone();
 
     tokio::spawn(async move {
         while let Some(msg) = ws_receiver.next().await {
             if let Ok(msg) = msg {
                 if msg.is_text() {
                     if let Ok(new_params) = serde_json::from_str::<WebsocketReceiverParams>(&msg.to_text().unwrap()) {
-                        let new_params_cl = new_params.clone();
-                        let binance_book = binance_book_cl.clone();
-                        let bybit_book = bybit_book_cl.clone();
-
                         let long_exchange = new_params.exchanges.long_exchange.to_lowercase();
                         let short_exchange = new_params.exchanges.short_exchange.to_lowercase();
-                        
-                        if long_exchange == "binance" || short_exchange == "binance" {
-                            tokio::spawn(async move {
-                                exchanges::binance::connect(&new_params_cl.ticker.to_uppercase(), &new_params_cl.types.long_type, binance_book.clone()).await;
-                            });
-                        }
 
-                        if short_exchange == "bybit" || long_exchange == "bybit" {
-                            tokio::spawn(async move {
-                                exchanges::bybit::connect(&new_params.ticker, &new_params.types.short_type, bybit_book.clone()).await;
-                            });
-                        }
+                        let long_exhange_connect = match long_exchange.as_str() {
+                            "binance" => Exchange::Binance,
+                            "bybit" => Exchange::Bybit,
+                            _ => panic!("unknown exchange")
+                        };
+
+                        let long_ticker = new_params.ticker.clone();
+                        let long_book = long_book_cl.clone();
+                        let long_order_type = new_params.types.long_type;
+
+                        tokio::spawn(async move {
+                            long_exhange_connect.connect(long_ticker.as_str(), long_order_type.as_str(), long_book.clone()).await;
+                        });
+
+                        let short_exhange_connect = match short_exchange.as_str() {
+                            "binance" => Exchange::Binance,
+                            "bybit" => Exchange::Bybit,
+                            _ => panic!("unknown exchange")
+                        };
+                        
+                        let short_ticker = new_params.ticker.clone();
+                        let short_book = short_book_cl.clone();
+                        let short_order_type = new_params.types.short_type;
+
+                        tokio::spawn(async move {
+                            short_exhange_connect.connect(short_ticker.as_str(), short_order_type.as_str(), short_book.clone()).await;
+                        });
                     }
                 }
             }
         }
     });
-
+    
     loop {
-        let binance_order_book = {
-            let book = binance_book.read().await;
-            book.clone()
-        };
-
-        let bybit_order_book = {
-            let book = bybit_book.read().await;
-            book.clone()
-        };
-
+        let long_book = long_book.read().await;
+        let short_book = short_book.read().await;
+        
         let mut books = HashMap::new();
-        books.insert("book1", serde_json::to_value(&binance_order_book).unwrap());
-        books.insert("book2", serde_json::to_value(&bybit_order_book).unwrap());
+        books.insert("book1", long_book.clone());
+        books.insert("book2", short_book.clone());
 
         let json = serde_json::to_string(&books).unwrap();
 
@@ -122,5 +129,5 @@ async fn handle_connection(
         }
 
         tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-    }
+    };
 }

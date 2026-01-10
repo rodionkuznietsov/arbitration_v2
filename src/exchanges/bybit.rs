@@ -5,7 +5,7 @@ use tokio::{sync::RwLock};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 
-use crate::exchanges::orderbook::BybitOrderbookLocal;
+use crate::exchanges::orderbook::{BybitOrderbookLocal, LocalOrderBook};
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct OrderbookResponse {
@@ -27,7 +27,7 @@ pub struct Data {
     pub last_price: Option<String>
 }
 
-pub async fn connect(ticker: &str, channel_type: &str, local_ask_order_book: Arc<RwLock<BybitOrderbookLocal>>) {
+pub async fn connect(ticker: &str, channel_type: &str, local_ask_order_book: Arc<RwLock<LocalOrderBook>>) {
     
     let url = url::Url::parse("wss://stream.bybit.com/v5/public/spot").unwrap();
     let (ws_stream, _) = connect_async(url.to_string()).await.expect("[Bybit] Failed to connect");
@@ -60,7 +60,7 @@ pub async fn connect(ticker: &str, channel_type: &str, local_ask_order_book: Arc
     read_future.await;
 }
 
-async fn fetch_data(data: OrderbookResponse, local_ask_order_book: Arc<RwLock<BybitOrderbookLocal>>) {
+async fn fetch_data(data: OrderbookResponse, local_ask_order_book: Arc<RwLock<LocalOrderBook>>) {
     let mut book = {
         let current = local_ask_order_book.read().await;
         current.clone()

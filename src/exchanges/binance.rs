@@ -5,7 +5,7 @@ use tokio::sync::RwLock;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use url::Url;
 
-use crate::exchanges::orderbook::{BinanceOrderbookLocal};
+use crate::exchanges::orderbook::{BinanceOrderbookLocal, LocalOrderBook};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct SnapshotResponse {
@@ -17,7 +17,7 @@ struct SnapshotResponse {
     last_price: Option<String>,
 }
 
-async fn get_snapshot(ticker: &str, local_book: Arc<RwLock<BinanceOrderbookLocal>>) {
+async fn get_snapshot(ticker: &str, local_book: Arc<RwLock<LocalOrderBook>>) {
     let url = format!("https://api.binance.com/api/v3/depth?symbol={}USDT&limit=50", ticker.to_uppercase());
     let client = reqwest::Client::new();
     let response = client.get(url)
@@ -43,7 +43,7 @@ async fn get_snapshot(ticker: &str, local_book: Arc<RwLock<BinanceOrderbookLocal
     }
 }
 
-pub async fn connect(ticker: &str, _channel_type: &str, local_book: Arc<RwLock<BinanceOrderbookLocal>>) {
+pub async fn connect(ticker: &str, _channel_type: &str, local_book: Arc<RwLock<LocalOrderBook>>) {
     get_snapshot(ticker, local_book.clone()).await;
 
     let url = Url::parse("wss://stream.binance.com:443/ws").unwrap();
@@ -80,7 +80,7 @@ pub async fn connect(ticker: &str, _channel_type: &str, local_book: Arc<RwLock<B
     read_future.await;
 }
 
-async fn fetch_data(str_data: String, local_book: Arc<RwLock<BinanceOrderbookLocal>>) {
+async fn fetch_data(str_data: String, local_book: Arc<RwLock<LocalOrderBook>>) {
     let json = serde_json::from_str::<SnapshotResponse>(&str_data).unwrap();
 
     let mut book = {
@@ -171,7 +171,7 @@ async fn fetch_data(str_data: String, local_book: Arc<RwLock<BinanceOrderbookLoc
     *book_lock = book
 }
 
-async fn parse_asks(data: SnapshotResponse, local_book: Arc<RwLock<BinanceOrderbookLocal>>) {
+async fn parse_asks(data: SnapshotResponse, local_book: Arc<RwLock<LocalOrderBook>>) {
     let mut book = {
         let current = local_book.read().await;
         current.clone()
@@ -199,7 +199,7 @@ async fn parse_asks(data: SnapshotResponse, local_book: Arc<RwLock<BinanceOrderb
     *book_lock = book
 }
 
-async fn parse_bids(data: SnapshotResponse, local_book: Arc<RwLock<BinanceOrderbookLocal>>) {
+async fn parse_bids(data: SnapshotResponse, local_book: Arc<RwLock<LocalOrderBook>>) {
     let mut book = {
         let current = local_book.read().await;
         current.clone()

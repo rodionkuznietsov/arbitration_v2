@@ -115,7 +115,7 @@ import { ref, defineExpose, defineProps, defineEmits } from 'vue';
                         <th>Обьем $</th>
                     </tr>
                     <tr v-for="ask in longAsks.splice(-6)" :key="ask">
-                        <td class="sell_label"> {{ ask.price }} </td>
+                        <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
                         <td class="sell_label"> {{ formatCurrency(ask.price *  ask.volume) }} </td>
                     </tr>
 
@@ -126,7 +126,7 @@ import { ref, defineExpose, defineProps, defineEmits } from 'vue';
                     </tr>
 
                     <tr v-for="bid in longBids.splice(0, 6)" :key="bid">
-                        <td class="buy_label"> {{ bid.price }} </td>
+                        <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
                         <td class="buy_label"> {{ formatCurrency(bid.price *  bid.volume) }} </td>
                     </tr>
                 </table>
@@ -142,7 +142,7 @@ import { ref, defineExpose, defineProps, defineEmits } from 'vue';
                         <th>Обьем $</th>
                     </tr>
                     <tr v-for="ask in shortAsks.splice(-6)" :key="ask">
-                        <td class="sell_label"> {{ ask.price }} </td>
+                        <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
                         <td class="sell_label"> {{ formatCurrency(ask.price *  ask.volume) }} </td>
                     </tr>
 
@@ -153,7 +153,7 @@ import { ref, defineExpose, defineProps, defineEmits } from 'vue';
                     </tr>
 
                     <tr v-for="bid in shortBids.splice(0, 6)" :key="bid">
-                        <td class="buy_label"> {{ bid.price }} </td>
+                        <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
                         <td class="buy_label"> {{ formatCurrency(bid.price *  bid.volume) }} </td>
                     </tr>
                 </table>

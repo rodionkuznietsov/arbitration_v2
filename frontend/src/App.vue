@@ -123,7 +123,7 @@ function start() {
 function stop() {
   orderBook.value.stop()
     if (header.value) {
-      header.value.change_work_status(false)
+      header.value.change_work_status('offline')
     }
 }
 
