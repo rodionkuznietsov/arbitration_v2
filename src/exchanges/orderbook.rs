@@ -1,11 +1,15 @@
 use serde::{Serialize};
 
 #[derive(Debug, Clone, Serialize)]
-pub struct OrderbookLocal {
+pub struct BybitOrderbookLocal {
     pub snapshot: Snapshot,
-    pub a: Vec<(f64, f64)>,
-    pub b: Vec<(f64, f64)>,
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct BinanceOrderbookLocal {
+    pub snapshot: Snapshot,
+}
+
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Snapshot {

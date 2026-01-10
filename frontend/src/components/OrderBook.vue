@@ -9,13 +9,24 @@ import { ref, defineExpose, defineProps, defineEmits } from 'vue';
     const isWarningStatus = ref(props.modelValue)
 
     let websoket = null
-    let snapshot_ask = ref([])
-    let snapshot_bid = ref([])
-    let snapshot_last_price = ref(0.0)
-    let exchanges_list = ref([])
+    const formData = ref({})
 
-    function exchanges(longExchange, shortExchange) {
-        exchanges_list.value = [longExchange, shortExchange]
+    const longAsks = ref([])
+    const longBids = ref([])
+    const longLastPrice = ref(0.0)
+    const longExchange = ref('Binance')
+
+    const shortAsks = ref([])
+    const shortBids = ref([])
+    const shortLastPrice = ref(0.0)
+    const shortExchange = ref('Bybit')
+
+    function exchanges(
+        data
+    ) {
+        formData.value = data
+        longExchange.value = formData.value.exchanges.longExchange
+        shortExchange.value = formData.value.exchanges.shortExchange
     }
 
     function start() {
@@ -31,25 +42,33 @@ import { ref, defineExpose, defineProps, defineEmits } from 'vue';
         websoket.onmessage = (event) => {
             const data = JSON.parse(event.data)
 
-            snapshot_ask.value = data.snapshot.a.map(x => ({
+            longAsks.value = data.book1.snapshot.a.map(x => ({
                 price: x[0],
-                volume: x[1]
+                volume: x[1],
             }))
 
-            snapshot_bid.value = data.snapshot.b.map(x => ({
+            longBids.value = data.book1.snapshot.b.map(x => ({
                 price: x[0],
-                volume: x[1]
+                volume: x[1],
             }))
 
-            snapshot_last_price.value = formatCurrency(data.snapshot.last_price)
+            longLastPrice.value = data.book1.snapshot.last_price
+
+            shortAsks.value = data.book2.snapshot.a.map(x => ({
+                price: x[0],
+                volume: x[1],
+            }))
+
+            shortBids.value = data.book2.snapshot.b.map(x => ({
+                price: x[0],
+                volume: x[1],
+            }))
+
+            shortLastPrice.value = data.book2.snapshot.last_price
         }
 
         websoket.onopen = () => {
-            websoket.send(JSON.stringify({
-                order_type: "spot".toLowerCase(),
-                exchange: exchanges_list.value[0].toLowerCase(),
-                symbol: "btc".toLowerCase()
-            }))
+            websoket.send(JSON.stringify(formData.value))
         }
 
         websoket.onclose = () => {
@@ -66,7 +85,6 @@ import { ref, defineExpose, defineProps, defineEmits } from 'vue';
             websoket.close()
             websoket = null
         }
-        snapshot_ask.value = []
         isVisible.value = "display: none;"
     }
 
@@ -76,7 +94,10 @@ import { ref, defineExpose, defineProps, defineEmits } from 'vue';
         }
 
         return new Intl.NumberFormat(
-            "en-US"
+            "en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }
         ).format(value)
     }
 
@@ -85,24 +106,55 @@ import { ref, defineExpose, defineProps, defineEmits } from 'vue';
 
 <template>
     <div id="stakan">
-        <div id="order_book" :style="isVisible" v-for="exchange_name in exchanges_list" :key="exchange_name">
-            <div id="exchange_name">{{ exchange_name }}</div>
+        <div id="order_book" :style="isVisible">
+            <div id="exchange_name">{{ longExchange }}</div>
             <div id="order_book_element">
                 <table class="orderbook_table">
                     <tr>
                         <th>Цена</th>
                         <th>Обьем $</th>
                     </tr>
-                    <tr v-for="(row, i) in snapshot_ask.splice(-6)" :key="i">
-                        <td class="sell_label">{{ formatCurrency(row.price) }}</td>
-                        <td class="sell_label">{{ formatCurrency(row.volume * row.price) }}</td>
+                    <tr v-for="ask in longAsks.splice(-6)" :key="ask">
+                        <td class="sell_label"> {{ ask.price }} </td>
+                        <td class="sell_label"> {{ formatCurrency(ask.price *  ask.volume) }} </td>
                     </tr>
+
                     <tr>
-                        <td colspan="2" class="center_label"> ⬇ {{ snapshot_last_price }}</td>
+                        <td colspan="2" class="center_label" tabindex="3">
+                            {{ formatCurrency(longLastPrice) }}
+                        </td>
                     </tr>
-                    <tr v-for="(row, i) in snapshot_bid.splice(0, 6)" :key="i">
-                        <td class="buy_label">{{ formatCurrency(row.price) }}</td>
-                        <td class="buy_label">{{ formatCurrency(row.volume * row.price) }}</td>
+
+                    <tr v-for="bid in longBids.splice(0, 6)" :key="bid">
+                        <td class="buy_label"> {{ bid.price }} </td>
+                        <td class="buy_label"> {{ formatCurrency(bid.price *  bid.volume) }} </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div id="order_book" :style="isVisible">
+            <div id="exchange_name">{{ shortExchange }}</div>
+            <div id="order_book_element">
+                <table class="orderbook_table">
+                    <tr>
+                        <th>Цена</th>
+                        <th>Обьем $</th>
+                    </tr>
+                    <tr v-for="ask in shortAsks.splice(-6)" :key="ask">
+                        <td class="sell_label"> {{ ask.price }} </td>
+                        <td class="sell_label"> {{ formatCurrency(ask.price *  ask.volume) }} </td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="2" class="center_label" tabindex="3">
+                            {{ formatCurrency(shortLastPrice) }}
+                        </td>
+                    </tr>
+
+                    <tr v-for="bid in shortBids.splice(0, 6)" :key="bid">
+                        <td class="buy_label"> {{ bid.price }} </td>
+                        <td class="buy_label"> {{ formatCurrency(bid.price *  bid.volume) }} </td>
                     </tr>
                 </table>
             </div>

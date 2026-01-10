@@ -3,7 +3,6 @@
 
     const props = defineProps({
         modelValue: String,
-        placeholder: String,
         options: Array
     })
 
@@ -11,16 +10,12 @@
     const arrow_class = ref("arrow")
     const emit = defineEmits([
       'update:modelValue',
-      'update:placeholder'
     ])
-    const localPlaceholder = ref(props.placeholder)
 
     const select = (value) => {
         emit('update:modelValue', value)
-        emit('update:placeholder', value)
         show.value = false
         arrow_class.value = "arrow"
-        localPlaceholder.value = value
     }
 
     const inside_div = ref({x: 0.0, y: 0.0})
@@ -67,7 +62,7 @@
 <template>
   <div @click="getPosInsideDiv">
       <div :class="arrow_class">
-          <input id="combobox" :value="props.modelValue ? props.modelValue : localPlaceholder " readonly="true" @click="popup" ref="arrowInput">
+          <input id="combobox" :value="props.modelValue" readonly="true" @click="popup" ref="arrowInput">
       </div>
 
       <ul class="combobox-list" id="optionsList" v-show="show" ref="comboboxList">

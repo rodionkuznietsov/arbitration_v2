@@ -6,7 +6,7 @@
       <div id="form-column">
         <div class="form-group">
           <label for="ticker" id="form_label">Тикер (BTC):</label>
-          <input id="ticker" name="ticker" type="text" value="BTC" class="form_input">
+          <input id="ticker" name="ticker" type="text" value="BTC" class="form_input" v-model="ticker">
         </div>
 
         <div class="form-group">
@@ -14,11 +14,11 @@
             <label for="order" id="form_label">Лонг:</label>
             <img src="./assets/icons/up.svg" alt="" draggable="false">
           </div>
-          <FormCombobox v-model="longExchange" placeholder="Bybit" :options="exchanges"/>
+          <FormCombobox v-model="longExchange" :options="exchanges"/>
         </div>
 
         <div class="form-group">
-          <FormCombobox v-model="longOrderType" placeholder="Фьючерс" :options="market_types"/>
+          <FormCombobox v-model="longOrderType" :options="market_types"/>
         </div>
 
         <div class="form-group">
@@ -38,11 +38,11 @@
             <label for="order" id="form_label">Шорт:</label>
             <img class="img_reverse" src="./assets/icons/up.svg" alt="" draggable="false">
           </div>
-          <FormCombobox v-model="shortExchange" placeholder="Mexc" :options="exchanges"/>
+          <FormCombobox v-model="shortExchange" :options="exchanges"/>
         </div>
 
         <div class="form-group">
-          <FormCombobox v-model="shortOrderType" placeholder="Фьючерс" :options="market_types"/>
+          <FormCombobox v-model="shortOrderType" :options="market_types"/>
         </div>
 
         <div class="form-group">
@@ -72,7 +72,7 @@ import FormCombobox from './components/FormCombobox.vue';
 import OrderBook from './components/OrderBook.vue';
 import AppMenu from './components/AppMenu.vue';
 
-const exchanges = ["Bybit", "Mexc"]
+const exchanges = ["Bybit", "Binance"]
 const market_types = ["Спот", "Фьючерс"]
 const isWarning = ref(false)
 
@@ -85,19 +85,29 @@ const orderBook = ref(null)
 const header = ref(null)
 
 // Данные с полей
-const longExchange = ref("Bybit")
+const longExchange = ref("Binance")
 const longOrderType = ref("Спот")
-const shortExchange = ref("Mexc")
+const shortExchange = ref("Bybit")
 const shortOrderType = ref("Спот")
+const ticker = ref("BTC")
 
 function start() {
-  console.log("Long Exchange: ", longExchange.value)
-  console.log("Long OrderType: ", longOrderType.value)
 
-  console.log("Short Exchange: ", shortExchange.value)
-  console.log("Short OrderType: ", shortOrderType.value)
+  console.log(ticker.value)
 
-  orderBook.value.exchanges(longExchange.value, shortExchange.value)
+  const data = {
+    exchanges: {
+      longExchange: longExchange.value,
+      shortExchange: shortExchange.value,
+    },
+    types: {
+      longType: longOrderType.value,
+      shortType: shortOrderType.value,
+    },
+    ticker: ticker
+  }
+
+  orderBook.value.exchanges(data)
   orderBook.value.show()  
   orderBook.value.start()
 
