@@ -31,6 +31,14 @@ pub async fn connect(ticker: &str, _channel_type: &str, local_book: Arc<RwLock<L
 
     println!("🌐 [BinX-Websocket] is running");
 
+    let ticker = {
+        if ticker.to_lowercase() == "ton" {
+            "toncoin".to_string()
+        } else {
+            ticker.to_string()
+        }
+    };
+
     let orderbook = format!("{}-USDT@depth50", ticker.to_uppercase());
 
     write.send(Message::Text(
@@ -54,14 +62,12 @@ pub async fn connect(ticker: &str, _channel_type: &str, local_book: Arc<RwLock<L
         let data = msg.unwrap();
         let book = local_book.clone();
         match data {
-            Message::Text(txt) => {
-                println!("{txt}")
-            }
+            Message::Text(_) => {}
             Message::Binary(binary) => {
                 let mut d = MultiGzDecoder::new(&*binary);
                 let mut s = String::new();
                 d.read_to_string(&mut s).unwrap();
-                
+
                 let data = serde_json::from_str::<Snapshot>(&s).unwrap();
                 
                 fetch_data(data.clone(), book.clone()).await;
@@ -138,7 +144,6 @@ async fn fetch_data(data: Snapshot, local_book: Arc<RwLock<LocalOrderBook>>) {
     book.snapshot.b.sort_by(|x, y| y.0.total_cmp(&x.0));
     let bstart = match book.snapshot.b.binary_search_by(|x| {
         if x.0 <= book.snapshot.last_price && book.snapshot.last_price > 0.0 { 
-            println!("{}; {}", x.0, book.snapshot.last_price);
             std::cmp::Ordering::Greater
          }
         else { std::cmp::Ordering::Less }
