@@ -134,6 +134,7 @@ async fn fetch_data(str_data: String, local_book: Arc<RwLock<LocalOrderBook>>) {
                 if let serde_json::Value::String(vol_str) = &bid_vec[1] {
                     volume = vol_str.parse::<f64>().unwrap();
                 }
+
                 // Удаляем запись
                 if volume == 0.0  {
                     book.snapshot.b.retain(|x| x.0 != price);
@@ -160,10 +161,12 @@ async fn fetch_data(str_data: String, local_book: Arc<RwLock<LocalOrderBook>>) {
 
     book.snapshot.b.sort_by(|x, y| y.0.total_cmp(&x.0));
 
-    let b_start = book.snapshot.b
-        .iter()
-        .position(|x| x.0 > book.snapshot.last_price)
-        .unwrap_or(book.snapshot.b.len());
+    let b_start = match book.snapshot.b.binary_search_by(|x| {
+        if x.0 > book.snapshot.last_price && book.snapshot.last_price > 0.0 { std::cmp::Ordering::Greater }
+        else { std::cmp::Ordering::Less }
+    }) {
+        Ok(pos) | Err(pos) => pos
+    };
 
     book.snapshot.b = book.snapshot.b[0..b_start].to_vec();
 

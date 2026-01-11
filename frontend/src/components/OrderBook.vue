@@ -154,8 +154,10 @@
     <div id="stakan">
         <div id="order_book" :style="isVisible">
             <div id="exchange_name">
-                <img :src="longExchangeLogo" alt="">
-                {{ longExchange }} 
+                <div class="with_img">
+                    <img :src="longExchangeLogo" alt="">
+                    <span>{{ longExchange }} </span>
+                </div>
             </div>
             <div id="order_book_element">
                 <table class="orderbook_table">
@@ -187,8 +189,10 @@
 
         <div id="order_book" :style="isVisible">
             <div id="exchange_name">
-                <img :src="shortExchangeLogo" alt="">
-                {{ shortExchange }}
+                <div class="with_img">
+                    <img :src="shortExchangeLogo" alt="">
+                    <span>{{ shortExchange }} </span>
+                </div>
             </div>
             <div id="order_book_element">
                 <table class="orderbook_table">
@@ -265,6 +269,13 @@
     #exchange_name img {
         width: var(--default-icon-size);
         height: var(--default-icon-size);
+    }
+
+    .with_img {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        align-items: center;
     }
 
     .orderbook_table {

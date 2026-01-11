@@ -43,6 +43,7 @@ enum WebsocketStatus {
     Close
 }
 
+/// Подключает и переподключает Websocket 
 pub async fn connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<LocalOrderBook>>) {
     loop {
         match __connect(ticker, channel_type, local_book.clone()).await {
@@ -75,8 +76,7 @@ async fn __connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<Loca
     };
 
     let orderbook = format!("/{}Market/level2Depth50:{}-USDT", channel_type.to_lowercase(), ticker.to_uppercase());
-    let price = format!("/market/ticker:{}-USDT", ticker.to_uppercase());
-
+    
     write.send(Message::Text(
         serde_json::json!({
             "type": "subscribe",
@@ -84,6 +84,10 @@ async fn __connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<Loca
             "response": true
         }).to_string().into()
     )).await.unwrap();
+
+
+    // Получение последней текущей цены
+    let price = format!("/market/ticker:{}-USDT", ticker.to_uppercase());
 
     write.send(Message::Text(
         serde_json::json!({
@@ -110,7 +114,6 @@ async fn __connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<Loca
                         let msg_type = v.get("type").and_then(|t| t.as_str());
 
                         if msg_type == Some("error") {
-                            // println!("{:?}", msg_type);
                             return Ok(Some(WebsocketStatus::Error));
                         }
 
@@ -180,8 +183,8 @@ async fn fetch_data(data: Snapshot, local_book: Arc<RwLock<LocalOrderBook>>) {
     *book_lock = book;
 }
 
+/// Получает временный ключ доступа к WebSocket.
 async fn get_api_key() -> Result<String> {
-    /* Получаем временный ключ доступа к Websocket */
     let url = "https://api.kucoin.com/api/v1/bullet-public";
     
     let client = reqwest::Client::new();
