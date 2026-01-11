@@ -1,10 +1,11 @@
 <script setup>
-import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
+    import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
+
     const props = defineProps({
         modelValue: Boolean
     })
 
-    const isVisible = ref("display: block;")
+    const isVisible = ref("display: none;")
     const emit = defineEmits(["update:modelValue"])
     const isWarningStatus = ref(props.modelValue)
 
@@ -19,6 +20,7 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
 
     const longLastPrice = ref(0.0)
     const longExchange = ref('')
+    const longExchangeLogo = ref('')
 
     const longArrow = computed(() => {
         if (longLastPrice.value == longFirstAskPrice.value) {
@@ -37,6 +39,7 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
 
     const shortLastPrice = ref(0.0)
     const shortExchange = ref('')
+    const shortExchangeLogo = ref('')
 
     const shortArrow = computed(() => {
         if (shortLastPrice.value == shortFirstAskPrice.value) {
@@ -52,7 +55,10 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
     ) {
         formData.value = data
         longExchange.value = formData.value.exchanges.longExchange
+        longExchangeLogo.value = `../assets/icons/${longExchange.value.toLowerCase()}_logo.svg`
+
         shortExchange.value = formData.value.exchanges.shortExchange
+        shortExchangeLogo.value = `../assets/icons/${shortExchange.value.toLowerCase()}_logo.svg`
     }
 
     function start() {
@@ -91,7 +97,6 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
             }))
 
             shortLastPrice.value = data.book2.snapshot.last_price
-
 
             // Для стрелочки
             longFirstAskPrice.value = data.book1?.snapshot?.a?.[0]?.[0];
@@ -148,7 +153,10 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
     <div class="order_book_title">Книги ордеров</div>
     <div id="stakan">
         <div id="order_book" :style="isVisible">
-            <div id="exchange_name">{{ longExchange }}</div>
+            <div id="exchange_name">
+                <img :src="longExchangeLogo" alt="">
+                {{ longExchange }} 
+            </div>
             <div id="order_book_element">
                 <table class="orderbook_table">
                     <tr>
@@ -178,7 +186,10 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
         </div>
 
         <div id="order_book" :style="isVisible">
-            <div id="exchange_name">{{ shortExchange }}</div>
+            <div id="exchange_name">
+                <img :src="shortExchangeLogo" alt="">
+                {{ shortExchange }}
+            </div>
             <div id="order_book_element">
                 <table class="orderbook_table">
                     <tr>
@@ -249,6 +260,11 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
         text-align: center;
         text-transform: capitalize;
         font-weight: 600;
+    }
+
+    #exchange_name img {
+        width: var(--default-icon-size);
+        height: var(--default-icon-size);
     }
 
     .orderbook_table {

@@ -48,7 +48,7 @@ pub async fn connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<Lo
         match __connect(ticker, channel_type, local_book.clone()).await {
             Ok(Some(WebsocketStatus::Error)) => {
                 println!("[KuCoin-Websocket] обновления Api-Key...");
-                tokio::time::sleep(Duration::from_secs(2)).await;
+                tokio::time::sleep(Duration::from_secs(1)).await;
             }
             Ok(_) => break,
             Err(e) => {
@@ -59,7 +59,7 @@ pub async fn connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<Lo
     }
 }
 
-async fn __connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<LocalOrderBook>>) -> Result<Option<(WebsocketStatus)>> {
+async fn __connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<LocalOrderBook>>) -> Result<Option<WebsocketStatus>> {
     let api_token = get_api_key().await.unwrap();
     
     let url = url::Url::parse(&format!("wss://ws-api-spot.kucoin.com?token={}", api_token)).unwrap();
@@ -101,7 +101,7 @@ async fn __connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<Loca
                 return Ok(Some(WebsocketStatus::Error));
             }
         };
-
+        
         match msg {
             Message::Text(txt) => {
                 let json = serde_json::from_str::<serde_json::Value>(&txt);
@@ -113,8 +113,14 @@ async fn __connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<Loca
                             // println!("{:?}", msg_type);
                             return Ok(Some(WebsocketStatus::Error));
                         }
+
+                        let data = serde_json::from_value::<Snapshot>(v).unwrap();
+                        let book = local_book.clone();
+
+                        fetch_data(data, book.clone()).await;
                     }
                     Err(e) => {
+                        println!("[KuCoint-Websocket]: {e}");
                         return Ok(Some(WebsocketStatus::Error));
                     }
                 }
@@ -125,48 +131,6 @@ async fn __connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<Loca
             _ => todo!()
         }
     }
-    
-    // let read_future = read.for_each(|msg| {
-    //     let value = local_book.clone();
-    //     async move {
-    //         let data = msg.unwrap();
-
-    //         match data {
-    //             Message::Text(txt) => {
-    //                 let json = serde_json::from_str::<serde_json::Value>(&txt);
-    //                 match json {
-    //                     Ok(v) => {
-    //                         let msg_type = v.get("type").and_then(|t| t.as_str());
-
-    //                         if msg_type == Some("error") {
-    //                             println!("{:?}", msg_type);
-    //                             Some(WebsocketStatus::Error);
-    //                         }
-    //                     }
-    //                     Err(e) => {
-    //                         println!("Error: {e}");
-    //                         Some(WebsocketStatus::Error);
-    //                     }
-    //                 }
-    //             }
-    //             Message::Close(_) => {
-    //                 return Some(WebsocketStatus::Error);
-    //             }
-    //             Message::Binary(items) => todo!(),
-    //             Message::Ping(items) => todo!(),
-    //             Message::Pong(items) => todo!(),
-    //             Message::Frame(frame) => todo!(),
-    //         }
-            
-    //         // let data_string = String::from_utf8(data.to_vec()).unwrap();
-    //         // let data = serde_json::from_str::<Snapshot>(&data_string).unwrap();
-    //         // let book = value.clone();
-
-    //         // fetch_data(data, book.clone()).await;
-    //     }
-    // });
-
-    // read_future.await;
 
     Ok(Some(WebsocketStatus::Success))
 }
@@ -179,6 +143,9 @@ async fn fetch_data(data: Snapshot, local_book: Arc<RwLock<LocalOrderBook>>) {
 
     if let Some(d) = data.data {
         if let Some(asks) = d.asks {
+
+            book.snapshot.a.clear();
+
             for ask in asks {
                 let price = ask[0].parse::<f64>().unwrap();
                 let volume = ask[1].parse::<f64>().unwrap();
@@ -188,6 +155,9 @@ async fn fetch_data(data: Snapshot, local_book: Arc<RwLock<LocalOrderBook>>) {
         }
 
         if let Some(bids) = d.bids {
+
+            book.snapshot.b.clear();
+            
             for bid in bids {
                 let price = bid[0].parse::<f64>().unwrap();
                 let volume = bid[1].parse::<f64>().unwrap();
