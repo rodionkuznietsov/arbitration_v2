@@ -140,6 +140,8 @@ function stop() {
     --color-error: #F6465D;
     --default-font-color: #EAECEF;
     --default-font-size: 16px;
+    --default-padding: 8px;
+    --default-icon-size: 16px;
   }
  
   #form {
@@ -150,7 +152,7 @@ function stop() {
     justify-content: space-around;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     border-radius: 8px;
-    padding: 10px;
+    padding: var(--default-padding);
     font-size: var(--default-font-size);
   }
 
@@ -163,8 +165,8 @@ function stop() {
   }
 
   #form_label-with_icon img {
-    width: 16px;
-    height: 16px;
+    width: var(--default-icon-size);
+    height: var(--default-icon-size);
   }
 
   .img_reverse {
@@ -178,7 +180,7 @@ function stop() {
 
   .form_input {
     width: 100%;
-    padding: 8px;
+    padding: var(--default-padding);
     border: none;
     color: var(--default-font-color);
     border-radius: 8px;
@@ -198,7 +200,7 @@ function stop() {
     display: flex;
     flex-direction: column;
     margin-top: 10px;
-    padding: 8px;
+    padding: var(--default-padding);
     overflow-y: visible;
     margin-bottom: 70px;
   }
@@ -210,7 +212,7 @@ function stop() {
 
   #start, #stop {
     flex: 1;
-    padding: 8px;
+    padding: var(--default-padding);
     border: none;
     color: var(--default-font-color);
     border-radius: 8px;

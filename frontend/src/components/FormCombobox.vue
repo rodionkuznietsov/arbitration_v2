@@ -74,7 +74,7 @@
 <style scoped>
   #combobox { 
     width: 100%;
-    padding: 8px;
+    padding: var(--default-padding);
     border: none;
     color: var(--default-font-color);
     border-radius: 8px;
@@ -113,7 +113,7 @@
     position: absolute;
     background-color: transparent;
     border-radius: 8px;
-    padding: 8px;
+    padding: var(--default-padding);
     z-index: 9999;
     box-sizing: border-box;
     border: 1px solid rgba(48, 60, 81, 0.6);
@@ -124,11 +124,11 @@
 
   #combobox_element {
     cursor: pointer;
-    padding: 8px;
     list-style: none;
     margin: 0;
     text-align: left;
     border-radius: 8px;
+    padding: var(--default-padding);
   }
 
   #combobox_element:hover {

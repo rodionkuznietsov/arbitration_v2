@@ -231,7 +231,6 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
 
     #order_book_element {
         width: 100%;
-        padding: 8px;
         border: 1px solid transparent;
         font-weight: 600;
         border-radius: 8px;

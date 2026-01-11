@@ -47,7 +47,7 @@
     top: 0;
     left: 0;
     right: 0;
-    padding: 8px;
+    padding: var(--default-padding);
   }
   
   #status {
@@ -57,8 +57,8 @@
   }
   
   #status_circle {
-    width: 16px;
-    height: 16px;
+    width: var(--default-icon-size);
+    height: var(--default-icon-size);
     border-radius: 50%;
   }
 
@@ -91,8 +91,8 @@
   }
 
   #header_icon {
-    width: 16px;
-    height: 16px;
+    width: var(--default-icon-size);
+    height: var(--default-icon-size);
     cursor: pointer;
   } 
 </style>

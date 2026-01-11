@@ -52,7 +52,7 @@
         position: absolute;
         background-color: rgba(48, 60, 81, 0.6);
         border-radius: 8px;
-        padding: 8px;
+        padding: var(--default-padding);
         z-index: 9999;
         box-sizing: border-box;
         border: 1px solid rgba(48, 60, 81, 0.6);
@@ -63,8 +63,8 @@
     }
 
     .status_img {
-        width: 16px;
-        height: 16px;
+        width: var(--default-icon-size);
+        height: var(--default-icon-size);
         margin-top: -3px;
         margin-left: -3px;
         transition: all 0.5s ease

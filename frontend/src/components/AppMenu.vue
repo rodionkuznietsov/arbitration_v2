@@ -40,7 +40,7 @@
         -webkit-backdrop-filter: blur(8px);
         width: 100%;
         height: 100%;
-        padding: 8px;
+        padding: var(--default-padding);
         box-sizing: border-box;
         justify-content: center;
         border-radius: 30px;
@@ -51,12 +51,12 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        padding: 8px;
+        padding: var(--default-padding);
     }
 
     #menu_element, img {
-        width: 16px;    
-        height: 16px;
+        width: var(--default-icon-size);    
+        height: var(--default-icon-size);
     }
 
     #menu_element:hover {
