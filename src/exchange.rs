@@ -5,17 +5,21 @@ use crate::exchanges::{orderbook::LocalOrderBook, *};
 
 pub enum Exchange {
     Bybit,
-    Binance
+    Binance,
+    KuCoin
 }
 
 impl Exchange {
-    pub async fn connect(&self, ticker: &str, order_type: &str, book: Arc<RwLock<LocalOrderBook>>) {
+    pub async fn connect(&self, ticker: &str, channel_type: &str, book: Arc<RwLock<LocalOrderBook>>) {
         match self {
             Exchange::Binance => {
-                binance::connect(ticker, order_type, book.clone()).await;
+                binance::connect(ticker, channel_type, book.clone()).await;
             }
             Exchange::Bybit => {
-                bybit::connect(ticker, order_type, book.clone()).await;
+                bybit::connect(ticker, channel_type, book.clone()).await;
+            }
+            Exchange::KuCoin => {
+                kucoin::connect(ticker, channel_type, book.clone()).await;
             }
         }
     }

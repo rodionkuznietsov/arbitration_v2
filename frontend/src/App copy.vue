@@ -143,6 +143,7 @@ function stop() {
   }
  
   #form {
+    margin-top: 20px;
     display: grid;
     gap: 10px;
     width: 100%;
@@ -153,18 +154,19 @@ function stop() {
     padding: 10px;
     font-size: var(--default-font-size);
   }
-
+/*
   #form_label-with_icon {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    gap: 5px;
+    gap: 10px;
   }
 
   #form_label-with_icon img {
     width: 16px;
     height: 16px;
+    margin-top: 12px;
   }
 
   .img_reverse {
@@ -173,6 +175,7 @@ function stop() {
 
   #form-column{
     display: flex;
+    gap: 5px;
     flex-direction: column;
   }
 
@@ -192,6 +195,13 @@ function stop() {
   .form-group {
     display: flex;
     flex-direction: column;
+  }
+
+  #form_label {
+    display: flex;
+    justify-content: flex-start;
+    font-size: var(--default-font-size);
+    margin-top: 10px;
   }
 
   #footer {
@@ -215,18 +225,18 @@ function stop() {
     color: var(--default-font-color);
     border-radius: 8px;
     font-size: var(--default-font-size);
-    transition: all 0.25s;
+    transition: all 0.6s;
   }
 
   #start:hover, #stop:hover {
     filter: opacity(75%);
     cursor: pointer;
-    transition: all 0.25s;
+    transition: all 0.6s;
   }
 
   #start {
     background-color: var(--color-success);
-  } 
+  } */
 
   #stop {
     background-color: var(--color-error);
@@ -246,5 +256,6 @@ function stop() {
   body {
     background-color: var(--basic-Bg);
     margin-bottom: 10px;
+    color: var(--default-font-color);
   }
 </style>

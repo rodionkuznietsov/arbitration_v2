@@ -49,14 +49,13 @@
     right: 0;
     padding: 8px;
   }
-
+  
   #status {
     display: flex;
     gap: 10px;
     align-items: center;
-    color: var(--default-font-color);
   }
-
+  
   #status_circle {
     width: 16px;
     height: 16px;
@@ -95,5 +94,5 @@
     width: 16px;
     height: 16px;
     cursor: pointer;
-  }
+  } 
 </style>

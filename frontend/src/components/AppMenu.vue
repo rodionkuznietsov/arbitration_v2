@@ -22,7 +22,7 @@
         display: flex;
         position: fixed;
         bottom: 10px;
-        background-color: rgba(255, 255, 255, 0.05);
+        background-color: rgba(48, 60, 81, 0.404);
         left: 0;
         right: 0;
         margin-left: 60px;
@@ -34,7 +34,7 @@
     #menu_overlay {
         display: flex;
         gap: 50px;
-        background-color: rgba(255, 255, 255, 0.02);
+        background-color: #303c5127;
         position: relative;
         backdrop-filter: blur(8px); 
         -webkit-backdrop-filter: blur(8px);

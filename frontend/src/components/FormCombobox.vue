@@ -78,7 +78,7 @@
     border: none;
     color: var(--default-font-color);
     border-radius: 8px;
-    font-size: 16px;
+    font-size: var(--default-font-size);
     margin-top: 10px;
     background-color: #303c5199;
     outline: none;
@@ -137,5 +137,5 @@
     filter: opacity(0.5) contrast(2px);
     transition: background 0.25s ease;
     color: #121212;
-  } 
+  }  
 </style>

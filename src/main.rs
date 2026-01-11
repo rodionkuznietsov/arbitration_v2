@@ -1,5 +1,7 @@
 use std::{time::Duration};
 
+use crate::exchanges::kucoin;
+
 mod exchanges;
 mod exchange;
 mod websocket;

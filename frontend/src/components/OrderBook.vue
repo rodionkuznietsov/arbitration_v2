@@ -4,7 +4,7 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
         modelValue: Boolean
     })
 
-    const isVisible = ref("display: none;")
+    const isVisible = ref("display: block;")
     const emit = defineEmits(["update:modelValue"])
     const isWarningStatus = ref(props.modelValue)
 
@@ -119,6 +119,12 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
             websoket.close()
             websoket = null
         }
+        longAsks.value = []
+        longBids.value = []
+        
+        shortAsks.value = []
+        shortBids.value = []
+        
         isVisible.value = "display: none;"
     }
 
@@ -155,7 +161,7 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
                     </tr>
 
                     <tr>
-                        <td colspan="2" class="center_label" tabindex="3">
+                        <td colspan="2" class="mid_price" tabindex="3">
                             <div class="with_arrow" :class="longArrow == '⬇' ? 'down' : 'up'">
                                 <div>{{ longArrow }} </div>
                                 <div>{{ formatCurrency(longLastPrice) }}</div>
@@ -185,7 +191,7 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
                     </tr>
 
                     <tr>
-                        <td colspan="2" class="center_label" tabindex="3">
+                        <td colspan="2" class="mid_price" tabindex="3">
                             <div class="with_arrow" :class="shortArrow == '⬇' ? 'down' : 'up'">
                                 <div>{{ shortArrow }} </div>
                                 <div>{{ formatCurrency(shortLastPrice) }}</div>
@@ -205,12 +211,10 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
 
 <style scoped>
     .order_book_title {
-        font-size: 16px;
         text-align: center;
         margin-top: 10px;
-        color: var(--default-font-color);
     }
-
+ 
     #stakan {
         display: flex;
         gap: 10px;
@@ -229,10 +233,8 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
         width: 100%;
         padding: 8px;
         border: 1px solid transparent;
-        color: var(--default-font-color);
         font-weight: 600;
         border-radius: 8px;
-        font-size: 16px;
         backdrop-filter: blur(8px); 
         -webkit-backdrop-filter: blur(8px);
         outline: none;
@@ -242,13 +244,12 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
         overflow-y: auto;
         display: flex;
     }
-
+    
     #exchange_name {
         margin-top: 10px;
         text-align: center;
         text-transform: capitalize;
         font-weight: 600;
-        font-size: 16px;
     }
 
     .orderbook_table {
@@ -261,7 +262,7 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
         margin-top: 10px;
     }
 
-    .buy_label, #sell_label {
+    .buy_label, .sell_label {
         margin-top: 10px;
     }
 
@@ -270,25 +271,15 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
     }
 
     .sell_label, .down {
-        color: #F6465D;
+        color: var(--color-error);
     }
 
-    #mid_price {
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-
-    #separator {
-        margin-bottom: 30px;
-    }
-
-    .center_label {
+    .mid_price {
         text-align: center;
-        color: rgb(151, 15, 15);
         border-top: 1px dashed var(--default-font-color);
         border-bottom: 1px dashed var(--default-font-color);
     }
-    
+
     .with_arrow {
         display: flex;
         justify-content: center;
