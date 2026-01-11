@@ -6,7 +6,7 @@
       <div id="form-column">
         <div class="form-group">
           <label for="ticker" id="form_label">Тикер (BTC):</label>
-          <input id="ticker" name="ticker" type="text" value="BTC" class="form_input" v-model="ticker">
+          <input id="ticker" name="ticker" type="text" value="BTC" class="form_input" v-model="ticker" @input="filterInput">
         </div>
 
         <div class="form-group">
@@ -91,10 +91,11 @@ const shortExchange = ref("Bybit")
 const shortOrderType = ref("Спот")
 const ticker = ref("BTC")
 
+function filterInput(event) {
+  ticker.value = event.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase()
+}
+
 function start() {
-
-  console.log(ticker.value)
-
   const data = {
     exchanges: {
       longExchange: longExchange.value,
