@@ -142,6 +142,7 @@ function stop() {
     --default-font-size: 16px;
     --default-padding: 8px;
     --default-icon-size: 16px;
+    --default-border-radius: 8px;
   }
  
   #form {
@@ -151,7 +152,7 @@ function stop() {
     box-sizing: border-box;
     justify-content: space-around;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    border-radius: 8px;
+    border-radius: var(--default-border-radius);
     padding: var(--default-padding);
     font-size: var(--default-font-size);
   }

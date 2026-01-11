@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use futures_util::{StreamExt, SinkExt};
-use anyhow::Result;
+use anyhow::{Result};
 
 use crate::exchanges::orderbook::LocalOrderBook;
 
@@ -36,24 +36,46 @@ struct SnapshotData {
     price: Option<String>
 }
 
+#[derive(Debug, PartialEq)]
+enum WebsocketStatus {
+    Error,
+    Success,
+    Close
+}
+
 pub async fn connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<LocalOrderBook>>) {
+    loop {
+        match __connect(ticker, channel_type, local_book.clone()).await {
+            Ok(Some(WebsocketStatus::Error)) => {
+                println!("[KuCoin-Websocket] обновления Api-Key...");
+                tokio::time::sleep(Duration::from_secs(2)).await;
+            }
+            Ok(_) => break,
+            Err(e) => {
+                println!("{:?}", e);
+                break;
+            }
+        }
+    }
+}
+
+async fn __connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<LocalOrderBook>>) -> Result<Option<(WebsocketStatus)>> {
     let api_token = get_api_key().await.unwrap();
     
     let url = url::Url::parse(&format!("wss://ws-api-spot.kucoin.com?token={}", api_token)).unwrap();
     let (ws_stream, _) = connect_async(url.to_string()).await.expect("[KuCoin] Failed to connect");
-    let (mut write, read) = ws_stream.split();
+    let (mut write, mut read) = ws_stream.split();
 
     println!("🌐 [KuCoin-Websocket] is running");
 
-    let channel_type = {
-        if channel_type == "фьючерс" {
-            "futures";
-        }
+    let channel_type = if channel_type == "фьючерс" {
+        "futures"
+    } else {
         "spot"
     };
 
     let orderbook = format!("/{}Market/level2Depth50:{}-USDT", channel_type.to_lowercase(), ticker.to_uppercase());
-    // let price = format!("/market/ticker:{}-USDT", ticker.to_uppercase());
+    let price = format!("/market/ticker:{}-USDT", ticker.to_uppercase());
 
     write.send(Message::Text(
         serde_json::json!({
@@ -66,52 +88,87 @@ pub async fn connect(ticker: &str, channel_type: &str, local_book: Arc<RwLock<Lo
     write.send(Message::Text(
         serde_json::json!({
             "type": "subscribe",
-            "topic": "/market/ticker:BTC-USDT",
+            "topic": price,
             "response": true
         }).to_string()
     )).await.unwrap();
 
-    let read_future = read.for_each(|msg| {
-        let value = local_book.clone();
-        async move {
-            let data = msg.unwrap();
+    while let Some(msg) = read.next().await {
+        let msg = match msg {
+            Ok(m) => m,
+            Err(e) => {
+                println!("[KuCoin-Websocket] read error: {e}");
+                return Ok(Some(WebsocketStatus::Error));
+            }
+        };
 
-            match data {
-                Message::Text(txt) => {
-                    let json = serde_json::from_str::<serde_json::Value>(&txt);
-                    match json {
-                        Ok(v) => {
-                            let msg_type = v.get("type").and_then(|t| t.as_str());
+        match msg {
+            Message::Text(txt) => {
+                let json = serde_json::from_str::<serde_json::Value>(&txt);
+                match json {
+                    Ok(v) => {
+                        let msg_type = v.get("type").and_then(|t| t.as_str());
 
-                            if msg_type == Some("error") {
-                                println!("{:?}", msg_type);
-                                return;
-                            }
-                        }
-                        Err(e) => {
-                            println!("Error: {e}")
+                        if msg_type == Some("error") {
+                            // println!("{:?}", msg_type);
+                            return Ok(Some(WebsocketStatus::Error));
                         }
                     }
+                    Err(e) => {
+                        return Ok(Some(WebsocketStatus::Error));
+                    }
                 }
-                Message::Close(_) => {
-                    return;
-                }
-                _ => {
-
-                }
+            },
+            Message::Close(_c) => {
+                return Ok(Some(WebsocketStatus::Close));
             }
-            
-            // let data_string = String::from_utf8(data.to_vec()).unwrap();
-            // let data = serde_json::from_str::<Snapshot>(&data_string).unwrap();
-            // let book = value.clone();
-
-            // fetch_data(data, book.clone()).await;
+            _ => todo!()
         }
-    });
+    }
+    
+    // let read_future = read.for_each(|msg| {
+    //     let value = local_book.clone();
+    //     async move {
+    //         let data = msg.unwrap();
 
-    read_future.await;
+    //         match data {
+    //             Message::Text(txt) => {
+    //                 let json = serde_json::from_str::<serde_json::Value>(&txt);
+    //                 match json {
+    //                     Ok(v) => {
+    //                         let msg_type = v.get("type").and_then(|t| t.as_str());
 
-    println!("Is returned");
+    //                         if msg_type == Some("error") {
+    //                             println!("{:?}", msg_type);
+    //                             Some(WebsocketStatus::Error);
+    //                         }
+    //                     }
+    //                     Err(e) => {
+    //                         println!("Error: {e}");
+    //                         Some(WebsocketStatus::Error);
+    //                     }
+    //                 }
+    //             }
+    //             Message::Close(_) => {
+    //                 return Some(WebsocketStatus::Error);
+    //             }
+    //             Message::Binary(items) => todo!(),
+    //             Message::Ping(items) => todo!(),
+    //             Message::Pong(items) => todo!(),
+    //             Message::Frame(frame) => todo!(),
+    //         }
+            
+    //         // let data_string = String::from_utf8(data.to_vec()).unwrap();
+    //         // let data = serde_json::from_str::<Snapshot>(&data_string).unwrap();
+    //         // let book = value.clone();
+
+    //         // fetch_data(data, book.clone()).await;
+    //     }
+    // });
+
+    // read_future.await;
+
+    Ok(Some(WebsocketStatus::Success))
 }
 
 async fn fetch_data(data: Snapshot, local_book: Arc<RwLock<LocalOrderBook>>) {
@@ -154,6 +211,7 @@ async fn fetch_data(data: Snapshot, local_book: Arc<RwLock<LocalOrderBook>>) {
 }
 
 async fn get_api_key() -> Result<String> {
+    /* Получаем временный ключ доступа к Websocket */
     let url = "https://api.kucoin.com/api/v1/bullet-public";
     
     let client = reqwest::Client::new();
@@ -164,7 +222,7 @@ async fn get_api_key() -> Result<String> {
     let data = response.json::<ApiKeyResponse>().await?;
     let api_key = data.data.token;
 
-    println!("[KuCoin] Api Key успешно получен.");
+    println!("[KuCoin-Rest] Api-Key успешно получен.");
 
     Ok(api_key)
 }

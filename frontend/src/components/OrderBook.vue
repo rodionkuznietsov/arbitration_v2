@@ -18,7 +18,7 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
     const longFirstBidPrice = ref(0.0)
 
     const longLastPrice = ref(0.0)
-    const longExchange = ref('Binance')
+    const longExchange = ref('')
 
     const longArrow = computed(() => {
         if (longLastPrice.value == longFirstAskPrice.value) {
@@ -36,7 +36,7 @@ import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
     const shortFirstBidPrice = ref(0.0)
 
     const shortLastPrice = ref(0.0)
-    const shortExchange = ref('Bybit')
+    const shortExchange = ref('')
 
     const shortArrow = computed(() => {
         if (shortLastPrice.value == shortFirstAskPrice.value) {
