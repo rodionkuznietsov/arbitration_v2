@@ -50,6 +50,8 @@
         return '⬆'
     })
 
+    const currentTicker = ref('')
+
     function exchanges(
         data
     ) {
@@ -59,6 +61,7 @@
 
         shortExchange.value = formData.value.exchanges.shortExchange
         shortExchangeLogo.value = `../assets/icons/${shortExchange.value.toLowerCase()}_logo.svg`
+        currentTicker.value = formData.value.ticker
     }
 
     function start() {
@@ -156,7 +159,8 @@
             <div id="exchange_name">
                 <div class="with_img">
                     <img :src="longExchangeLogo" alt="">
-                    <span>{{ longExchange }} </span>
+                    <span>{{ longExchange }}</span>
+                    <span class="ticker_name">{{ currentTicker }}</span>
                 </div>
             </div>
             <div id="order_book_element">
@@ -191,7 +195,8 @@
             <div id="exchange_name">
                 <div class="with_img">
                     <img :src="shortExchangeLogo" alt="">
-                    <span>{{ shortExchange }} </span>
+                    <span>{{ shortExchange }}</span>
+                    <span class="ticker_name">{{ currentTicker }}</span>
                 </div>
             </div>
             <div id="order_book_element">
@@ -276,6 +281,14 @@
         justify-content: center;
         gap: 10px;
         align-items: center;
+    }
+
+    .ticker_name {
+        text-transform: uppercase;
+        font-size: 10px;
+        margin-top: -5px;
+        margin-left: -5px;
+        color: #d8d8d8;
     }
 
     .orderbook_table {
