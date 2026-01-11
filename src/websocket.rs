@@ -69,6 +69,7 @@ async fn handle_connection(
                             "binance" => Exchange::Binance,
                             "bybit" => Exchange::Bybit,
                             "kucoin" => Exchange::KuCoin,
+                            "binx" => Exchange::BinX,
                             _ => panic!("unknown exchange")
                         };
 
@@ -84,6 +85,7 @@ async fn handle_connection(
                             "binance" => Exchange::Binance,
                             "bybit" => Exchange::Bybit,
                             "kucoin" => Exchange::KuCoin,
+                            "binx" => Exchange::BinX,
                             _ => panic!("unknown exchange")
                         };
                         

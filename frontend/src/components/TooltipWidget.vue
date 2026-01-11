@@ -51,7 +51,7 @@
     #tooltip_overlay {
         position: absolute;
         background-color: rgba(48, 60, 81, 0.6);
-        border-radius: 8px;
+        border-radius: var(--default-border-radius);
         padding: var(--default-padding);
         z-index: 9999;
         box-sizing: border-box;

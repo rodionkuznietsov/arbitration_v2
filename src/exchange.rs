@@ -6,7 +6,8 @@ use crate::exchanges::{orderbook::LocalOrderBook, *};
 pub enum Exchange {
     Bybit,
     Binance,
-    KuCoin
+    KuCoin,
+    BinX
 }
 
 impl Exchange {
@@ -20,6 +21,9 @@ impl Exchange {
             }
             Exchange::KuCoin => {
                 kucoin::connect(ticker, channel_type, book.clone()).await;
+            }
+            Exchange::BinX => {
+                binx::connect(ticker, channel_type, book.clone()).await;
             }
         }
     }

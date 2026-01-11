@@ -61,7 +61,7 @@
 
     #menu_element:hover {
         filter: opacity(0.7);
-        border-radius: 8px;
+        border-radius: var(--default-border-radius);
         cursor: pointer;
     }
 </style>

@@ -72,7 +72,7 @@ import FormCombobox from './components/FormCombobox.vue';
 import OrderBook from './components/OrderBook.vue';
 import AppMenu from './components/AppMenu.vue';
 
-const exchanges = ["Bybit", "Binance", "KuCoin"]
+const exchanges = ["Bybit", "Binance", "KuCoin", "BinX"]
 const market_types = ["Спот", "Фьючерс"]
 const isWarning = ref(false)
 
@@ -185,7 +185,7 @@ function stop() {
     padding: var(--default-padding);
     border: none;
     color: var(--default-font-color);
-    border-radius: 8px;
+    border-radius: var(--default-border-radius);
     font-size: var(--default-font-size);
     margin-top: 10px;
     background-color: #303c5199;
@@ -218,7 +218,7 @@ function stop() {
     padding: var(--default-padding);
     border: none;
     color: var(--default-font-color);
-    border-radius: 8px;
+    border-radius: var(--default-border-radius);
     font-size: var(--default-font-size);
     transition: all 0.25s;
   }

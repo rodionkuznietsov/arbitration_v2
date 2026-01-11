@@ -245,7 +245,7 @@
         width: 100%;
         box-sizing: border-box;
         position: relative;
-        border-radius: 8px;
+        border-radius: var(--default-border-radius);
         background-color: #303c5199;
     }
 
@@ -253,7 +253,7 @@
         width: 100%;
         border: 1px solid transparent;
         font-weight: 600;
-        border-radius: 8px;
+        border-radius: var(--default-border-radius);
         backdrop-filter: blur(8px); 
         -webkit-backdrop-filter: blur(8px);
         outline: none;

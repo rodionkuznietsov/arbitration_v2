@@ -77,7 +77,7 @@
     padding: var(--default-padding);
     border: none;
     color: var(--default-font-color);
-    border-radius: 8px;
+    border-radius: var(--default-border-radius);
     font-size: var(--default-font-size);
     margin-top: 10px;
     background-color: #303c5199;
@@ -112,7 +112,7 @@
   .combobox-list {
     position: absolute;
     background-color: transparent;
-    border-radius: 8px;
+    border-radius: var(--default-border-radius);
     padding: var(--default-padding);
     z-index: 9999;
     box-sizing: border-box;
@@ -127,7 +127,7 @@
     list-style: none;
     margin: 0;
     text-align: left;
-    border-radius: 8px;
+    border-radius: var(--default-border-radius);
     padding: var(--default-padding);
   }
 

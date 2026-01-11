@@ -3,3 +3,4 @@ pub mod mexc;
 pub mod orderbook;
 pub mod binance;
 pub mod kucoin;
+pub mod binx;
