@@ -126,7 +126,7 @@ async fn fetch_data(data: Snapshot, local_book: Arc<RwLock<LocalOrderBook>>) {
 
     // Определяем стартовую позицию
     let astart = match book.snapshot.a.binary_search_by(|x| {
-        if x.0 >= book.snapshot.last_price && book.snapshot.last_price > 0.0 { 
+        if x.0 > book.snapshot.last_price && book.snapshot.last_price > 0.0 { 
             std::cmp::Ordering::Greater
          }
         else { std::cmp::Ordering::Less }
