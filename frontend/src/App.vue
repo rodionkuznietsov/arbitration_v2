@@ -190,6 +190,7 @@ function stop() {
     background-color: #303c5199;
     outline: none;
     box-sizing: border-box;
+    text-transform: uppercase;
   }
 
   .form-group {

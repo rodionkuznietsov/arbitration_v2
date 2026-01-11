@@ -152,12 +152,14 @@ async fn fetch_data(str_data: String, local_book: Arc<RwLock<LocalOrderBook>>) {
 
     book.snapshot.a.sort_by(|x, y| y.0.total_cmp(&x.0));
 
-    let start = book.snapshot.a
-        .iter()
-        .position(|x| x.0 > book.snapshot.last_price)
-        .unwrap_or(book.snapshot.a.len());
+    // let start = match book.snapshot.a.binary_search_by(|x| {
+    //     if x.0 > book.snapshot.last_price && book.snapshot.last_price > 0.0 { std::cmp::Ordering::Greater }
+    //     else { std::cmp::Ordering::Less }
+    // }) {
+    //     Ok(pos) | Err(pos) => pos
+    // };
 
-    book.snapshot.a = book.snapshot.a[start+1..].to_vec();
+    // book.snapshot.a = book.snapshot.a[start..].to_vec();
 
     book.snapshot.b.sort_by(|x, y| y.0.total_cmp(&x.0));
 
