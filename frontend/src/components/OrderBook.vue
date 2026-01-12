@@ -21,6 +21,7 @@
     const longLastPrice = ref(0.0)
     const longExchange = ref('')
     const longExchangeLogo = ref('')
+    const longOrderType = ref('')
 
     const longArrow = computed(() => {
         if (longLastPrice.value == longFirstAskPrice.value) {
@@ -40,6 +41,7 @@
     const shortLastPrice = ref(0.0)
     const shortExchange = ref('')
     const shortExchangeLogo = ref('')
+    const shortOrderType = ref('')
 
     const shortArrow = computed(() => {
         if (shortLastPrice.value == shortFirstAskPrice.value) {
@@ -58,10 +60,12 @@
         formData.value = data
         longExchange.value = formData.value.exchanges.longExchange
         longExchangeLogo.value = `../assets/icons/${longExchange.value.toLowerCase()}_logo.svg`
+        longOrderType.value = formData.value.types.longType
 
         shortExchange.value = formData.value.exchanges.shortExchange
         shortExchangeLogo.value = `../assets/icons/${shortExchange.value.toLowerCase()}_logo.svg`
         currentTicker.value = formData.value.ticker
+        shortOrderType.value = formData.value.types.shortType
     }
 
     function start() {
@@ -160,7 +164,7 @@
                 <div class="with_img">
                     <img :src="longExchangeLogo" alt="">
                     <span>{{ longExchange }}</span>
-                    <span class="ticker_name">{{ currentTicker }}</span>
+                    <span class="ticker_name">{{ currentTicker }} - {{ longOrderType }}</span>
                 </div>
             </div>
             <div id="order_book_element">
@@ -196,7 +200,7 @@
                 <div class="with_img">
                     <img :src="shortExchangeLogo" alt="">
                     <span>{{ shortExchange }}</span>
-                    <span class="ticker_name">{{ currentTicker }}</span>
+                    <span class="ticker_name">{{ currentTicker }} - {{ shortOrderType }}</span>
                 </div>
             </div>
             <div id="order_book_element">
