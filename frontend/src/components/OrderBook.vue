@@ -81,36 +81,38 @@
         websoket.onmessage = (event) => {
             const data = JSON.parse(event.data)
 
-            longAsks.value = data.book1.snapshot.a.map(x => ({
+            console.log(data.long)
+
+            longAsks.value = data.long?.a.map(x => ({
                 price: x[0],
                 volume: x[1],
             }))
 
-            longBids.value = data.book1.snapshot.b.map(x => ({
+            longBids.value = data.long?.b.map(x => ({
                 price: x[0],
                 volume: x[1],
             }))
 
-            longLastPrice.value = data.book1.snapshot.last_price
+            longLastPrice.value = data.long?.last_price
 
-            shortAsks.value = data.book2.snapshot.a.map(x => ({
+            shortAsks.value = data.book2?.a.map(x => ({
                 price: x[0],
                 volume: x[1],
             }))
 
-            shortBids.value = data.book2.snapshot.b.map(x => ({
+            shortBids.value = data.book2?.b.map(x => ({
                 price: x[0],
                 volume: x[1],
             }))
 
-            shortLastPrice.value = data.book2.snapshot.last_price
+            shortLastPrice.value = data.book2?.last_price
 
             // Для стрелочки
-            longFirstAskPrice.value = data.book1?.snapshot?.a?.[0]?.[0];
-            longFirstBidPrice.value = data.book1?.snapshot?.b?.[0]?.[0];
+            longFirstAskPrice.value = data.book1?.a?.[0]?.[0];
+            longFirstBidPrice.value = data.book1?.b?.[0]?.[0];
 
-            shortFirstAskPrice.value = data.book2?.snapshot?.a[0]?.[0];
-            shortFirstBidPrice.value = data.book2?.snapshot?.b?.[0]?.[0];
+            shortFirstAskPrice.value = data.book2?.a[0]?.[0];
+            shortFirstBidPrice.value = data.book2?.b?.[0]?.[0];
         }
 
         websoket.onopen = () => {
@@ -148,7 +150,7 @@
         return new Intl.NumberFormat(
             "en-US", {
                 minimumFractionDigits: 2,
-                maximumFractionDigits: 3,
+                maximumFractionDigits: 10,
             }
         ).format(value)
     }
@@ -173,7 +175,7 @@
                         <th>Цена</th>
                         <th>Обьем $</th>
                     </tr>
-                    <tr v-for="ask in longAsks.splice(-6)" :key="ask">
+                    <tr v-for="ask in longAsks" :key="ask">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
                         <td class="sell_label"> {{ formatCurrency(ask.price *  ask.volume) }} </td>
                     </tr>
@@ -187,7 +189,7 @@
                         </td>
                     </tr>
 
-                    <tr v-for="bid in longBids.splice(0, 6)" :key="bid">
+                    <tr v-for="bid in longBids" :key="bid">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
                         <td class="buy_label"> {{ formatCurrency(bid.price *  bid.volume) }} </td>
                     </tr>
@@ -209,7 +211,7 @@
                         <th>Цена</th>
                         <th>Обьем $</th>
                     </tr>
-                    <tr v-for="ask in shortAsks.splice(-6)" :key="ask">
+                    <tr v-for="ask in shortAsks" :key="ask">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
                         <td class="sell_label"> {{ formatCurrency(ask.price *  ask.volume) }} </td>
                     </tr>
@@ -223,7 +225,7 @@
                         </td>
                     </tr>
 
-                    <tr v-for="bid in shortBids.splice(0, 6)" :key="bid">
+                    <tr v-for="bid in shortBids" :key="bid">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
                         <td class="buy_label"> {{ formatCurrency(bid.price *  bid.volume) }} </td>
                     </tr>

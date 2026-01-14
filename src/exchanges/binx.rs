@@ -3,7 +3,7 @@ use std::{io::Read, sync::Arc};
 use flate2::read::MultiGzDecoder;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
+use tokio::{sync::RwLock};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 use crate::exchanges::orderbook::LocalOrderBook;
@@ -31,16 +31,12 @@ pub async fn connect(ticker: &str, _channel_type: &str, local_book: Arc<RwLock<L
 
     println!("🌐 [BinX-Websocket] is running");
 
-    let ticker = {
-        if ticker.to_lowercase() == "ton" {
-            "toncoin".to_string()
-        } else {
-            ticker.to_string()
-        }
+    let ticker = match ticker.to_lowercase().as_str() {
+        "ton" => "toncoin",
+        _ => ticker
     };
 
     let orderbook = format!("{}-USDT@depth50", ticker.to_uppercase());
-
     write.send(Message::Text(
         serde_json::json!({
             "id": "e745cd6d-d0f6-4a70-8d5a-043e4c741b40",
@@ -57,25 +53,27 @@ pub async fn connect(ticker: &str, _channel_type: &str, local_book: Arc<RwLock<L
             "dataType": price
         }).to_string().into()
     )).await.unwrap();
-
+    
     let read_future = read.for_each(|msg| async {
         let data = msg.unwrap();
         let book = local_book.clone();
-        match data {
-            Message::Text(_) => {}
-            Message::Binary(binary) => {
-                let mut d = MultiGzDecoder::new(&*binary);
-                let mut s = String::new();
-                d.read_to_string(&mut s).unwrap();
 
-                let data = serde_json::from_str::<Snapshot>(&s).unwrap();
-                
-                fetch_data(data.clone(), book.clone()).await;
+        tokio::spawn(async move {
+            match data {
+                Message::Binary(binary) => {
+                    let mut d = MultiGzDecoder::new(&*binary);
+                    let mut s = String::new();
+                    d.read_to_string(&mut s).unwrap();
+
+                    let data = serde_json::from_str::<Snapshot>(&s).unwrap();
+                    
+                    fetch_data(data.clone(), book.clone()).await;
+                }
+                _ => {}
             }
-            _ => {}
-        }
+        }).await.unwrap();
     });
-
+    
     read_future.await;
 }
 
@@ -119,11 +117,9 @@ async fn fetch_data(data: Snapshot, local_book: Arc<RwLock<LocalOrderBook>>) {
         }
     }
 
-    // Меняем уровень ask
-
     // Сортирируем от большого к низкому
     book.snapshot.a.sort_by(|x, y| x.0.total_cmp(&y.0));
-
+    
     // Определяем стартовую позицию
     let astart = match book.snapshot.a.binary_search_by(|x| {
         if x.0 > book.snapshot.last_price && book.snapshot.last_price > 0.0 { 
@@ -133,12 +129,10 @@ async fn fetch_data(data: Snapshot, local_book: Arc<RwLock<LocalOrderBook>>) {
     }) {
         Ok(pos) | Err(pos) => pos
     };
-
     book.snapshot.a = book.snapshot.a[astart..].to_vec();
 
     // Теперь сортирируем в нужном порядке с большего к меньшему
     book.snapshot.a.sort_by(|x, y| y.0.total_cmp(&x.0));
-
     
     // Меняем уровень bids
     book.snapshot.b.sort_by(|x, y| y.0.total_cmp(&x.0));

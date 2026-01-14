@@ -127,12 +127,12 @@ async fn fetch_data(str_data: String, local_book: Arc<RwLock<LocalOrderBook>>) {
             if let serde_json::Value::Array(bid_vec) = bids {
                 let mut price = 0.0;
                 if let serde_json::Value::String(price_str) = &bid_vec[0] {
-                    price = price_str.parse::<f64>().unwrap();
+                    price = price_str.parse::<f64>().unwrap_or(0.0);
                 }
 
                 let mut volume = 0.0;
                 if let serde_json::Value::String(vol_str) = &bid_vec[1] {
-                    volume = vol_str.parse::<f64>().unwrap();
+                    volume = vol_str.parse::<f64>().unwrap_or(0.0);
                 }
 
                 // Удаляем запись
@@ -150,17 +150,37 @@ async fn fetch_data(str_data: String, local_book: Arc<RwLock<LocalOrderBook>>) {
         }
     }
 
-    book.snapshot.a.sort_by(|x, y| y.0.total_cmp(&x.0));
-    book.snapshot.b.sort_by(|x, y| y.0.total_cmp(&x.0));
+    book.snapshot.a.sort_by(|x, y| x.0.total_cmp(&y.0));
 
-    let b_start = match book.snapshot.b.binary_search_by(|x| {
-        if x.0 > book.snapshot.last_price && book.snapshot.last_price > 0.0 { std::cmp::Ordering::Greater }
+    let a_start = match book.snapshot.a.binary_search_by(|x| {
+        if x.0 > book.snapshot.last_price && book.snapshot.last_price > 0.0 { 
+            std::cmp::Ordering::Greater 
+        }
         else { std::cmp::Ordering::Less }
     }) {
         Ok(pos) | Err(pos) => pos
     };
 
-    book.snapshot.b = book.snapshot.b[0..b_start].to_vec();
+    if book.snapshot.a.len() > 0 {
+        book.snapshot.a = book.snapshot.a[a_start..].to_vec();
+    }
+
+    book.snapshot.a.sort_by(|x, y| y.0.total_cmp(&x.0));
+
+    book.snapshot.b.sort_by(|x, y| y.0.total_cmp(&x.0));
+
+    let b_start = match book.snapshot.b.binary_search_by(|x| {
+        if x.0 <= book.snapshot.last_price && book.snapshot.last_price > 0.0 { 
+            std::cmp::Ordering::Greater 
+        }
+        else { std::cmp::Ordering::Less }
+    }) {
+        Ok(pos) | Err(pos) => pos
+    };
+
+    if book.snapshot.b.len() > 0 {
+        book.snapshot.b = book.snapshot.b[b_start..].to_vec();
+    }
 
     let mut book_lock = local_book.write().await;
     *book_lock = book
@@ -189,9 +209,6 @@ async fn parse_asks(data: SnapshotResponse, local_book: Arc<RwLock<LocalOrderBoo
             }
         }
     }
-
-    let mut book_lock = local_book.write().await;
-    *book_lock = book
 }
 
 async fn parse_bids(data: SnapshotResponse, local_book: Arc<RwLock<LocalOrderBook>>) {
@@ -218,9 +235,4 @@ async fn parse_bids(data: SnapshotResponse, local_book: Arc<RwLock<LocalOrderBoo
         }
     }
 
-    book.snapshot.a.sort_by(|a, b| b.0.total_cmp(&a.0));
-    book.snapshot.b.sort_by(|a, b| b.0.total_cmp(&a.0));
-
-    let mut book_lock = local_book.write().await;
-    *book_lock = book
 }

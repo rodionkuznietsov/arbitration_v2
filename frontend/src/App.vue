@@ -92,7 +92,7 @@ const shortOrderType = ref("Спот")
 const ticker = ref("BTC")
 
 function filterInput(event) {
-  ticker.value = event.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase()
+  ticker.value = event.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
 }
 
 function start() {
