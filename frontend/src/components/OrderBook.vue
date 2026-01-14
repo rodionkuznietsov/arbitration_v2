@@ -95,24 +95,24 @@
 
             longLastPrice.value = data.long?.last_price
 
-            shortAsks.value = data.book2?.a.map(x => ({
+            shortAsks.value = data.short?.a.map(x => ({
                 price: x[0],
                 volume: x[1],
             }))
 
-            shortBids.value = data.book2?.b.map(x => ({
+            shortBids.value = data.short?.b.map(x => ({
                 price: x[0],
                 volume: x[1],
             }))
 
-            shortLastPrice.value = data.book2?.last_price
+            shortLastPrice.value = data.short?.last_price
 
             // Для стрелочки
-            longFirstAskPrice.value = data.book1?.a?.[0]?.[0];
-            longFirstBidPrice.value = data.book1?.b?.[0]?.[0];
+            longFirstAskPrice.value = data.long?.a?.[0]?.[0];
+            longFirstBidPrice.value = data.long?.b?.[0]?.[0];
 
-            shortFirstAskPrice.value = data.book2?.a[0]?.[0];
-            shortFirstBidPrice.value = data.book2?.b?.[0]?.[0];
+            shortFirstAskPrice.value = data.short?.a[0]?.[0];
+            shortFirstBidPrice.value = data.short?.b?.[0]?.[0];
         }
 
         websoket.onopen = () => {

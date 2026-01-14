@@ -1,7 +1,8 @@
-use std::{collections::{HashMap}, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::Duration};
+use dashmap::DashMap;
 use futures_util::{StreamExt, SinkExt};
 use serde::Deserialize;
-use tokio::{net::TcpListener, sync::{RwLock, broadcast, mpsc::{self, Receiver}}};
+use tokio::{net::TcpListener, select, sync::{RwLock, broadcast, mpsc::{self, Receiver}}, time::{Interval, interval}};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 
 use crate::exchanges::orderbook::{LocalOrderBook, OrderType, Snapshot, SnapshotUi};
@@ -41,13 +42,13 @@ pub async fn connect_async(
     println!("🌐 [Arbitration-Websocket] is running",);
 
     while let Ok((stream, _)) = listener.accept().await {
-        let snapshot_receiver = snapshot_sender.subscribe();
+        let snapshot_rx = snapshot_sender.subscribe();
         tokio::spawn(handle_connection(
             stream, 
             long_book.clone(),
             short_book.clone(),
             sender.clone(),
-            snapshot_receiver
+            snapshot_rx
         ));
     }
 }
@@ -80,42 +81,35 @@ async fn handle_connection(
         }
     });
 
-    loop {
+    tokio::spawn(async move {
+        let mut books = HashMap::new();
+        let mut ticker = interval(Duration::from_millis(50));
 
-        let mut long_snapshot = SnapshotUi {
-            a: vec![],
-            b: vec![],
-            last_price: 0.0,
-        };
+        loop {
+            tokio::select! {
+                Ok((order_type, snapshot)) = snapshot_receiver.recv() => {
+                    match order_type {
+                        OrderType::Long => { books.insert("long", snapshot);  },
+                        OrderType::Short => { books.insert("short", snapshot);  }
+                    }
+                }
 
-        match snapshot_receiver.recv().await {
-            Ok((order_type, snapshot_ui)) => {
-                match order_type {
-                    OrderType::Long => {
-                        long_snapshot = snapshot_ui
-                    },
-                    OrderType::Short => {
-                        println!("Short: {:?}", snapshot_ui)
+                _ = ticker.tick() => {
+                    if books.is_empty() {
+                        continue;
+                    }
+
+                    let json = match serde_json::to_string(&books) {
+                        Ok(res) => res,
+                        Err(_) => continue,
+                    };
+
+                    if ws_sender.send(Message::Text(json.into())).await.is_err() {
+                        println!("Client disconnected");
+                        break;
                     }
                 }
             }
-            Err(broadcast::error::RecvError::Closed) => break,
-            Err(broadcast::error::RecvError::Lagged(_)) => {}
         }
-
-        if long_snapshot.last_price != 0.0 {
-            let mut books = HashMap::new();
-            books.insert("long", long_snapshot.clone());
-            books.insert("book2", long_snapshot.clone());
-
-            let json = serde_json::to_string(&books).unwrap();
-
-            if ws_sender.send(Message::Text(json.into())).await.is_err() {
-                println!("Client disconnected");            
-                break;
-            }
-        }
-
-        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-    };
+    });
 }

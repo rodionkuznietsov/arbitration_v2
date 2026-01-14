@@ -25,7 +25,6 @@ impl ExchangeWithParam {
             let book = book.read().await;            
             // Фильтруем по выброному токену пользователя
             if let Some(snaphsot) = book.books.get(&format!("{}usdt", ticker)) {
-                println!("{:?}", snaphsot.last_price);
                 let snapshot_ui = snaphsot.to_ui(6);
                 snapshot_sender.send((order_type, snapshot_ui)).expect("[ExchangeWithParam] Failed to send snaphsot");
             }

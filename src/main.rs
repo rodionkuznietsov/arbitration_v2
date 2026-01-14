@@ -32,7 +32,7 @@ async fn main() {
     let short_book = LocalOrderBook::new();
 
     let (sender_exchange_names, receiver_exchange_names) = mpsc::channel::<(String, String, String)>(200);
-    let (sender_snapshot, _) = broadcast::channel::<(OrderType, SnapshotUi)>(300);
+    let (sender_snapshot, _) = broadcast::channel::<(OrderType, SnapshotUi)>(1000);
 
     // Запускаем Websockets
     tokio::spawn({
@@ -52,13 +52,13 @@ async fn main() {
     tokio::spawn({
         let long_book = long_book.clone();  
         let short_book = short_book.clone();  
-        let snapshot_sender = sender_snapshot.clone();
+
         async move {
             websocket::connect_async(
                 long_book, 
                 short_book,
                 sender_exchange_names,
-                snapshot_sender
+                sender_snapshot
             ).await;
         } 
     });
