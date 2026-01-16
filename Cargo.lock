@@ -66,6 +66,7 @@ dependencies = [
  "dotenv",
  "flate2",
  "futures-util",
+ "rand 0.8.5",
  "reqwest 0.13.1",
  "rustls 0.21.12",
  "rustls-pemfile",
@@ -75,8 +76,10 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.23.4",
  "tokio-tungstenite",
+ "tokio-util",
  "tracing",
  "url",
+ "uuid",
 ]
 
 [[package]]

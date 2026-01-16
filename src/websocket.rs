@@ -1,11 +1,13 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{any::Any, collections::HashMap, sync::Arc, time::Duration};
 use dashmap::DashMap;
 use futures_util::{StreamExt, SinkExt};
+use rand::Rng;
 use serde::Deserialize;
 use tokio::{net::TcpListener, select, sync::{RwLock, broadcast, mpsc::{self, Receiver}}, time::{Interval, interval}};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
+use uuid::Uuid;
 
-use crate::exchanges::orderbook::{LocalOrderBook, OrderType, Snapshot, SnapshotUi};
+use crate::{exchange::ExchangeType, exchanges::orderbook::{LocalOrderBook, OrderType, Snapshot, SnapshotUi}};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebsocketReceiverParams {
@@ -30,11 +32,51 @@ pub struct OrderTypes {
     pub short_type: String
 }
 
+#[derive(Debug, Clone)]
+pub struct ConnectedClient {
+    pub uuid: Uuid,
+    pub ticker: String,
+    pub long_exchange: ExchangeType,
+    pub short_exchange: ExchangeType,
+    pub snapshot_ui: SnapshotUi,
+    pub sender: async_channel::Sender<(OrderType, SnapshotUi)>,
+    pub receiver: async_channel::Receiver<(OrderType, SnapshotUi)>,
+    pub token: tokio_util::sync::CancellationToken,
+}
+
+impl ConnectedClient {
+    pub fn new() -> Self {
+        let (sender, receiver) = async_channel::unbounded::<(OrderType, SnapshotUi)>();
+        
+        Self { 
+            uuid: Uuid::new_v4(),
+            ticker: String::new(),
+            long_exchange: ExchangeType::Unknown, 
+            short_exchange: ExchangeType::Unknown,
+            snapshot_ui: SnapshotUi { a: vec![], b: vec![], last_price: 0.0 },
+            sender: sender,
+            receiver: receiver,
+            token: tokio_util::sync::CancellationToken::new()
+        }
+    }
+
+    pub fn update(&mut self, ticker: &str, long_exchange: ExchangeType, short_exchange: ExchangeType) {
+        self.ticker = ticker.to_string();
+        self.long_exchange = long_exchange;
+        self.short_exchange = short_exchange;
+    }
+
+    pub async fn send_snapshot(&mut self, order_type: OrderType, exchange_book: Arc<RwLock<LocalOrderBook>>) {
+        let exchange_book = exchange_book.read().await;
+        if let Some(snapshot) = exchange_book.books.get(&format!("{}usdt", self.ticker)) {
+            self.snapshot_ui = snapshot.to_ui(6);
+            self.sender.send((order_type.clone(), self.snapshot_ui.clone())).await.expect("[ConnectedClient] Failed to send snapshot")
+        }
+    }
+}
+
 pub async fn connect_async(
-    long_book: Arc<RwLock<LocalOrderBook>>, 
-    short_book: Arc<RwLock<LocalOrderBook>>, 
-    sender: mpsc::Sender<(String, String, String)>,
-    snapshot_sender: broadcast::Sender<(OrderType, SnapshotUi)>
+    sender: async_channel::Sender<ConnectedClient>,
 ) {
     let addr = "127.0.0.1:9000";
     let listener = TcpListener::bind(addr).await.unwrap();
@@ -42,28 +84,64 @@ pub async fn connect_async(
     println!("🌐 [Arbitration-Websocket] is running",);
 
     while let Ok((stream, _)) = listener.accept().await {
-        let snapshot_rx = snapshot_sender.subscribe();
         tokio::spawn(handle_connection(
             stream, 
-            long_book.clone(),
-            short_book.clone(),
             sender.clone(),
-            snapshot_rx
         ));
     }
 }
 
 async fn handle_connection(
     stream: tokio::net::TcpStream, 
-    long_book: Arc<RwLock<LocalOrderBook>>,
-    short_book: Arc<RwLock<LocalOrderBook>>,
-    sender: mpsc::Sender<(String, String, String)>,
-    mut snapshot_receiver: broadcast::Receiver<(OrderType, SnapshotUi)>
+    sender: async_channel::Sender<ConnectedClient>,
 ) {
 
     let ws_stream: tokio_tungstenite::WebSocketStream<tokio::net::TcpStream> = accept_async(stream).await.unwrap();
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
-    println!("🟢 [Arbitration-Websocket] Client connected");
+
+    let mut client = ConnectedClient::new();
+    let receiver = client.receiver.clone(); 
+    let task_token = client.token.clone();
+
+    println!("Client: `{}` is successfully connected", client.uuid);
+
+    tokio::spawn({
+        async move {
+            let mut books = HashMap::new();
+            let mut ticker = interval(Duration::from_millis(50));        
+            loop {
+                tokio::select! {
+                    _ = task_token.cancelled() => {
+                        println!("Client: `{}` disconnected", client.uuid);
+                        break;
+                    }
+
+                    Ok((order_type, snapshot)) = receiver.recv() => {
+                        match order_type {
+                            OrderType::Long => { books.insert("long", snapshot); },
+                            OrderType::Short => { books.insert("short", snapshot);}
+                        }
+                    }
+
+                    _ = ticker.tick() => {
+                        if books.is_empty() {
+                            continue;
+                        }
+
+                        let json = match serde_json::to_string(&books) {
+                            Ok(res) => res,
+                            Err(_) => continue,
+                        };
+
+                        if ws_sender.send(Message::Text(json.into())).await.is_err() {
+                            task_token.cancel();
+                        }
+                    }
+                }
+
+            }
+        }
+    });
 
     tokio::spawn(async move {
         while let Some(msg) = ws_receiver.next().await {
@@ -73,43 +151,26 @@ async fn handle_connection(
                         let long_exchange = new_params.exchanges.long_exchange.to_lowercase();
                         let short_exchange = new_params.exchanges.short_exchange.to_lowercase();
                         let ticker = new_params.ticker.to_lowercase();
-                        
-                        sender.send((ticker.to_lowercase(), long_exchange, short_exchange)).await.expect("[Arbitration-Websocket] Failed to send exchange names");
+                                                
+                        let long_exchange= match long_exchange.as_str() {
+                            "binance" => ExchangeType::Binance,
+                            "bybit" => ExchangeType::Bybit,
+                            _ => ExchangeType::Unknown
+                        };
+
+                        let short_exchange= match short_exchange.as_str() {
+                            "binance" => ExchangeType::Binance,
+                            "bybit" => ExchangeType::Bybit,
+                            _ => ExchangeType::Unknown
+                        };
+
+                        client.update(&ticker, long_exchange, short_exchange);
+
+                        sender.send(client.clone()).await.expect("[Arbitration-Websocket] Failed to send exchange names");
                     }
                 }
             }
         }
     });
 
-    tokio::spawn(async move {
-        let mut books = HashMap::new();
-        let mut ticker = interval(Duration::from_millis(50));
-
-        loop {
-            tokio::select! {
-                Ok((order_type, snapshot)) = snapshot_receiver.recv() => {
-                    match order_type {
-                        OrderType::Long => { books.insert("long", snapshot);  },
-                        OrderType::Short => { books.insert("short", snapshot);  }
-                    }
-                }
-
-                _ = ticker.tick() => {
-                    if books.is_empty() {
-                        continue;
-                    }
-
-                    let json = match serde_json::to_string(&books) {
-                        Ok(res) => res,
-                        Err(_) => continue,
-                    };
-
-                    if ws_sender.send(Message::Text(json.into())).await.is_err() {
-                        println!("Client disconnected");
-                        break;
-                    }
-                }
-            }
-        }
-    });
 }
