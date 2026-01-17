@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use crate::{websocket::ConnectedClient, exchanges::{orderbook::{LocalOrderBook, OrderType}, *}};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -14,7 +12,7 @@ pub async fn run_websockets(
 ) {
 
     let binance_book = LocalOrderBook::new();
-    let binance_book_cl = binance_book.clone();
+    // let binance_book_cl = binance_book.clone();
 
     let bybit_book = LocalOrderBook::new();
     let bybit_book_cl = bybit_book.clone();
@@ -34,6 +32,7 @@ pub async fn run_websockets(
         let short_exchange = client.short_exchange.clone();
         let client = client.clone();
 
+        // Proccesing long exchange
         tokio::spawn({
             let binance_book = binance_book.clone();
             let bybit_book = bybit_book.clone();
@@ -65,6 +64,7 @@ pub async fn run_websockets(
             }
         });
 
+        // Proccesing short exchange
         tokio::spawn({
             let binance_book = binance_book.clone();
             let bybit_book = bybit_book.clone();

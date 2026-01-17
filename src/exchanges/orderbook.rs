@@ -1,4 +1,4 @@
-use std::{collections::{BTreeMap, HashMap}, sync::Arc};
+use std::{collections::{BTreeMap}, sync::Arc};
 
 use dashmap::DashMap;
 use serde::{Serialize};
@@ -26,12 +26,6 @@ impl LocalOrderBook {
         ))
     }
 
-    pub async fn to_hashmap(&self) -> HashMap<String, Snapshot> {
-        self.books.iter()
-            .map(|entry| (entry.key().clone(), entry.value().clone()))
-            .collect()
-    }
-
     pub fn set_last_price(&mut self, ticker: &str, last_price: f64) {
         if let Some(mut snapshot) = self.books.get_mut(&ticker.to_string()) {
             snapshot.last_price = last_price;
@@ -47,14 +41,23 @@ impl LocalOrderBook {
         bids: BTreeMap<i64, f64>,
     ) {
 
-        if let Some(mut snapshot) = self.books.get(&ticker.to_lowercase()) {
-            let mut old_asks = &snapshot.a;
-            let mut old_bids = &snapshot.b;
+        if let Some(mut snapshot) = self.books.get_mut(&ticker.to_lowercase()) {
+            for (price, volume) in asks {
+                if volume == 0.0 {
+                    snapshot.a.remove(&price);
+                } else {
+                    snapshot.a.insert(price, volume);
+                }
+            }
 
-            // println!("{:#?}", old_asks)
+            for (price, volume) in bids {
+                if volume == 0.0 {
+                    snapshot.b.remove(&price);
+                } else {
+                    snapshot.b.insert(price, volume);
+                }
+            }
             
-            // let bids = snapshot.b.clone();
-
         } else {
             println!("[OrderBook] Ticker: {ticker} not found")
         }
@@ -70,14 +73,18 @@ pub struct Snapshot {
 
 impl Snapshot {
     pub fn to_ui(&self, depth: usize) -> SnapshotUi {
-        let a = self.a.iter()
-            .take(depth)
+        let mut a = self.a.iter()
+            .filter(|(p, _)| (**p as f64) / 100.0 > self.last_price)
             .map(|(p, v)| (*p as f64 / 100.0, *v))
+            .take(depth)
             .collect::<Vec<(f64, f64)>>();
+        a.reverse();
 
         let b = self.b.iter()
-            .take(depth)
+            .rev()
+            .filter(|(p, _)| (**p as f64) / 100.00 <= self.last_price)
             .map(|(p, v)| (*p as f64 / 100.0, *v))
+            .take(depth)
             .collect::<Vec<(f64, f64)>>();
 
         let last_price = self.last_price;

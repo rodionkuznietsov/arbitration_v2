@@ -1,18 +1,15 @@
-use std::{any::Any, collections::HashMap, sync::Arc, time::Duration};
-use dashmap::DashMap;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use futures_util::{StreamExt, SinkExt};
-use rand::Rng;
 use serde::Deserialize;
-use tokio::{net::TcpListener, select, sync::{RwLock, broadcast, mpsc::{self, Receiver}}, time::{Interval, interval}};
+use tokio::{net::TcpListener, sync::{RwLock}, time::{interval}};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::{exchange::ExchangeType, exchanges::orderbook::{LocalOrderBook, OrderType, Snapshot, SnapshotUi}};
+use crate::{exchange::ExchangeType, exchanges::orderbook::{LocalOrderBook, OrderType, SnapshotUi}};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebsocketReceiverParams {
     pub exchanges: Exchanges,
-    pub types: OrderTypes,
     pub ticker: String
 }
 
@@ -22,14 +19,6 @@ pub struct Exchanges {
     pub long_exchange: String,
     #[serde(rename="shortExchange")]
     pub short_exchange: String
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct OrderTypes {
-    #[serde(rename="longType")]
-    pub long_type: String,
-    #[serde(rename="shortType")]
-    pub short_type: String
 }
 
 #[derive(Debug, Clone)]

@@ -91,7 +91,7 @@ pub async fn connect(channel_type: &str, local_book: Arc<RwLock<LocalOrderBook>>
 
     for ticker in tickers {
         let symbol = ticker.symbol;
-        let orderbook_str = format!("orderbook.50.{}", symbol.to_uppercase());
+        let orderbook_str = format!("orderbook.200.{}", symbol.to_uppercase());
         let price_str = format!("tickers.{}", symbol.to_uppercase());
 
         params.push(orderbook_str);
