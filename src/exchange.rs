@@ -1,9 +1,10 @@
-use crate::{websocket::ConnectedClient, exchanges::{orderbook::{LocalOrderBook, OrderType}, *}};
+use crate::{exchanges::{bybit_ws::BybitWebsocket, kucoin_ws::KuCoinWebsocket, orderbook::{LocalOrderBook, OrderType}, websocket::Websocket}, websocket::ConnectedClient};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExchangeType {
     Binance, 
     Bybit,
+    KuCoin,
     Unknown
 }
 
@@ -12,19 +13,17 @@ pub async fn run_websockets(
 ) {
 
     let binance_book = LocalOrderBook::new();
-    // let binance_book_cl = binance_book.clone();
-
-    let bybit_book = LocalOrderBook::new();
-    let bybit_book_cl = bybit_book.clone();
+    let binance_book_cl = binance_book.clone();
 
     // tokio::spawn(async move {
     //     binance_ws::connect(binance_book_cl).await;
     // });
 
-    tokio::spawn(async move {
-        bybit_ws::connect("spot", bybit_book_cl).await;
-    });
+    let kucoin_websocket = KuCoinWebsocket::new(true);
+    let kucoin_book = kucoin_websocket.get_local_book();
 
+    let bybit_websocket = BybitWebsocket::new(false);
+    let bybit_book = bybit_websocket.get_local_book();
     
     while let Ok(client) = receiver.recv().await {  
         let token = client.token.clone();
@@ -36,6 +35,7 @@ pub async fn run_websockets(
         tokio::spawn({
             let binance_book = binance_book.clone();
             let bybit_book = bybit_book.clone();
+            let kucoin_book = kucoin_book.clone();
             let token = token.clone();
             let client = client.clone();
 
@@ -44,6 +44,7 @@ pub async fn run_websockets(
                     let exchange_book = match long_exchange {
                         ExchangeType::Binance => binance_book.clone(),
                         ExchangeType::Bybit => bybit_book.clone(),
+                        ExchangeType::KuCoin => kucoin_book.clone(),
                         ExchangeType::Unknown => return,
                     };
 
@@ -68,6 +69,8 @@ pub async fn run_websockets(
         tokio::spawn({
             let binance_book = binance_book.clone();
             let bybit_book = bybit_book.clone();
+            let kucoin_book = kucoin_book.clone();
+            
             let token = token.clone();
             let client = client.clone();
 
@@ -76,6 +79,7 @@ pub async fn run_websockets(
                     let exchange_book = match short_exchange {
                         ExchangeType::Binance => binance_book.clone(),
                         ExchangeType::Bybit => bybit_book.clone(),
+                        ExchangeType::KuCoin => kucoin_book.clone(),
                         ExchangeType::Unknown => return 
                     };
 

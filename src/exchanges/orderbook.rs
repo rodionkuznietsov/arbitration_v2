@@ -26,12 +26,30 @@ impl LocalOrderBook {
         ))
     }
 
-    pub fn set_last_price(&mut self, ticker: &str, last_price: f64) {
-        if let Some(mut snapshot) = self.books.get_mut(&ticker.to_string()) {
-            snapshot.last_price = last_price;
-        } else {
-            println!("[OrderBook] Ticker: {ticker} not found")
+    pub async fn set_last_price(&mut self, ticker: &str, last_price: f64) {
+        if self.books.contains_key(ticker) {
+            if let Some(mut snapshot) = self.books.get_mut(&ticker.to_string()) {
+                snapshot.last_price = last_price;
+            } else {
+                println!("[OrderBook] Ticker: {ticker} not found")
+            }
         }
+    }
+
+    pub async fn parse_levels(&self, data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
+        let mut values = BTreeMap::new();
+        let tick = 1000000.0;
+
+        for vec in data {
+            let price = vec[0].parse::<f64>().expect("[Orderbook] Bad price");
+            let volume = vec[1].parse::<f64>().expect("[Orderbook] Bad volume");
+
+            let price_with_tick = (price * tick).round() as i64;
+
+            values.insert(price_with_tick, volume);
+        }
+
+        values
     }
 
     pub async fn apply_snapshot_updates(
@@ -62,6 +80,26 @@ impl LocalOrderBook {
             println!("[OrderBook] Ticker: {ticker} not found")
         }
     }
+
+    pub async fn apply_or_add_snapshot(
+        &self, 
+        ticker: &str, 
+        asks: BTreeMap<i64, f64>, 
+        bids: BTreeMap<i64, f64>
+    ) {
+        if !self.books.contains_key(ticker) {
+            self.books.insert(ticker.to_lowercase(), Snapshot {
+                a: asks,
+                b: bids,
+                last_price: 0.0
+            });
+        } else {
+            if let Some(mut snapshot) = self.books.get_mut(ticker) {
+                snapshot.a = asks;
+                snapshot.b = bids;
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -72,18 +110,25 @@ pub struct Snapshot {
 }
 
 impl Snapshot {
-    pub fn to_ui(&self, depth: usize) -> SnapshotUi {
+    pub async fn to_ui(&self, depth: usize) -> SnapshotUi {
+        let tick = 1000000.00;
         let mut a = self.a.iter()
-            .filter(|(p, _)| (**p as f64) / 100.0 > self.last_price)
-            .map(|(p, v)| (*p as f64 / 100.0, *v))
+            .filter(|(p, _)| (**p as f64) / tick > self.last_price)
+            .map(|(p, v)| (*p as f64 / tick, *v))
             .take(depth)
             .collect::<Vec<(f64, f64)>>();
         a.reverse();
 
+        let a_price = a
+            .iter()
+            .min_by(|x, y| x.0.partial_cmp(&y.0).unwrap())
+            .unwrap()
+            .0;
+
         let b = self.b.iter()
             .rev()
-            .filter(|(p, _)| (**p as f64) / 100.00 <= self.last_price)
-            .map(|(p, v)| (*p as f64 / 100.0, *v))
+            .filter(|(p, _)| (**p as f64) / tick < a_price)
+            .map(|(p, v)| (*p as f64 / tick, *v))
             .take(depth)
             .collect::<Vec<(f64, f64)>>();
 
@@ -102,4 +147,20 @@ pub struct SnapshotUi {
     pub a: Vec<(f64, f64)>,
     pub b: Vec<(f64, f64)>,
     pub last_price: f64,
+}
+
+pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
+    let mut values = BTreeMap::new();
+    let tick = 1000000.0;
+
+    for vec in data {
+        let price = vec[0].parse::<f64>().expect("[Orderbook] Bad price");
+        let volume = vec[1].parse::<f64>().expect("[Orderbook] Bad volume");
+
+        let price_with_tick = (price * tick).round() as i64;
+
+        values.insert(price_with_tick, volume);
+    }
+
+    values
 }

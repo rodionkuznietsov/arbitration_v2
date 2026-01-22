@@ -58,7 +58,7 @@ impl ConnectedClient {
     pub async fn send_snapshot(&mut self, order_type: OrderType, exchange_book: Arc<RwLock<LocalOrderBook>>) {
         let exchange_book = exchange_book.read().await;
         if let Some(snapshot) = exchange_book.books.get(&format!("{}usdt", self.ticker)) {
-            self.snapshot_ui = snapshot.to_ui(6);
+            self.snapshot_ui = snapshot.to_ui(6).await;
             self.sender.send((order_type.clone(), self.snapshot_ui.clone())).await.expect("[ConnectedClient] Failed to send snapshot")
         }
     }
@@ -144,12 +144,14 @@ async fn handle_connection(
                         let long_exchange= match long_exchange.as_str() {
                             "binance" => ExchangeType::Binance,
                             "bybit" => ExchangeType::Bybit,
+                            "kucoin" => ExchangeType::KuCoin,
                             _ => ExchangeType::Unknown
                         };
 
                         let short_exchange= match short_exchange.as_str() {
                             "binance" => ExchangeType::Binance,
                             "bybit" => ExchangeType::Bybit,
+                            "kucoin" => ExchangeType::KuCoin,
                             _ => ExchangeType::Unknown
                         };
 

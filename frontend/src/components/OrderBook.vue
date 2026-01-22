@@ -150,10 +150,23 @@
         return new Intl.NumberFormat(
             "en-US", {
                 minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
+                maximumFractionDigits: 10,
             }
         ).format(value)
     }
+
+    function formatVolume(value) {
+        if (typeof value != 'number') {
+            return value;
+        }
+
+        return new Intl.NumberFormat(
+            "en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }
+        ).format(value)
+    }   
 
     defineExpose({ show, start, stop, exchanges, isWarningStatus })
 </script>
@@ -177,7 +190,7 @@
                     </tr>
                     <tr v-for="ask in longAsks" :key="ask">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
-                        <td class="sell_label"> {{ formatCurrency(ask.price *  ask.volume) }} </td>
+                        <td class="sell_label"> {{ formatVolume(ask.price *  ask.volume) }} </td>
                     </tr>
 
                     <tr>
@@ -191,7 +204,7 @@
 
                     <tr v-for="bid in longBids" :key="bid">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
-                        <td class="buy_label"> {{ formatCurrency(bid.price *  bid.volume) }} </td>
+                        <td class="buy_label"> {{ formatVolume(bid.price *  bid.volume) }} </td>
                     </tr>
                 </table>
             </div>
@@ -213,7 +226,7 @@
                     </tr>
                     <tr v-for="ask in shortAsks" :key="ask">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
-                        <td class="sell_label"> {{ formatCurrency(ask.price *  ask.volume) }} </td>
+                        <td class="sell_label"> {{ formatVolume(ask.price *  ask.volume) }} </td>
                     </tr>
 
                     <tr>
@@ -227,7 +240,7 @@
 
                     <tr v-for="bid in shortBids" :key="bid">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
-                        <td class="buy_label"> {{ formatCurrency(bid.price *  bid.volume) }} </td>
+                        <td class="buy_label"> {{ formatVolume(bid.price *  bid.volume) }} </td>
                     </tr>
                 </table>
             </div>
