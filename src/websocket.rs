@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use futures_util::{StreamExt, SinkExt};
 use serde::Deserialize;
-use tokio::{net::TcpListener, sync::{RwLock}, time::{interval}};
+use tokio::{net::TcpListener, sync::{RwLock, mpsc}, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
@@ -55,12 +55,13 @@ impl ConnectedClient {
         self.short_exchange = short_exchange;
     }
 
-    pub async fn send_snapshot(&mut self, order_type: OrderType, exchange_book: Arc<RwLock<LocalOrderBook>>) {
-        let exchange_book = exchange_book.read().await;
-        if let Some(snapshot) = exchange_book.books.get(&format!("{}usdt", self.ticker)) {
-            self.snapshot_ui = snapshot.to_ui(6).await;
-            self.sender.send((order_type.clone(), self.snapshot_ui.clone())).await.expect("[ConnectedClient] Failed to send snapshot")
-        }
+    pub async fn send_snapshot(&mut self, order_type: OrderType, snapshot: SnapshotUi) {
+        
+        // let exchange_book = exchange_book.read().await;
+        // if let Some(snapshot) = exchange_book.books.get(&format!("{}usdt", self.ticker)) {
+        //     self.snapshot_ui = snapshot.to_ui(6).await;
+        self.sender.send((order_type.clone(), snapshot)).await.expect("[ConnectedClient] Failed to send snapshot")
+        // }
     }
 }
 

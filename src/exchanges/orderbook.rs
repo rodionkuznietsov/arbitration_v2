@@ -1,8 +1,8 @@
-use std::{collections::{BTreeMap}, sync::Arc};
+use std::{collections::{BTreeMap, HashMap}, sync::Arc};
 
 use dashmap::DashMap;
 use serde::{Serialize};
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, mpsc, oneshot};
 
 type Ticker = String;
 
@@ -163,4 +163,55 @@ pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
     }
 
     values
+}
+
+pub struct OrderBookView {
+    snapshot: Snapshot
+}
+
+pub enum BookEvent {
+    Snapshot { ticker: String, snapshot: Snapshot },
+    Price { ticker: String, last_price: f64 },
+    GetBook { ticker: String, reply: mpsc::Sender<Option<SnapshotUi>> }
+}
+
+#[derive(Clone)]
+pub struct OrderBookManager {
+    pub books: HashMap<String, Snapshot>,
+    pub rx: async_channel::Receiver<BookEvent>
+}
+
+impl OrderBookManager {
+    pub async fn set_data(mut self) {
+        while let Ok(event) = self.rx.clone().recv().await {
+            match event {
+                BookEvent::Snapshot { ticker, snapshot  } => {
+                    let snapshot_ = snapshot.clone();
+                    self.books
+                        .entry(ticker.clone())
+                        .and_modify(|book| {
+                            book.a = snapshot_.a;
+                            book.b = snapshot_.b;
+                        })
+                        .or_insert_with(|| Snapshot { a: snapshot.a, b: snapshot.b, last_price: 0.0 });
+                }
+                BookEvent::Price { ticker, last_price } => {
+                    if let Some(t) = self.books.get_mut(&ticker) {
+                        t.last_price = last_price;
+                    }
+                },
+                BookEvent::GetBook { ticker, reply } => {
+                    if let Some(snapshot) = self.books.get(&format!("{}usdt", ticker)) {   
+                        let snapshot_ui = snapshot.to_ui(6).await;
+                        match reply.send(Some(snapshot_ui)).await {
+                            Ok(_) => {}
+                            Err(e) => {
+                                println!("{}", format!("[OrderBookManager]: {}", e))
+                            }
+                        }   
+                    }
+                }
+            }
+        }
+    }
 }
