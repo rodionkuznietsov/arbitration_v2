@@ -1,10 +1,11 @@
-use std::{collections::{HashMap}, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::{Arc, atomic::AtomicBool}, time::Duration};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{Notify, mpsc, oneshot};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
-use futures_util::{SinkExt, StreamExt};
+use futures_util::{SinkExt, StreamExt, select};
 use anyhow::{Result};
+use tokio_util::sync::CancellationToken;
 
 use crate::exchanges::{orderbook::{BookEvent, OrderBookManager, Snapshot, SnapshotUi, parse_levels__}, websocket::Ticker};
 
@@ -62,7 +63,8 @@ struct TickerEventData {
 
 #[derive(Debug, PartialEq)]
 enum WebSocketStatus {
-    Finished
+    Finished,
+    None
 }
 
 enum WsCmd {
@@ -85,8 +87,8 @@ impl KuCoinWebsocket {
         let title = "[KuCoin-Websocket]".to_string();
         let client = reqwest::Client::new();
         let channel_type = String::from("spot");
-        let (sender_data, rx_data) = async_channel::bounded(100);
-        let (ticker_tx, mut ticker_rx) = async_channel::bounded::<(String, String)>(1);
+        let (sender_data, rx_data) = async_channel::bounded(50);
+        let (ticker_tx, ticker_rx) = async_channel::bounded::<(String, String)>(1);
 
         let book_manager = OrderBookManager {
             books: HashMap::new(),
@@ -121,7 +123,10 @@ impl KuCoinWebsocket {
                         if let Some(snapshot_ui) = data {
                             if let Some(snapshot) = snapshot_ui {
                                 // println!("{}: {}", uuid, snapshot.last_price);
-                                snapshot_tx.send(snapshot).unwrap();
+                                match snapshot_tx.send(snapshot) {
+                                    Ok(_) => {}
+                                    Err(_) => {}
+                                }
                             }
                         }
                     }
@@ -141,38 +146,53 @@ impl KuCoinWebsocket {
 
             let this = self.clone();
             let tickers = self.get_tickers().await;
-            
+        
             // Обрабатываем подписку на все токены
             if let Some(tickers) = tickers {
-                for chunk in tickers.chunks(50) {
-                    let (cmd_tx, cmd_rx) = async_channel::bounded(50);
-
-                    for ticker in chunk {
-                        let symbol = ticker.symbol.clone().unwrap().replace("-USDT", "");
-                        cmd_tx.send(WsCmd::Subscribe(symbol)).await.unwrap();
-                    }
-                    
-                    // На каждый чанк запускаем новое подключение к вебсокету
-                    let this = this.clone();
-                    tokio::spawn(async move {
-                        loop {
-                            let status = this.clone().run_websocket(cmd_rx.clone()).await;
-
-                            match status {
-                                WebSocketStatus::Finished => {
-                                    println!("{}: Reconnecting...", this.title);
-                                    tokio::time::sleep(Duration::from_secs(5)).await;
-                                    continue;
-                                } 
-                            }
-                        }
-                    });
-                }
+                this.clone().websocket_loop(&tickers).await;
             }
         });
     }
 
-    async fn run_websocket(self: Arc<Self>, mut cmd_rx: async_channel::Receiver<WsCmd>) -> WebSocketStatus {
+    async fn websocket_loop(self: Arc<Self>, tickers: &Vec<Ticker>) {                        
+        let notify = Arc::new(Notify::new());
+        notify.notify_one();
+        loop {    
+            notify.notified().await;
+            println!("Reconnecting...");
+            let token = CancellationToken::new();
+
+            for chunk in tickers.chunks(50) {
+                let (cmd_tx, cmd_rx) = async_channel::bounded::<WsCmd>(50);
+
+                for ticker in chunk {
+                    let symbol = ticker.symbol.clone().unwrap().replace("-USDT", "");
+                    cmd_tx.send(WsCmd::Subscribe(symbol)).await.unwrap();   
+                }
+            
+                // На каждый чанк запускаем новое подключение к вебсокету
+                let this = self.clone();
+                let cmd_rx = cmd_rx;
+                let token = token.clone();
+                let notify = notify.clone();
+                tokio::spawn(async move {
+                    tokio::select! {
+                        _ = token.cancelled() => {
+                            return ;
+                        },
+                        _ = this.clone().run_websocket(&cmd_rx) => {
+                            token.cancel();
+                        }
+                    };
+
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    notify.notify_one();
+                });
+            }
+        }
+    }
+
+    async fn run_websocket(self: Arc<Self>, cmd_rx: &async_channel::Receiver<WsCmd>) -> WebSocketStatus {
         let api_token = get_api_key().await.unwrap();
 
         let url = url::Url::parse(&format!("wss://ws-api-spot.kucoin.com?token={}", api_token)).unwrap();
@@ -183,7 +203,7 @@ impl KuCoinWebsocket {
         while let Ok(cmd) = cmd_rx.recv().await {
             match cmd {
                 WsCmd::Subscribe(ticker) => {
-                    // println!("Ticker: {}", ticker);
+                    println!("Ticker: {}", ticker);
 
                     write.send(Message::Text(
                         serde_json::json!({
@@ -208,7 +228,10 @@ impl KuCoinWebsocket {
         while let Some(msg) = read.next().await {
             let msg_type = match msg {
                 Ok(m) => Some(m),
-                Err(_) => None
+                Err(e) => {
+                    println!("{}: {e}", this.title);
+                    None
+                }
             };            
 
             if let Some(msg_type) = msg_type {
@@ -282,8 +305,7 @@ impl KuCoinWebsocket {
 
     async fn get_tickers(self: Arc<Self>) -> Option<Vec<Ticker>>  {
         let url = "https://api.kucoin.com/api/v1/market/allTickers";
-        let client = reqwest::Client::new();
-        let response = client.get(url).send().await;
+        let response = self.client.get(url).send().await;
         
         let Ok(response) = response else { return None };
         let Ok(json) = response.json::<TickerResponse>().await else { return None };

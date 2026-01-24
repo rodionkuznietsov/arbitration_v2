@@ -6,7 +6,7 @@ use anyhow::Result;
 
 use crate::exchanges::orderbook::LocalOrderBook;
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Ticker {
     #[serde(rename="symbol")]
     pub symbol: Option<String>
