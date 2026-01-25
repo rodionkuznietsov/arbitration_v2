@@ -2,19 +2,21 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc;
 
-use crate::{exchanges::{bybit_ws::BybitWebsocket, kucoin_ws::KuCoinWebsocket, orderbook::{OrderType, SnapshotUi}, websocket::Websocket}, websocket::ConnectedClient};
+use crate::{exchanges::{binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, kucoin_ws::KuCoinWebsocket, orderbook::{OrderType, SnapshotUi}, websocket::Websocket}, websocket::ConnectedClient};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExchangeType {
     Binance, 
     Bybit,
     KuCoin,
+    BinX,
     Unknown
 }
 
 enum ExchangeWs {
     Bybit(Arc<BybitWebsocket>),
     KuCoin(Arc<KuCoinWebsocket>),
+    BinX(Arc<BinXWebsocket>),
 }
 
 impl ExchangeWs {
@@ -24,6 +26,9 @@ impl ExchangeWs {
                 ws.ticker_tx.clone()
             }
             Self::KuCoin(ws) => {
+                ws.ticker_tx.clone()
+            }
+            Self::BinX(ws) => {
                 ws.ticker_tx.clone()
             }
         }
@@ -37,6 +42,9 @@ impl ExchangeWs {
             Self::KuCoin(ws) => {
                 ws.clone().get_snapshot(snapshot_tx).await
             }
+            Self::BinX(ws) => {
+                ws.clone().get_snapshot(snapshot_tx).await
+            }
         }
     }
 }
@@ -47,6 +55,7 @@ pub async fn run_websockets(
 
     let kucoin_websocket = KuCoinWebsocket::new(true);
     let bybit_websocket = BybitWebsocket::new(true);
+    let binx_websocket = BinXWebsocket::new(true);
     
     while let Ok(client) = receiver.recv().await {  
         let token = client.token.clone();
@@ -54,11 +63,12 @@ pub async fn run_websockets(
         let short_exchange = client.short_exchange.clone();
         let client = client.clone();
 
-        // Proccesing long exchange
         tokio::spawn({
             // let binance_book = binance_book.clone();
             let bybit = bybit_websocket.clone();
             let kucoin = kucoin_websocket.clone();
+            let binx = binx_websocket.clone();
+
             let token = token.clone();
             let client = client.clone();
 
@@ -68,6 +78,7 @@ pub async fn run_websockets(
                         ExchangeType::Binance => return,
                         ExchangeType::Bybit => ExchangeWs::Bybit(bybit),
                         ExchangeType::KuCoin => ExchangeWs::KuCoin(kucoin),
+                        ExchangeType::BinX => ExchangeWs::BinX(binx),
                         ExchangeType::Unknown => return,
                     };
 
@@ -90,11 +101,12 @@ pub async fn run_websockets(
             }
         });
 
-        // Proccesing short exchange
         tokio::spawn({
             // let binance_book = binance_book.clone();
             let bybit = bybit_websocket.clone();
             let kucoin = kucoin_websocket.clone();
+            let binx = binx_websocket.clone();
+            
             let token = token.clone();
             let client = client.clone();
 
@@ -104,6 +116,7 @@ pub async fn run_websockets(
                         ExchangeType::Binance => return,
                         ExchangeType::Bybit => ExchangeWs::Bybit(bybit),
                         ExchangeType::KuCoin => ExchangeWs::KuCoin(kucoin),
+                        ExchangeType::BinX => ExchangeWs::BinX(binx),
                         ExchangeType::Unknown => return,
                     };
 

@@ -97,7 +97,7 @@ impl BybitWebsocket {
         notify.notify_one(); 
         loop {
             notify.notified().await;
-            println!("Reconnecting...");
+            println!("{}: Reconnecting...", self.title);
 
             let token = CancellationToken::new();
             let (cmd_tx, mut cmd_rx) = mpsc::channel::<WsCmd>(10);
@@ -229,7 +229,7 @@ impl Websocket for BybitWebsocket {
         tokio::spawn({
             async move {
                 if !self.enabled {
-                    println!("{} enabled: false", self.title);
+                    println!("{} enabled: false", this.title);
                     return;
                 } 
 

@@ -15,6 +15,11 @@ pub enum WsCmd {
     Subscribe(String)
 }
 
+#[derive(Debug, PartialEq)]
+pub enum WebSocketStatus {
+    Finished,
+}
+
 pub trait Websocket {
     type Snapshot;
     type Price;

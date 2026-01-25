@@ -113,7 +113,8 @@ impl KuCoinWebsocket {
         notify.notify_one(); // Инициализируем запуск
         loop {    
             notify.notified().await;
-            println!("Reconnecting...");
+            println!("{}: Reconnecting...", self.title);
+            
             let token = CancellationToken::new();
 
             for chunk in tickers.chunks(50) {

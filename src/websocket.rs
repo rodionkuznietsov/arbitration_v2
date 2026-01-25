@@ -54,12 +54,7 @@ impl ConnectedClient {
     }
 
     pub async fn send_snapshot(&mut self, order_type: OrderType, snapshot: SnapshotUi) {
-        
-        // let exchange_book = exchange_book.read().await;
-        // if let Some(snapshot) = exchange_book.books.get(&format!("{}usdt", self.ticker)) {
-        //     self.snapshot_ui = snapshot.to_ui(6).await;
         self.sender.send((order_type.clone(), snapshot)).await.expect("[ConnectedClient] Failed to send snapshot")
-        // }
     }
 }
 
@@ -144,6 +139,7 @@ async fn handle_connection(
                             "binance" => ExchangeType::Binance,
                             "bybit" => ExchangeType::Bybit,
                             "kucoin" => ExchangeType::KuCoin,
+                            "binx" => ExchangeType::BinX,
                             _ => ExchangeType::Unknown
                         };
 
@@ -151,6 +147,7 @@ async fn handle_connection(
                             "binance" => ExchangeType::Binance,
                             "bybit" => ExchangeType::Bybit,
                             "kucoin" => ExchangeType::KuCoin,
+                            "binx" => ExchangeType::BinX,
                             _ => ExchangeType::Unknown
                         };
 

@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 use tokio::{sync::RwLock};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-use crate::exchanges::orderbook::LocalOrderBook;
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct Snapshot {
     #[serde(rename="data")]
