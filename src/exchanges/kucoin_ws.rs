@@ -203,7 +203,7 @@ impl KuCoinWebsocket {
                                 match this.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("1111{}", format!("{}: {}", this.title, e))
+                                        println!("{}", format!("{}: {}", this.title, e))
                                     }
                                 }
                             } 
@@ -216,7 +216,7 @@ impl KuCoinWebsocket {
                                 match this.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("1111{}", format!("{}: {}", this.title, e))
+                                        println!("{}", format!("{}: {}", this.title, e))
                                     }
                                 }
                             }
@@ -263,6 +263,10 @@ impl Websocket for KuCoinWebsocket {
     }
     
     async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::UnboundedSender<SnapshotUi>) {
+        if !self.enabled {
+            return ;
+        }
+
         while let Ok((_uuid, ticker)) = self.ticker_rx.recv().await {
             let (tx, mut rx) = mpsc::channel(100);    
             let this = Arc::clone(&self);
@@ -319,7 +323,7 @@ impl Websocket for KuCoinWebsocket {
         Some(BookEvent::Snapshot { ticker, snapshot: Snapshot { a: asks, b: bids, last_price: 0.0 } })
     }
     
-    async fn handle_delta(self: Arc<Self>, _json: Self::Snapshot) {
+    async fn handle_delta(self: Arc<Self>, _json: Self::Snapshot) -> Option<BookEvent> {
         todo!()
     }
     

@@ -1,105 +1,11 @@
-use std::{collections::{BTreeMap, HashMap}, sync::Arc};
-
-use dashmap::DashMap;
+use std::{collections::{BTreeMap, HashMap}};
 use serde::{Serialize};
-use tokio::sync::{RwLock, mpsc};
-
-type Ticker = String;
+use tokio::sync::{mpsc};
 
 #[derive(Clone, Debug)]
 pub enum OrderType {
     Long, 
     Short
-}
-
-#[derive(Debug, Clone)]
-pub struct LocalOrderBook {
-    pub books: DashMap<Ticker, Snapshot>
-}
-
-impl LocalOrderBook {
-    pub fn new() -> Arc<RwLock<Self>> {
-        Arc::new(RwLock::new(
-            Self {
-                books: DashMap::new()
-            }
-        ))
-    }
-
-    pub async fn set_last_price(&mut self, ticker: &str, last_price: f64) {
-        if self.books.contains_key(ticker) {
-            if let Some(mut snapshot) = self.books.get_mut(&ticker.to_string()) {
-                snapshot.last_price = last_price;
-            } else {
-                println!("[OrderBook] Ticker: {ticker} not found")
-            }
-        }
-    }
-
-    pub async fn parse_levels(&self, data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
-        let mut values = BTreeMap::new();
-        let tick = 900000000.0;
-
-        for vec in data {
-            let price = vec[0].parse::<f64>().expect("[Orderbook] Bad price");
-            let volume = vec[1].parse::<f64>().expect("[Orderbook] Bad volume");
-
-            let price_with_tick = (price * tick).round() as i64;
-
-            values.insert(price_with_tick, volume);
-        }
-
-        values
-    }
-
-    pub async fn apply_snapshot_updates(
-        &mut self, 
-        ticker: &str, 
-        asks: BTreeMap<i64, f64>,
-        bids: BTreeMap<i64, f64>,
-    ) {
-
-        if let Some(mut snapshot) = self.books.get_mut(&ticker.to_lowercase()) {
-            for (price, volume) in asks {
-                if volume == 0.0 {
-                    snapshot.a.remove(&price);
-                } else {
-                    snapshot.a.insert(price, volume);
-                }
-            }
-
-            for (price, volume) in bids {
-                if volume == 0.0 {
-                    snapshot.b.remove(&price);
-                } else {
-                    snapshot.b.insert(price, volume);
-                }
-            }
-            
-        } else {
-            println!("[OrderBook] Ticker: {ticker} not found")
-        }
-    }
-
-    pub async fn apply_or_add_snapshot(
-        &self, 
-        ticker: &str, 
-        asks: BTreeMap<i64, f64>, 
-        bids: BTreeMap<i64, f64>
-    ) {
-        if !self.books.contains_key(ticker) {
-            self.books.insert(ticker.to_lowercase(), Snapshot {
-                a: asks,
-                b: bids,
-                last_price: 0.0
-            });
-        } else {
-            if let Some(mut snapshot) = self.books.get_mut(ticker) {
-                snapshot.a = asks;
-                snapshot.b = bids;
-            }
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -167,8 +73,9 @@ pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
 
 pub enum BookEvent {
     Snapshot { ticker: String, snapshot: Snapshot },
+    Delta { ticker: String, delta: Snapshot },
     Price { ticker: String, last_price: f64 },
-    GetBook { ticker: String, reply: mpsc::Sender<Option<SnapshotUi>> }
+    GetBook { ticker: String, reply: mpsc::Sender<Option<SnapshotUi>> },
 }
 
 // #[derive(Clone)]
@@ -190,6 +97,33 @@ impl OrderBookManager {
                             book.b = snapshot_.b;
                         })
                         .or_insert_with(|| Snapshot { a: snapshot.a, b: snapshot.b, last_price: 0.0 });
+                }
+                BookEvent::Delta { ticker, delta } => {
+                    if let Some(snapshot) = self.books.get_mut(&ticker) {
+                        for (price, volume) in delta.a {
+                            if volume == 0.0 {
+                                snapshot.a.remove(&price);
+                            } else {
+                                if let Some(v) = snapshot.a.get_mut(&price) {
+                                    *v = volume;
+                                } else {
+                                    snapshot.a.insert(price, volume);
+                                }
+                            }
+                        }
+
+                        for (price, volume) in delta.b {
+                            if volume == 0.0 {
+                                snapshot.b.remove(&price);
+                            } else {
+                                if let Some(v) = snapshot.b.get_mut(&price) {
+                                    *v = volume;
+                                } else {
+                                    snapshot.b.insert(price, volume);
+                                }
+                            }
+                        }
+                    }
                 }
                 BookEvent::Price { ticker, last_price } => {
                     if let Some(t) = self.books.get_mut(&ticker) {

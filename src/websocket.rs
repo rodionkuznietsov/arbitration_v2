@@ -1,11 +1,11 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, time::Duration};
 use futures_util::{StreamExt, SinkExt};
 use serde::Deserialize;
-use tokio::{net::TcpListener, sync::{RwLock, mpsc}, time::interval};
+use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::{exchange::ExchangeType, exchanges::orderbook::{LocalOrderBook, OrderType, SnapshotUi}};
+use crate::{exchange::ExchangeType, exchanges::orderbook::{OrderType, SnapshotUi}};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebsocketReceiverParams {
@@ -27,7 +27,6 @@ pub struct ConnectedClient {
     pub ticker: String,
     pub long_exchange: ExchangeType,
     pub short_exchange: ExchangeType,
-    pub snapshot_ui: SnapshotUi,
     pub sender: async_channel::Sender<(OrderType, SnapshotUi)>,
     pub receiver: async_channel::Receiver<(OrderType, SnapshotUi)>,
     pub token: tokio_util::sync::CancellationToken,
@@ -42,7 +41,6 @@ impl ConnectedClient {
             ticker: String::new(),
             long_exchange: ExchangeType::Unknown, 
             short_exchange: ExchangeType::Unknown,
-            snapshot_ui: SnapshotUi { a: vec![], b: vec![], last_price: 0.0 },
             sender: sender,
             receiver: receiver,
             token: tokio_util::sync::CancellationToken::new()
