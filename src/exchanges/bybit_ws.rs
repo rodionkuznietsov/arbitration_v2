@@ -6,7 +6,7 @@ use tokio::sync::{RwLock, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 
-use crate::exchanges::{orderbook::{LocalOrderBook, Snapshot}, websocket::{Ticker, Websocket}};
+use crate::exchanges::{orderbook::{BookEvent, LocalOrderBook, Snapshot, SnapshotUi}, websocket::{Ticker, Websocket}};
 
 #[derive(Deserialize, Debug, Serialize)]
 struct TickerResponse {
@@ -72,7 +72,7 @@ impl BybitWebsocket {
         let this = Arc::new(Self { enabled, local_book, title });
 
         let this_cl = Arc::clone(&this);
-        this_cl.connect("spot".to_string());
+        this_cl.connect();
         this
     }
 }
@@ -81,7 +81,7 @@ impl Websocket for BybitWebsocket {
     type Snapshot = OrderBookEvent;
     type Price = TickerEvent;
 
-    fn connect(self: Arc<Self>, channel_type: String) {
+    fn connect(self: Arc<Self>) {
         if !self.enabled {
             println!("{} enabled: false", self.title);
             return;
@@ -158,58 +158,60 @@ impl Websocket for BybitWebsocket {
         // });
     }
 
-    fn get_local_book(self: Arc<Self>,) -> Arc<RwLock<LocalOrderBook>> {
-        self.local_book.clone()
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::UnboundedSender<SnapshotUi>) {
+        todo!()
     }
 
-    async fn get_tickers(&self, channel_type: &str) -> Result<Vec<Ticker>> {
-        let url = format!("https://api.bybit.com/v5/market/tickers?category={channel_type}");
-        let client = reqwest::Client::new();
-        let response = client.get(url)
-            .send()
-            .await?;
+    async fn get_tickers(&self, channel_type: &str) -> Option<Vec<Ticker>> {
+        todo!()
+        // let url = format!("https://api.bybit.com/v5/market/tickers?category={channel_type}");
+        // let client = reqwest::Client::new();
+        // let response = client.get(url)
+        //     .send()
+        //     .await?;
 
-        let mut usdt_tickers = Vec::new();
+        // let mut usdt_tickers = Vec::new();
 
-        if response.status().is_success() {
-            let json = response.json::<TickerResponse>().await?;
-            usdt_tickers = json.result.list
-                .into_iter()
-                .filter(|ticker| ticker.symbol.clone().unwrap().ends_with("USDT"))
-                .collect();
-        }
+        // if response.status().is_success() {
+        //     let json = response.json::<TickerResponse>().await?;
+        //     usdt_tickers = json.result.list
+        //         .into_iter()
+        //         .filter(|ticker| ticker.symbol.clone().unwrap().ends_with("USDT"))
+        //         .collect();
+        // }
 
-        Ok(usdt_tickers)
+        // Ok(usdt_tickers)
     }
 
-    async fn handle_snapshot(self: Arc<Self>, json: OrderBookEvent) -> Option<(String, BTreeMap<i64, f64>, BTreeMap<i64, f64>)> {
-        let book = {
-            self.local_book.read().await.clone()
-        };
+    async fn handle_snapshot(self: Arc<Self>, json: OrderBookEvent) -> Option<BookEvent> {
+        todo!()
+        // let book = {
+        //     self.local_book.read().await.clone()
+        // };
 
-        match json.data {
-            Some(data) => {
-                let ticker = data.symbol.unwrap().to_lowercase();
+        // match json.data {
+        //     Some(data) => {
+        //         let ticker = data.symbol.unwrap().to_lowercase();
 
-                // println!("{:?}", ticker);
+        //         // println!("{:?}", ticker);
 
-                let asks = book.parse_levels(data.asks.unwrap()).await;
-                let bids = book.parse_levels(data.bids.unwrap()).await;
+        //         let asks = book.parse_levels(data.asks.unwrap()).await;
+        //         let bids = book.parse_levels(data.bids.unwrap()).await;
 
-                // Добавляем Asks/Bids в локальный orderbook
-                book.books.insert(ticker, Snapshot {
-                    a: asks,
-                    b: bids,
-                    last_price: 0.0,
-                });
-            }
-            _ => {}
-        }
+        //         // Добавляем Asks/Bids в локальный orderbook
+        //         book.books.insert(ticker, Snapshot {
+        //             a: asks,
+        //             b: bids,
+        //             last_price: 0.0,
+        //         });
+        //     }
+        //     _ => {}
+        // }
 
-        let mut lock = self.local_book.write().await;
-        *lock = book;
+        // let mut lock = self.local_book.write().await;
+        // *lock = book;
 
-        Some((String::new(), BTreeMap::new(), BTreeMap::new()))
+        // Some((String::new(), BTreeMap::new(), BTreeMap::new()))
     }
 
     async fn handle_delta(self: Arc<Self>, json: OrderBookEvent) {
@@ -228,17 +230,18 @@ impl Websocket for BybitWebsocket {
         drop(lock);
     }
 
-    async fn handle_price(self: Arc<Self>, json: TickerEvent) -> Option<(String, f64)> {
-        let mut lock = self.local_book.write().await;
+    async fn handle_price(self: Arc<Self>, json: TickerEvent) -> Option<BookEvent> {
+        todo!()
+        // let mut lock = self.local_book.write().await;
         
-        if let Some(data) = json.data {
-            let ticker = data.symbol.to_lowercase();
-            let last_price = data.last_price.parse::<f64>().expect("[Bybit-Websocket] bad price");
+        // if let Some(data) = json.data {
+        //     let ticker = data.symbol.to_lowercase();
+        //     let last_price = data.last_price.parse::<f64>().expect("[Bybit-Websocket] bad price");
 
-            lock.set_last_price(&ticker, last_price).await;
-        }
-        drop(lock);
+        //     lock.set_last_price(&ticker, last_price).await;
+        // }
+        // drop(lock);
 
-        Some((String::new(), 0.0))
+        // Some((String::new(), 0.0))
     }
 }

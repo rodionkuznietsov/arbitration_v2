@@ -1,10 +1,9 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{sync::Arc};
 
 use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
-use anyhow::Result;
+use tokio::sync::{mpsc};
 
-use crate::exchanges::orderbook::LocalOrderBook;
+use crate::exchanges::orderbook::{BookEvent, SnapshotUi};
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Ticker {
@@ -16,10 +15,10 @@ pub trait Websocket {
     type Snapshot;
     type Price;
 
-    fn connect(self: Arc<Self>, channel_type: String);
-    fn get_local_book(self: Arc<Self>) -> Arc<RwLock<LocalOrderBook>>;
-    async fn get_tickers(&self, channel_type: &str) -> Result<Vec<Ticker>>;
-    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<(String, BTreeMap<i64, f64>, BTreeMap<i64, f64>)>;
+    fn connect(self: Arc<Self>);
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::UnboundedSender<SnapshotUi>);
+    async fn get_tickers(&self, channel_type: &str) -> Option<Vec<Ticker>>;
+    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<BookEvent>;
     async fn handle_delta(self: Arc<Self>, json: Self::Snapshot);
-    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<(String, f64)>;
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<BookEvent>;
 }

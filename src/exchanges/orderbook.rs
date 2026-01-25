@@ -2,7 +2,7 @@ use std::{collections::{BTreeMap, HashMap}, sync::Arc};
 
 use dashmap::DashMap;
 use serde::{Serialize};
-use tokio::sync::{RwLock, mpsc, oneshot};
+use tokio::sync::{RwLock, mpsc};
 
 type Ticker = String;
 
@@ -38,7 +38,7 @@ impl LocalOrderBook {
 
     pub async fn parse_levels(&self, data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
         let mut values = BTreeMap::new();
-        let tick = 1000000.0;
+        let tick = 900000000.0;
 
         for vec in data {
             let price = vec[0].parse::<f64>().expect("[Orderbook] Bad price");
@@ -111,7 +111,8 @@ pub struct Snapshot {
 
 impl Snapshot {
     pub async fn to_ui(&self, depth: usize) -> SnapshotUi {
-        let tick = 1000000.00;
+        let tick = 900000000.0;
+        
         let mut a = self.a.iter()
             .filter(|(p, _)| (**p as f64) / tick > self.last_price)
             .map(|(p, v)| (*p as f64 / tick, *v))
@@ -151,12 +152,11 @@ pub struct SnapshotUi {
 
 pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
     let mut values = BTreeMap::new();
-    let tick = 1000000.0;
+    let tick = 900000000.0;
 
     for vec in data {
         let price = vec[0].parse::<f64>().expect("[Orderbook] Bad price");
         let volume = vec[1].parse::<f64>().expect("[Orderbook] Bad volume");
-
         let price_with_tick = (price * tick).round() as i64;
 
         values.insert(price_with_tick, volume);
@@ -165,25 +165,21 @@ pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
     values
 }
 
-pub struct OrderBookView {
-    snapshot: Snapshot
-}
-
 pub enum BookEvent {
     Snapshot { ticker: String, snapshot: Snapshot },
     Price { ticker: String, last_price: f64 },
     GetBook { ticker: String, reply: mpsc::Sender<Option<SnapshotUi>> }
 }
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct OrderBookManager {
     pub books: HashMap<String, Snapshot>,
-    pub rx: async_channel::Receiver<BookEvent>
+    pub rx: mpsc::Receiver<BookEvent>
 }
 
 impl OrderBookManager {
     pub async fn set_data(mut self) {
-        while let Ok(event) = self.rx.clone().recv().await {
+        while let Some(event) = self.rx.recv().await {
             match event {
                 BookEvent::Snapshot { ticker, snapshot  } => {
                     let snapshot_ = snapshot.clone();
@@ -201,7 +197,7 @@ impl OrderBookManager {
                     }
                 },
                 BookEvent::GetBook { ticker, reply } => {
-                    if let Some(snapshot) = self.books.get(&format!("{}usdt", ticker)) {   
+                    if let Some(snapshot) = self.books.get(&format!("{}usdt", ticker)) {
                         let snapshot_ui = snapshot.to_ui(6).await;
                         match reply.send(Some(snapshot_ui)).await {
                             Ok(_) => {}

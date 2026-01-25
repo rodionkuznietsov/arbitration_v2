@@ -1,13 +1,13 @@
-use std::{collections::HashMap, sync::{Arc, atomic::AtomicBool}, time::Duration};
+use std::{collections::HashMap, sync::{Arc}, time::Duration};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Notify, mpsc, oneshot};
+use tokio::sync::{Notify, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
-use futures_util::{SinkExt, StreamExt, select};
+use futures_util::{SinkExt, StreamExt};
 use anyhow::{Result};
 use tokio_util::sync::CancellationToken;
 
-use crate::exchanges::{orderbook::{BookEvent, OrderBookManager, Snapshot, SnapshotUi, parse_levels__}, websocket::Ticker};
+use crate::exchanges::{orderbook::{BookEvent, OrderBookManager, Snapshot, SnapshotUi, parse_levels__}, websocket::{Ticker, Websocket}};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct ApiKeyResponse {
@@ -64,7 +64,6 @@ struct TickerEventData {
 #[derive(Debug, PartialEq)]
 enum WebSocketStatus {
     Finished,
-    None
 }
 
 enum WsCmd {
@@ -76,18 +75,17 @@ pub struct KuCoinWebsocket {
     enabled: bool,
     client: reqwest::Client,
     channel_type: String,
-    sender_data: async_channel::Sender<BookEvent>,
+    sender_data: mpsc::Sender<BookEvent>,
     pub ticker_tx: async_channel::Sender<(String, String)>,
     ticker_rx: async_channel::Receiver<(String, String)>,
 }
 
 impl KuCoinWebsocket {
     pub fn new(enabled: bool) -> Arc<Self> {
-        
         let title = "[KuCoin-Websocket]".to_string();
         let client = reqwest::Client::new();
         let channel_type = String::from("spot");
-        let (sender_data, rx_data) = async_channel::bounded(50);
+        let (sender_data, rx_data) = mpsc::channel(50);
         let (ticker_tx, ticker_rx) = async_channel::bounded::<(String, String)>(1);
 
         let book_manager = OrderBookManager {
@@ -104,59 +102,15 @@ impl KuCoinWebsocket {
             sender_data, ticker_tx, ticker_rx
         });
         let this_cl = Arc::clone(&this);
-        this_cl.handle_tickers();
+        this_cl.connect();
 
         this
     }
 
-    pub async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::UnboundedSender<SnapshotUi>) {        
-        while let Ok((_uuid, ticker)) = self.ticker_rx.recv().await {
-            let (tx, mut rx) = mpsc::channel(100);    
-            let this = Arc::clone(&self);
-
-            loop {
-                let ticker = ticker.clone();
-                this.sender_data.send(BookEvent::GetBook { ticker, reply: tx.clone() }).await.unwrap();
-
-                tokio::select! {
-                    data = rx.recv() => {
-                        if let Some(snapshot_ui) = data {
-                            if let Some(snapshot) = snapshot_ui {
-                                // println!("{}: {}", uuid, snapshot.last_price);
-                                match snapshot_tx.send(snapshot) {
-                                    Ok(_) => {}
-                                    Err(_) => {}
-                                }
-                            }
-                        }
-                    }
-
-                    _ = tokio::time::sleep(Duration::from_millis(750)) => {}
-                }
-            }
-        }
-    }
-
-    fn handle_tickers(self: Arc<Self>) {
-        tokio::spawn(async move {
-            if !self.enabled {
-                println!("{} enabled: false", self.title);
-                return ;
-            }
-
-            let this = self.clone();
-            let tickers = self.get_tickers().await;
-        
-            // Обрабатываем подписку на все токены
-            if let Some(tickers) = tickers {
-                this.clone().websocket_loop(&tickers).await;
-            }
-        });
-    }
-
-    async fn websocket_loop(self: Arc<Self>, tickers: &Vec<Ticker>) {                        
+    async fn reconnect(self: Arc<Self>, tickers: &Vec<Ticker>) {                        
         let notify = Arc::new(Notify::new());
-        notify.notify_one();
+        
+        notify.notify_one(); // Инициализируем запуск
         loop {    
             notify.notified().await;
             println!("Reconnecting...");
@@ -167,26 +121,32 @@ impl KuCoinWebsocket {
 
                 for ticker in chunk {
                     let symbol = ticker.symbol.clone().unwrap().replace("-USDT", "");
-                    cmd_tx.send(WsCmd::Subscribe(symbol)).await.unwrap();   
+                    match cmd_tx.send(WsCmd::Subscribe(symbol)).await {
+                        Ok(_) => {}
+                        Err(e) => {
+                            println!("{}: {e}", self.title)
+                        }
+                    }
                 }
             
-                // На каждый чанк запускаем новое подключение к вебсокету
                 let this = self.clone();
                 let cmd_rx = cmd_rx;
                 let token = token.clone();
                 let notify = notify.clone();
+
+                // На каждый чанк запускаем новое подключение к вебсокету
                 tokio::spawn(async move {
                     tokio::select! {
                         _ = token.cancelled() => {
-                            return ;
+                            return;
                         },
                         _ = this.clone().run_websocket(&cmd_rx) => {
-                            token.cancel();
+                            token.cancel(); // Удаляем текущую задачу
                         }
                     };
 
-                    tokio::time::sleep(Duration::from_secs(5)).await;
-                    notify.notify_one();
+                    tokio::time::sleep(Duration::from_secs(5)).await; 
+                    notify.notify_one(); // Реконектемся
                 });
             }
         }
@@ -203,8 +163,6 @@ impl KuCoinWebsocket {
         while let Ok(cmd) = cmd_rx.recv().await {
             match cmd {
                 WsCmd::Subscribe(ticker) => {
-                    println!("Ticker: {}", ticker);
-
                     write.send(Message::Text(
                         serde_json::json!({
                             "type": "subscribe",
@@ -240,11 +198,12 @@ impl KuCoinWebsocket {
                         if channel.contains("level2Depth50") {
                             let json: OrderBookEvent = serde_json::from_str(&channel).unwrap();
                             let result = this.clone().handle_snapshot(json).await;
+                            
                             if let Some(event) = result {
                                 match this.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("{}", format!("{}: {}", this.title, e))
+                                        println!("1111{}", format!("{}: {}", this.title, e))
                                     }
                                 }
                             } 
@@ -257,7 +216,7 @@ impl KuCoinWebsocket {
                                 match this.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("{}", format!("{}: {}", this.title, e))
+                                        println!("1111{}", format!("{}: {}", this.title, e))
                                     }
                                 }
                             }
@@ -280,30 +239,63 @@ impl KuCoinWebsocket {
 
         Some(ticker.to_lowercase())
     }
+}
+ 
+impl Websocket for KuCoinWebsocket {
+    type Snapshot = OrderBookEvent;
+    type Price = TickerEvent;
 
-    async fn handle_snapshot(self: Arc<Self>, json: OrderBookEvent) -> Option<BookEvent> {
-        let Some(data) = json.data else { return None};
-        let ticker = self.ticker_formatted(json.topic).await;
-        let Some(ticker) = ticker else { return None };
-        let asks = parse_levels__(data.asks).await;
-        let bids = parse_levels__(data.bids).await;
+    fn connect(self: Arc<Self>) {
+        tokio::spawn(async move {
+            if !self.enabled {
+                println!("{} enabled: false", self.title);
+                return ;
+            }
 
-        Some(BookEvent::Snapshot { ticker, snapshot: Snapshot { a: asks, b: bids, last_price: 0.0 } })
+            let this = self.clone();
+            let tickers = self.get_tickers(&self.channel_type).await;
+            
+            // Обрабатываем подписку на все токены
+            if let Some(tickers) = tickers {
+                this.reconnect(&tickers).await;
+            }
+        });
     }
+    
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::UnboundedSender<SnapshotUi>) {
+        while let Ok((_uuid, ticker)) = self.ticker_rx.recv().await {
+            let (tx, mut rx) = mpsc::channel(100);    
+            let this = Arc::clone(&self);
 
-    async fn handle_price(self: Arc<Self>, json: TickerEvent) -> Option<BookEvent> {
-        let Some(data) = json.data else { return None};
-        let ticker = self.ticker_formatted(json.topic).await;
-        let Some(ticker) = ticker else { return None };
-        let last_price = match data.last_price.parse::<f64>() {
-            Ok(p) => p,
-            Err(_) => 0.0
-        };
+            loop {
+                let ticker = ticker.clone();
+                
+                match this.sender_data.send(BookEvent::GetBook { ticker, reply: tx.clone() }).await {
+                    Ok(_) => {},
+                    Err(e) => {
+                        println!("{}: {}", this.title, e)
+                    },
+                };
 
-        Some(BookEvent::Price { ticker, last_price })
+                tokio::select! {
+                    data = rx.recv() => {
+                        if let Some(snapshot_ui) = data {
+                            if let Some(snapshot) = snapshot_ui {
+                                match snapshot_tx.send(snapshot) {
+                                    Ok(_) => {}
+                                    Err(_) => {}
+                                }
+                            }
+                        }
+                    }
+
+                    _ = tokio::time::sleep(Duration::from_millis(750)) => {}
+                }
+            }
+        }
     }
-
-    async fn get_tickers(self: Arc<Self>) -> Option<Vec<Ticker>>  {
+    
+    async fn get_tickers(&self, _channel_type: &str) -> Option<Vec<Ticker>> {
         let url = "https://api.kucoin.com/api/v1/market/allTickers";
         let response = self.client.get(url).send().await;
         
@@ -316,8 +308,34 @@ impl KuCoinWebsocket {
 
         Some(usdt_tickers)
     }
+    
+    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<BookEvent> {
+        let Some(data) = json.data else { return None};
+        let ticker = self.ticker_formatted(json.topic).await;
+        let Some(ticker) = ticker else { return None };
+        let asks = parse_levels__(data.asks).await;
+        let bids = parse_levels__(data.bids).await;
+
+        Some(BookEvent::Snapshot { ticker, snapshot: Snapshot { a: asks, b: bids, last_price: 0.0 } })
+    }
+    
+    async fn handle_delta(self: Arc<Self>, _json: Self::Snapshot) {
+        todo!()
+    }
+    
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<BookEvent> {
+        let Some(data) = json.data else { return None};
+        let ticker = self.ticker_formatted(json.topic).await;
+        let Some(ticker) = ticker else { return None };
+        let last_price = match data.last_price.parse::<f64>() {
+            Ok(p) => p,
+            Err(_) => 0.0
+        };
+
+        Some(BookEvent::Price { ticker, last_price })
+    }
 }
- 
+
 /// Получает временный ключ доступа к WebSocket.
 async fn get_api_key() -> Result<String> {
     let url = "https://api.kucoin.com/api/v1/bullet-public";
