@@ -1,4 +1,4 @@
-name: Rust
+name: Rust CI
 
 on:
   push:
@@ -16,9 +16,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    
+    # Собираем проект
     - name: Build
       run: cargo build --verbose
+
+    # Тестируем проект
     - name: Run tests
       run: cargo test --verbose
+
+    # Загружаем артефакт
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: my-artifact
+        path: target/debug/your_artifact
+
+    # Скачиваем артефакт
     - name: Download a Build Artifact
       uses: actions/download-artifact@v7.0.0
