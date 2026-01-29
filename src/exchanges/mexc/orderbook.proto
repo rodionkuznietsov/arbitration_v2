@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+import "public_aggre_depths.proto";
+import "public_mini_ticker.proto";
+import "public_deals.proto";
+
+message OrderBookEvent {
+    string channel = 1;
+    PublicAggreDepthsV3Api public_increase_depths = 313;
+    string symbol = 3;
+    int64 sendtime = 6;
+}
+
+message TickerEvent {
+    string channel = 1;
+    PublicMiniTickerV3Api public_deals = 309;
+}
+
+message Event {
+    string channel = 1;
+    string symbol = 3;
+}

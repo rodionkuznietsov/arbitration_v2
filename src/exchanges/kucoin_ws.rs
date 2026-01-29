@@ -7,7 +7,7 @@ use futures_util::{SinkExt, StreamExt};
 use anyhow::{Result};
 use tokio_util::sync::CancellationToken;
 
-use crate::exchanges::{orderbook::{BookEvent, OrderBookManager, Snapshot, SnapshotUi, parse_levels__}, websocket::{Ticker, Websocket}};
+use crate::exchanges::{orderbook::{BookEvent, OrderBookManager, Snapshot, SnapshotUi, parse_levels__}, websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct ApiKeyResponse {
@@ -61,15 +61,6 @@ struct TickerEventData {
     last_price: String
 }
 
-#[derive(Debug, PartialEq)]
-enum WebSocketStatus {
-    Finished,
-}
-
-enum WsCmd {
-    Subscribe(String)
-}
-
 pub struct KuCoinWebsocket {
     title: String,
     enabled: bool,
@@ -107,6 +98,39 @@ impl KuCoinWebsocket {
         this
     }
 
+    async fn ticker_formatted(self: Arc<Self>, topic: String) -> Option<String> {
+        let regex = Regex::new(r"([a-zA-Z]+)-(USDT)$").unwrap();
+        let ticker = regex
+            .captures(&topic)
+            .and_then(|c| c.get(0))
+            .map(|m| m.as_str().to_string().replace("-", ""))?;
+
+        Some(ticker.to_lowercase())
+    }
+}
+ 
+impl Websocket for KuCoinWebsocket {
+    type Snapshot = OrderBookEvent;
+    type Delta = OrderBookEvent;
+    type Price = TickerEvent;
+
+    fn connect(self: Arc<Self>) {
+        tokio::spawn(async move {
+            if !self.enabled {
+                println!("{} enabled: false", self.title);
+                return ;
+            }
+
+            let this = self.clone();
+            let tickers = self.get_tickers(&self.channel_type).await;
+            
+            // Обрабатываем подписку на все токены
+            if let Some(tickers) = tickers {
+                this.reconnect(&tickers).await;
+            }
+        });
+    }
+
     async fn reconnect(self: Arc<Self>, tickers: &Vec<Ticker>) {                        
         let notify = Arc::new(Notify::new());
         
@@ -118,7 +142,7 @@ impl KuCoinWebsocket {
             let token = CancellationToken::new();
 
             for chunk in tickers.chunks(50) {
-                let (cmd_tx, cmd_rx) = async_channel::bounded::<WsCmd>(50);
+                let (cmd_tx, cmd_rx) = mpsc::channel::<WsCmd>(50);
 
                 for ticker in chunk {
                     let symbol = ticker.symbol.clone().unwrap().replace("-USDT", "");
@@ -131,7 +155,7 @@ impl KuCoinWebsocket {
                 }
             
                 let this = self.clone();
-                let cmd_rx = cmd_rx;
+                let mut cmd_rx = cmd_rx;
                 let token = token.clone();
                 let notify = notify.clone();
 
@@ -141,7 +165,7 @@ impl KuCoinWebsocket {
                         _ = token.cancelled() => {
                             return;
                         },
-                        _ = this.clone().run_websocket(&cmd_rx) => {
+                        _ = this.clone().run_websocket(&mut cmd_rx) => {
                             token.cancel(); // Удаляем текущую задачу
                         }
                     };
@@ -152,16 +176,16 @@ impl KuCoinWebsocket {
             }
         }
     }
-
-    async fn run_websocket(self: Arc<Self>, cmd_rx: &async_channel::Receiver<WsCmd>) -> WebSocketStatus {
+    
+    async fn run_websocket(self: Arc<Self>, cmd_rx: &mut mpsc::Receiver<WsCmd>) -> WebSocketStatus {
         let api_token = get_api_key().await.unwrap();
 
         let url = url::Url::parse(&format!("wss://ws-api-spot.kucoin.com?token={}", api_token)).unwrap();
-        let (ws_stream, _) = connect_async(url.to_string()).await.expect("[KuCoin] Failed to connect");
+        let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.title));
         let (mut write, mut read) = ws_stream.split();
         println!("🌐 {} is running", self.title);
 
-        while let Ok(cmd) = cmd_rx.recv().await {
+        while let Some(cmd) = cmd_rx.recv().await {
             match cmd {
                 WsCmd::Subscribe(ticker) => {
                     write.send(Message::Text(
@@ -231,38 +255,6 @@ impl KuCoinWebsocket {
         WebSocketStatus::Finished
     }
 
-    async fn ticker_formatted(self: Arc<Self>, topic: String) -> Option<String> {
-        let regex = Regex::new(r"([a-zA-Z]+)-(USDT)$").unwrap();
-        let ticker = regex
-            .captures(&topic)
-            .and_then(|c| c.get(0))
-            .map(|m| m.as_str().to_string().replace("-", ""))?;
-
-        Some(ticker.to_lowercase())
-    }
-}
- 
-impl Websocket for KuCoinWebsocket {
-    type Snapshot = OrderBookEvent;
-    type Price = TickerEvent;
-
-    fn connect(self: Arc<Self>) {
-        tokio::spawn(async move {
-            if !self.enabled {
-                println!("{} enabled: false", self.title);
-                return ;
-            }
-
-            let this = self.clone();
-            let tickers = self.get_tickers(&self.channel_type).await;
-            
-            // Обрабатываем подписку на все токены
-            if let Some(tickers) = tickers {
-                this.reconnect(&tickers).await;
-            }
-        });
-    }
-    
     async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::UnboundedSender<SnapshotUi>) {
         if !self.enabled {
             return ;
@@ -321,7 +313,10 @@ impl Websocket for KuCoinWebsocket {
         let asks = parse_levels__(data.asks).await;
         let bids = parse_levels__(data.bids).await;
 
-        Some(BookEvent::Snapshot { ticker, snapshot: Snapshot { a: asks, b: bids, last_price: 0.0 } })
+        Some(BookEvent::Snapshot { 
+            ticker, 
+            snapshot: Snapshot { a: asks, b: bids, last_price: 0.0, last_update_id: None } 
+        })
     }
     
     async fn handle_delta(self: Arc<Self>, _json: Self::Snapshot) -> Option<BookEvent> {

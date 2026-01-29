@@ -78,8 +78,29 @@ impl BinXWebsocket {
         this_cl.connect();
         this
     }
+}
 
-    // Перенести recconect в WebsocketTrait
+impl Websocket for BinXWebsocket {
+    type Snapshot = OrderBookEvent;
+    type Delta = OrderBookEvent;
+    type Price = TickerEvent;
+
+    fn connect(self: Arc<Self>) {
+        let this = Arc::clone(&self);
+        tokio::spawn(async move {
+            if !self.enabled {
+                println!("{} enabled: false", this.title);
+                return;
+            } 
+
+            let tickers = this.get_tickers(&this.channel_type).await;
+
+            if let Some(tickers) = tickers {
+                this.reconnect(&tickers).await;
+            }
+        });
+    }
+
     async fn reconnect(self: Arc<Self>, tickers: &Vec<Ticker>) {        
         let notify = Arc::new(Notify::new());
 
@@ -124,10 +145,10 @@ impl BinXWebsocket {
             }
         }
     }
-    
+
     async fn run_websocket(self: Arc<Self>, cmd_rx: &mut mpsc::Receiver<WsCmd>) -> WebSocketStatus {        
         let url = url::Url::parse("wss://open-api-ws.bingx.com/market").unwrap();
-        let (ws_stream, _) = connect_async(url.to_string()).await.unwrap();
+        let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.title));
         let (mut write, mut read) = ws_stream.split();
 
         println!("🌐 [BinX-Websocket] is running");
@@ -206,27 +227,6 @@ impl BinXWebsocket {
 
         WebSocketStatus::Finished
     }
-}
-
-impl Websocket for BinXWebsocket {
-    type Snapshot = OrderBookEvent;
-    type Price = TickerEvent;
-
-    fn connect(self: Arc<Self>) {
-        let this = Arc::clone(&self);
-        tokio::spawn(async move {
-            if !self.enabled {
-                println!("{} enabled: false", this.title);
-                return;
-            } 
-
-            let tickers = this.get_tickers(&this.channel_type).await;
-
-            if let Some(tickers) = tickers {
-                this.reconnect(&tickers).await;
-            }
-        });
-    }
 
     async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<super::orderbook::SnapshotUi>) {
         if !self.enabled {
@@ -236,6 +236,12 @@ impl Websocket for BinXWebsocket {
         while let Ok((_uuid, ticker)) = self.ticker_rx.recv().await {
             let (tx, mut rx) = mpsc::channel(100);
             let this = self.clone();
+
+            let ticker = if ticker.eq_ignore_ascii_case("ton") {
+                "toncoin".to_string()
+            } else {
+                ticker
+            };
 
             loop {
                 let ticker = ticker.clone();
@@ -284,14 +290,13 @@ impl Websocket for BinXWebsocket {
         let asks = parse_levels__(json.data.asks).await;
         let bids = parse_levels__(json.data.bids).await;
 
-        Some(BookEvent::Snapshot { ticker, snapshot: Snapshot {
-            a: asks,
-            b: bids,
-            last_price: 0.0
-        }})
+        Some(BookEvent::Snapshot { 
+            ticker, 
+            snapshot: Snapshot { a: asks, b: bids, last_price: 0.0, last_update_id: None }
+        })
     }
 
-    async fn handle_delta(self: Arc<Self>, json: Self::Snapshot) -> Option<super::orderbook::BookEvent> {
+    async fn handle_delta(self: Arc<Self>, _json: Self::Snapshot) -> Option<super::orderbook::BookEvent> {
         todo!()
     }
 

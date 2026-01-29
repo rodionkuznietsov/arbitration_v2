@@ -140,6 +140,7 @@ async fn handle_connection(
                             "bybit" => ExchangeType::Bybit,
                             "kucoin" => ExchangeType::KuCoin,
                             "binx" => ExchangeType::BinX,
+                            "mexc" => ExchangeType::Mexc,
                             _ => ExchangeType::Unknown
                         };
 
@@ -148,6 +149,7 @@ async fn handle_connection(
                             "bybit" => ExchangeType::Bybit,
                             "kucoin" => ExchangeType::KuCoin,
                             "binx" => ExchangeType::BinX,
+                            "mexc" => ExchangeType::Mexc,
                             _ => ExchangeType::Unknown
                         };
 

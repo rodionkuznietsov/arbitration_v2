@@ -5,6 +5,10 @@ mod exchanges;
 mod exchange;
 mod websocket;
 
+mod mexc_orderbook {
+    include!(concat!(env!("OUT_DIR"), "/_.rs"));
+}
+
 #[tokio::main]
 async fn main() {
     let (sender_exchange_names, receiver_exchange_names) = async_channel::unbounded::<ConnectedClient>();

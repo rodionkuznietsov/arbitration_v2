@@ -2,6 +2,7 @@
 name = "arbitration"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 [dependencies]
 reqwest = { version="0.13.1", features=["json"] }
@@ -25,3 +26,9 @@ rand = "0.8"
 uuid = "1.19.0"
 tokio-util = "0.7"
 regex = "1.12.2"
+prost = "0.12"
+prost-types = "0.12"
+wiremock = "0.6.5"
+
+[build-dependencies]
+prost-build = "0.12"

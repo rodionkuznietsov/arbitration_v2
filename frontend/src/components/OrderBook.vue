@@ -80,9 +80,6 @@
 
         websoket.onmessage = (event) => {
             const data = JSON.parse(event.data)
-
-            console.log(data.long)
-
             longAsks.value = data.long?.a.map(x => ({
                 price: x[0],
                 volume: x[1],
@@ -162,11 +159,36 @@
 
         return new Intl.NumberFormat(
             "en-US", {
-                minimumFractionDigits: 2,
+                minimumFractionDigits: 1,
                 maximumFractionDigits: 2,
+                style: "decimal"
             }
         ).format(value)
     }   
+
+    function getFillPercentAsk(value, method) {
+        if (method == "long") {
+            let max = Math.max(...longAsks.value.map(a => a.volume))
+            const result = (value.volume / max) * 100;
+            return result
+        } else if (method == 'short') {
+            let max = Math.max(...shortAsks.value.map(a => a.volume))
+            const result = (value.volume / max) * 100;
+            return result   
+        }
+    }
+
+    function getFillPercentBid(value, method) {
+        if (method == "long") {
+            let max = Math.max(...longBids.value.map(a => a.volume))
+            const result = (value.volume / max) * 100;
+            return result
+        } else if (method == 'short') {
+            let max = Math.max(...shortBids.value.map(a => a.volume))
+            const result = (value.volume / max) * 100;
+            return result   
+        }
+    }
 
     defineExpose({ show, start, stop, exchanges, isWarningStatus })
 </script>
@@ -188,11 +210,10 @@
                         <th>Цена</th>
                         <th>Обьем $</th>
                     </tr>
-                    <tr v-for="ask in longAsks" :key="ask">
+                    <tr v-for="ask in longAsks" :key="ask" class="ask_row">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
-                        <td class="sell_label"> {{ formatVolume(ask.price *  ask.volume) }} </td>
+                        <td class="sell_label volume-bar" :style="{ '--fill': getFillPercentAsk(ask, 'long') + '%' }">{{ formatVolume(ask.price *  ask.volume) }}</td>
                     </tr>
-
                     <tr>
                         <td colspan="2" class="mid_price" tabindex="3">
                             <div class="with_arrow" :class="longArrow == '⬇' ? 'down' : 'up'">
@@ -202,9 +223,9 @@
                         </td>
                     </tr>
 
-                    <tr v-for="bid in longBids" :key="bid">
+                    <tr v-for="bid in longBids" :key="bid" class="bid_row">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
-                        <td class="buy_label"> {{ formatVolume(bid.price *  bid.volume) }} </td>
+                        <td class="buy_label bid-volume-bar" :style="{ '--fill': getFillPercentBid(bid, 'long') + '%' }">{{ formatVolume(bid.price *  bid.volume) }}</td>
                     </tr>
                 </table>
             </div>
@@ -224,11 +245,10 @@
                         <th>Цена</th>
                         <th>Обьем $</th>
                     </tr>
-                    <tr v-for="ask in shortAsks" :key="ask">
+                    <tr v-for="ask in shortAsks" :key="ask" class="ask_row">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
-                        <td class="sell_label"> {{ formatVolume(ask.price *  ask.volume) }} </td>
+                        <td class="sell_label volume-bar" :style="{ '--fill': getFillPercentAsk(ask, 'short') + '%' }">{{ formatVolume(ask.price *  ask.volume) }}</td>
                     </tr>
-
                     <tr>
                         <td colspan="2" class="mid_price" tabindex="3">
                             <div class="with_arrow" :class="shortArrow == '⬇' ? 'down' : 'up'">
@@ -238,9 +258,9 @@
                         </td>
                     </tr>
 
-                    <tr v-for="bid in shortBids" :key="bid">
+                    <tr v-for="bid in shortBids" :key="bid" class="bid_row">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
-                        <td class="buy_label"> {{ formatVolume(bid.price *  bid.volume) }} </td>
+                        <td class="buy_label bid-volume-bar" :style="{ '--fill': getFillPercentBid(bid, 'short') + '%' }">{{ formatVolume(bid.price *  bid.volume) }}</td>
                     </tr>
                 </table>
             </div>
@@ -253,7 +273,39 @@
         text-align: center;
         margin-top: 10px;
     }
- 
+
+    .ask_row, .bid_row {
+        position: relative;
+    }
+
+    .volume-bar::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: var(--fill);
+        background: var(--color-error-opacity-0_15);
+        z-index: 0;
+        transition: width 0.3s ease;
+    }
+
+    .bid-volume-bar::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: var(--fill);
+        background: var(--color-success-opacity-0_15);
+        z-index: 0;
+        transition: width 0.3s ease;
+    }
+
+    .ask_row td, .bid_row td{
+        position: relative;
+    }
+
     #stakan {
         display: flex;
         gap: 10px;
