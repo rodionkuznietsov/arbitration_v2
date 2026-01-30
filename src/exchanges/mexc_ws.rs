@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::{Duration}};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Notify, Semaphore, mpsc};
@@ -67,9 +67,10 @@ impl MexcWebsocket {
         let notify = Arc::new(Notify::new());
         let mut delay = Duration::from_secs(1);
         let max_delay = Duration::from_secs(60);
+        let mut _snapshot = None;
+                
+        tracing::warn!(ticker);
 
-        let mut snapshot = None;
-        
         notify.notify_one();
         loop {
             notify.notified().await;
@@ -82,13 +83,13 @@ impl MexcWebsocket {
                     tokio::time::sleep(delay).await;
                     notify.notify_one();
                 } else {
-                    snapshot = Some(snap);
+                    _snapshot = Some(snap);
                     break;
                 }
             } 
         }
 
-        snapshot
+        _snapshot
     }
 
     async fn get_ticker_snapshot(self: Arc<Self>, ticker: &str) -> Option<(u16, SnapshotResponse)> {
@@ -126,10 +127,26 @@ impl Websocket for MexcWebsocket {
             return;
         }
 
-        let chunk_size = 20;
+        let chunk_size = 16;
+        let batch_delay = 1.25;
+        let semaphore = Arc::new(Semaphore::new(12));
+        let rate_limiter = Arc::new(Semaphore::new(0));
 
+        tokio::spawn({
+            let rl = rate_limiter.clone();
+            async move {
+                // Formula: max limit / min secs limit = result; second in millis / result = min mill secs
+                let mut interval = tokio::time::interval(Duration::from_millis(25)); // 40 rps 
+                loop {
+                    interval.tick().await;
+                    rl.add_permits(1);
+                }
+            }
+        });
+        
         let notify = Arc::new(Notify::new());
         notify.notify_one();
+
         loop {
             notify.notified().await;
             println!("{}: Reconnecting...", self.title);
@@ -138,6 +155,10 @@ impl Websocket for MexcWebsocket {
 
             let this = self.clone();
             
+            // let tickers: Vec<&Ticker> = tickers.iter()
+            //     .filter(|x| x.symbol.as_deref() == Some("SOLUSDT"))
+            //     .collect();
+
             for chunk in tickers.chunks(chunk_size) {
                 let (cmd_tx, mut cmd_rx) = mpsc::channel::<WsCmd>(chunk_size);
 
@@ -149,26 +170,33 @@ impl Websocket for MexcWebsocket {
                     match cmd_tx.send(WsCmd::Subscribe(symbol.clone())).await {
                         Ok(_) => {},
                         Err(e) => {
-                            println!("{}: {}", this.title, e);
+                            tracing::error!("{}: {}", this.title, e)
                         }
                     };
 
-                    // let this = this.clone();
-                    // tokio::spawn(async move {
-                    //     let data = this.clone().get_ticker_snapshot_with_retry(&symbol_cl).await;
+                    let this = this.clone();
+                    let semaphore = semaphore.clone();
+                    let rate_limiter = rate_limiter.clone();
 
-                    //     if let Some(json) = data {
-                    //         let result = this.clone().handle_snapshot(json).await;
-                    //         if let Some(event) = result {
-                    //             match this.sender_data.send(event).await {
-                    //                 Ok(_) => {}
-                    //                 Err(e) => {
-                    //                     println!("{}", format!("{}: {}", this.title, e))
-                    //                 }
-                    //             }
-                    //         }
-                    //     }
-                    // }); 
+                    tokio::spawn(async move {
+                        let _permit = semaphore.clone().acquire_owned().await.unwrap();
+                        let _rl = rate_limiter.acquire().await.unwrap();
+
+                        tokio::time::sleep(Duration::from_secs_f64(batch_delay)).await; // Задержка перед следущим батчем
+                        let data = this.clone().get_ticker_snapshot_with_retry(&symbol_cl).await;
+
+                        if let Some(json) = data {
+                            let result = this.clone().handle_snapshot(json).await;
+                            if let Some(event) = result {
+                                match this.sender_data.send(event).await {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        tracing::error!("{}: {}", this.title, e)
+                                    }
+                                }
+                            }
+                        }
+                    }); 
                 }
 
                 let token = token.clone();
@@ -182,7 +210,7 @@ impl Websocket for MexcWebsocket {
                             token.cancel();
                         }
                     }
-                });                
+                });     
             }
         }
     }
@@ -197,7 +225,9 @@ impl Websocket for MexcWebsocket {
         while let Some(cmd) = cmd_rx.recv().await {
             match cmd {
                 WsCmd::Subscribe(ticker) => {
-                    println!("{}", ticker);
+                    if ticker == "SOLUSDT" {
+                        println!("{}", ticker)
+                    }
                     write.send(TungsteniteMessage::Text(
                         serde_json::json!({
                             "method": "SUBSCRIPTION",
@@ -215,7 +245,7 @@ impl Websocket for MexcWebsocket {
             let msg_type = match msg {
                 Ok(m) => Some(m),
                 Err(e) => {
-                    println!("{}: {e}", self.title);
+                    tracing::error!("{}: {}", self.title, e);
                     None
                 }
             };
@@ -233,10 +263,14 @@ impl Websocket for MexcWebsocket {
                                 match self.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("{}", format!("{}: {}", self.title, e))
+                                        tracing::error!("{}: {}", self.title, e)
                                     }
                                 }
                             }
+                        }
+
+                        if event.symbol == "SOLUSDT" {
+                            println!("ssss{}", event.channel)
                         }
                     
                         if event.channel.contains("miniTicker") {
@@ -252,7 +286,7 @@ impl Websocket for MexcWebsocket {
                                 match self.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("{}", format!("{}: {}", self.title, e))
+                                        tracing::error!("{}: {}", self.title, e)
                                     }
                                 }
                             }
@@ -281,7 +315,7 @@ impl Websocket for MexcWebsocket {
                 match this.sender_data.send(BookEvent::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
-                        println!("{}: {}", this.title, e)
+                        tracing::error!("{}: {}", this.title, e)
                     }
                 }
 

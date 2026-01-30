@@ -10,6 +10,10 @@
                 <span>Курс</span>
             </div>
             <div id="menu_element">
+                <img src="../assets/icons/graph.svg" alt="">
+                <span>График</span>
+            </div>
+            <div id="menu_element">
                 <img src="../assets/icons/logs.svg" alt="">
                 <span>История</span>
             </div>

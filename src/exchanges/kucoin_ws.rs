@@ -149,7 +149,7 @@ impl Websocket for KuCoinWebsocket {
                     match cmd_tx.send(WsCmd::Subscribe(symbol)).await {
                         Ok(_) => {}
                         Err(e) => {
-                            println!("{}: {e}", self.title)
+                            println!("{}: {{cmd_tx_event_recconect}} {e}", self.title)
                         }
                     }
                 }
@@ -170,7 +170,7 @@ impl Websocket for KuCoinWebsocket {
                         }
                     };
 
-                    tokio::time::sleep(Duration::from_secs(5)).await; 
+                    tokio::time::sleep(Duration::from_secs(1)).await; 
                     notify.notify_one(); // Реконектемся
                 });
             }
@@ -212,7 +212,7 @@ impl Websocket for KuCoinWebsocket {
             let msg_type = match msg {
                 Ok(m) => Some(m),
                 Err(e) => {
-                    println!("{}: {e}", this.title);
+                    println!("{}: {{msg_event_run_websocket_read}} {e}", this.title);
                     None
                 }
             };            
@@ -228,7 +228,7 @@ impl Websocket for KuCoinWebsocket {
                                 match this.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("{}", format!("{}: {}", this.title, e))
+                                        println!("{}: {{sender_data_event_level2Depth50}} {e}", this.title)
                                     }
                                 }
                             } 
@@ -241,7 +241,7 @@ impl Websocket for KuCoinWebsocket {
                                 match this.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("{}", format!("{}: {}", this.title, e))
+                                        println!("{}: {{sender_data_event_ticker}} {e}", this.title)
                                     }
                                 }
                             }
@@ -270,7 +270,7 @@ impl Websocket for KuCoinWebsocket {
                 match this.sender_data.send(BookEvent::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
-                        println!("{}: {}", this.title, e)
+                        println!("{}: {{sender_data_event_get_book}} {e}", this.title)
                     },
                 };
 

@@ -11,6 +11,11 @@ mod mexc_orderbook {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::ERROR)
+        .pretty()
+        .init();
+
     let (sender_exchange_names, receiver_exchange_names) = async_channel::unbounded::<ConnectedClient>();
 
     tokio::spawn({

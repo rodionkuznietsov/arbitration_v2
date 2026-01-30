@@ -61,10 +61,10 @@ pub async fn run_websockets(
     receiver: async_channel::Receiver<ConnectedClient>,
 ) {
 
-    let kucoin_websocket = KuCoinWebsocket::new(true);
-    let bybit_websocket = BybitWebsocket::new(true);
-    let binx_websocket = BinXWebsocket::new(true);
-    let mexc_websocket = MexcWebsocket::new(false);
+    let kucoin_websocket = KuCoinWebsocket::new(false);
+    let bybit_websocket = BybitWebsocket::new(false);
+    let binx_websocket = BinXWebsocket::new(false);
+    let mexc_websocket = MexcWebsocket::new(true);
     
     while let Ok(client) = receiver.recv().await {  
         let token = client.token.clone();
