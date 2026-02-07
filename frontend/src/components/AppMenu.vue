@@ -6,12 +6,16 @@
     <div id="app_menu">
         <div id="menu_overlay">
             <div id="menu_element">
-                <img src="../assets/icons/growth.svg" alt="">
-                <router-link class="router-link" to="/">Курс</router-link>
+                <router-link class="router-link" to="/">
+                    <img src="../assets/icons/growth.svg" alt="">
+                    <span>Курс</span>
+                </router-link>
             </div>
             <div id="menu_element">
-                <img src="../assets/icons/graph.svg" alt="">
-                <router-link class="router-link" to="/chart">График</router-link>
+                <router-link class="router-link" to="/chart">
+                    <img src="../assets/icons/graph.svg" alt="">
+                    <span>График</span>
+                </router-link>
             </div>
             <div id="menu_element">
                 <img src="../assets/icons/logs.svg" alt="">
@@ -29,8 +33,7 @@
         background-color: rgba(48, 60, 81, 0.404);
         left: 0;
         right: 0;
-        margin-left: 60px;
-        margin-right: 60px;
+        margin: 0 125px;
         border-radius: 30px;
         font-size: 16px;
         z-index: 1;
@@ -39,6 +42,9 @@
     .router-link {
         color: var(--default-font-color);
         text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     #menu_overlay {
