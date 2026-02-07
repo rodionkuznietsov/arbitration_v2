@@ -33,6 +33,7 @@
         margin-right: 60px;
         border-radius: 30px;
         font-size: 16px;
+        z-index: 1;
     }
 
     .router-link {
