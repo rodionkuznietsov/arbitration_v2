@@ -46,6 +46,13 @@ import { onMounted, ref } from 'vue';
         ]);
 
         chart.timeScale().fitContent()
+        chart.timeScale().scrollToPosition(0.5, false)
+        chart.timeScale().applyOptions({
+            fixLeftEdge: true,
+            lockVisibleTimeRangeOnResize: true,
+            rightOffset: 0,
+            borderVisible: false,
+        })
     })
     
 </script>
