@@ -81,6 +81,7 @@ import { onMounted, ref } from 'vue';
         <input class="toolbar-button" type="button" value="5m">
     </div>
     <div class="chart" ref="container" id="chart"></div>
+    <div class="title_bg">Arbitration Bot</div>
 </template>
 
 <style scoped>
@@ -106,5 +107,17 @@ import { onMounted, ref } from 'vue';
         cursor: pointer;
         border-radius: 4px;
         font-size: var(--default-font-size);
+    }
+
+    .title_bg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 18px;
+        color: #ffffff27;
+        pointer-events: none;
+        z-index: 1000000000;
+        font-weight: bold;
     }
 </style>
