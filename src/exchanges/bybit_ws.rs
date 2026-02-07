@@ -116,12 +116,13 @@ impl Websocket for BybitWebsocket {
     }
 
     async fn reconnect(self: Arc<Self>, tickers: &Vec<Ticker>) {
+        let chunk_size = 5;
         let notify = Arc::new(Notify::new());
 
         notify.notify_one(); 
         loop {
             notify.notified().await;
-            println!("{}: Reconnecting...", self.title);
+            tracing::info!("{}", format!("{} Reconnection...", self.title));
 
             let token = CancellationToken::new();
             let (cmd_tx, mut cmd_rx) = mpsc::channel::<WsCmd>(10);
@@ -138,13 +139,14 @@ impl Websocket for BybitWebsocket {
                 }
             });
 
-            for chunk in tickers.chunks(5) {
+            for chunk in tickers.chunks(chunk_size) {
                 for ticker in chunk {
                     let symbol = ticker.symbol.clone().unwrap().replace("USDT", "");
                     match cmd_tx.send(WsCmd::Subscribe(symbol)).await {
                         Ok(_) => {}
                         Err(e) => {
-                            println!("{}: {e}", self.title)
+                            tracing::info!("{}", format!("{} Failed to send subscribe command: {}", self.title, e));
+                            break;
                         }
                     }
                 }
@@ -157,7 +159,7 @@ impl Websocket for BybitWebsocket {
         let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.title));
         let (mut write, mut read) = ws_stream.split();
 
-        println!("🌐 {} is running", self.title);
+        tracing::info!("{}", format!("{} is now live", self.title));
 
         while let Some(cmd) = cmd_rx.recv().await {
             match cmd {
@@ -204,7 +206,8 @@ impl Websocket for BybitWebsocket {
                                         match this.sender_data.send(event).await {
                                             Ok(_) => {}
                                             Err(e) => {
-                                                println!("{}", format!("{}: {}", this.title, e))
+                                                tracing::error!("{}: {}", this.title, e);
+                                                break;
                                             }
                                         }
                                     }
@@ -216,7 +219,8 @@ impl Websocket for BybitWebsocket {
                                         match this.sender_data.send(event).await {
                                             Ok(_) => {}
                                             Err(e) => {
-                                                println!("{}", format!("{}: {}", this.title, e))
+                                                tracing::error!("{}: {}", this.title, e);
+                                                break;
                                             }
                                         }
                                     }
@@ -232,7 +236,8 @@ impl Websocket for BybitWebsocket {
                                 match this.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("{}", format!("{}: {}", this.title, e))
+                                        tracing::error!("{}: {}", this.title, e);
+                                        break;
                                     }
                                 }
                             }
@@ -261,7 +266,8 @@ impl Websocket for BybitWebsocket {
                 match this.sender_data.send(BookEvent::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
-                        println!("{}: {}", this.title, e)
+                        tracing::error!("{}: {}", this.title, e);
+                        break;
                     },
                 };
 

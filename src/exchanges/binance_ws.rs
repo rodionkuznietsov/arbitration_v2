@@ -1,19 +1,14 @@
-use std::{collections::BTreeMap, sync::Arc, thread::sleep, time::Duration};
-use anyhow::Result;
-use dashmap::DashMap;
-use futures_util::{SinkExt, StreamExt, stream::{self, SplitStream}};
-use reqwest::StatusCode;
+use std::{collections::HashMap, sync::Arc, time::Duration};
+
+use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use tokio::{io::{AsyncRead, AsyncWrite}, net::TcpStream, sync::RwLock};
-use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite::Message};
+use tokio::sync::{Notify, Semaphore, mpsc};
+use tokio_tungstenite::{connect_async, tungstenite::Message};
+use tokio_util::sync::CancellationToken;
+use tracing::{error, info, warn};
 use url::Url;
 
-use crate::exchanges::orderbook::{LocalOrderBook, Snapshot};
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Ticker {
-    pub symbol: String,
-}
+use crate::exchanges::{orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, parse_levels__}, websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OrderBookEvent {
@@ -22,223 +17,391 @@ pub struct OrderBookEvent {
     #[serde(rename="b")]
     bids: Vec<Vec<String>>,
     #[serde(rename="s")]
-    symbol: String
+    symbol: String,
+    #[serde(rename="U")]
+    from_version: u64,
+    #[serde(rename="u")]
+    to_version: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct SnapshotResponse {
-    #[serde(rename="asks")]
-    asks: Vec<Vec<String>>,
-    #[serde(rename="bids")]
-    bids: Vec<Vec<String>>,
-    #[serde(rename="s")]
-    symbol: Option<String>
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct TickerEvent {
     #[serde(rename="s")]
     symbol: String,
     #[serde(rename="c")]
-    last_price: String,
+    last_price: String
 }
 
-pub async fn get_tickers(client: &reqwest::Client) -> Result<Vec<Ticker>> {
-    let url = "https://api.binance.us/api/v3/ticker/bookTicker";
-    let mut usdt_tickers = Vec::new();
-
-    let mut retries = 0;
-
-    loop {
-        let response = client
-            .get(url)
-            .header("User-Agent", "arbitrage-bot/0.1")
-            .send()
-            .await?;
-
-        if response.status() == 418 {
-            retries += 1;
-            let delay = 2u64.pow(retries.min(5));
-            // println!("[BinanceWs] 418 received, retrying in {}s", delay);
-            tokio::time::sleep(Duration::from_secs(delay)).await;
-            continue;
-        } else if response.status() == 200 {
-            let tickers: Vec<Ticker> = response.json().await?;
-            usdt_tickers = tickers
-                .into_iter()
-                .filter(|ticker| ticker.symbol.ends_with("USDT"))
-                .collect();
-            return Ok(usdt_tickers);
-        }
-    }
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SnapshotResponse {
+    #[serde(rename="asks")]
+    asks: Vec<Vec<String>>,
+    #[serde(rename="bids")]
+    bids: Vec<Vec<String>>,
+    #[serde(rename="lastUpdateId")]
+    last_update_id: u64,
+    symbol: Option<String>
 }
 
-async fn get_spot_snapshot(symbol: String, client: &reqwest::Client) -> Result<Option<SnapshotResponse>> {
-    let url = format!("https://api.binance.com/api/v3/depth?symbol={}&limit=1000", symbol);
-    let mut snapshot = None;
-    let mut retries = 0;
-
-    loop {
-        let response = client.get(&url)
-            .send()
-            .await?;
-
-        if response.status() == 418 {
-            retries += 1;
-            let delay = 2u64.pow(retries.min(5));
-            tokio::time::sleep(Duration::from_secs(delay)).await;
-            continue;
-        } else if response.status() == 200 {
-            let mut json: SnapshotResponse = response.json().await?;
-            json.symbol = Some(symbol.clone());
-            snapshot = Some(json);
-            
-            break;
-        }
-    }
-  
-    Ok(snapshot)
+pub struct BinanceWebsocket {
+    title: String,
+    enabled: bool,
+    channel_type: String,
+    client: reqwest::Client,
+    pub ticker_tx: async_channel::Sender<(String, String)>,
+    ticker_rx: async_channel::Receiver<(String, String)>,
+    sender_data: mpsc::Sender<BookEvent>
 }
 
-pub async fn connect(local_book: Arc<RwLock<LocalOrderBook>>) {
-    let client = reqwest::Client::new();
-    let tickers = get_tickers(&client).await.unwrap();
+impl BinanceWebsocket {
+    pub fn new(enabled: bool) -> Arc<Self> {
+        let title = "[BinanceWebsocket]:".to_string();
+        let channel_type = String::from("spot");
+        let client = reqwest::Client::new();
+        let (ticker_tx, ticker_rx) = async_channel::bounded::<(String, String)>(1);
+        let (sender_data, rx_data) = mpsc::channel::<BookEvent>(1);
 
-    let url = Url::parse("wss://stream.binance.com:443/ws").unwrap();
-    let (ws_stream, _) = connect_async(url.to_string()).await.expect("[Binance] Failed to connect");
-    let (mut write, read) = ws_stream.split();
-
-    println!("🌐 [Binance-Websocket] is running");
-
-    let mut params = Vec::new();
-
-    for ticker in &tickers {
-        let symbol = ticker.symbol.to_lowercase().clone();
-        let orderbook_str = format!("{}@depth@100ms", symbol);
-        let last_price_str = format!("{}@ticker", symbol);
-
-        params.push(orderbook_str);
-        params.push(last_price_str);
-    }
-
-    for chunk in params.chunks(200) {
-        write.send(tokio_tungstenite::tungstenite::Message::Text(
-            serde_json::json!({
-                "method": "SUBSCRIBE",
-                "params": chunk
-            }).to_string().into()
-        )).await.unwrap();
-    }
-
-    let (sender, receiver) = async_channel::unbounded::<SnapshotResponse>();
-
-    tokio::spawn(async move {
-        ws_read_loop(read, local_book, receiver).await;
-    });
-
-    let client = Arc::new(client);
-    let mut snapshots = stream::iter(tickers)
-        .map(move |ticker| {
-            let symbol = ticker.symbol.clone();
-            let client = Arc::clone(&client);
-            async move {
-                get_spot_snapshot(symbol, &client).await
-            }
-        })
-        .buffer_unordered(3); // 3 одновременных запросов
-
-    tokio::spawn({
-        async move {
-            while let Some(s) = snapshots.next().await {
-                let snapshot = s.unwrap();
-                if let Some(snap) = snapshot {
-                    sender.send(snap).await.expect("[BinanceWS] Failed to send snapshot")
-                }
-            }
-        }
-    });
-}
-
-async fn ws_read_loop<S>(
-    mut read: SplitStream<WebSocketStream<S>>, 
-    local_book: Arc<RwLock<LocalOrderBook>>,
-    receiver: async_channel::Receiver<SnapshotResponse>
-) 
-where 
-    S: AsyncRead + AsyncWrite + Unpin,
-{
-    while let Some(msg) = read.next().await {
-        let msg_type = match msg {
-            Ok(m) => m,
-            Err(e) => {
-                println!("[Binance-Websocket] read error: {e}");
-                return;
-            }
+        let book_manager = OrderBookManager {
+            books: HashMap::new(),
+            rx: rx_data
         };
 
-        match msg_type {
-            Message::Text(channel) => {
-                
-                if channel.contains("depthUpdate") {   
-                    let json: OrderBookEvent = serde_json::from_str(&channel).unwrap();
+        tokio::spawn(async move {
+            book_manager.set_data().await;
+        });
 
-                    tokio::select! {
-                        Ok(snapshot) = receiver.recv() => {
-                            handle_snapshot(snapshot, local_book.clone()).await;
-                        }
-                        _ = handle_delta(json, local_book.clone()) => {}
-                    }
+        let this = Arc::new(Self {
+            title, enabled, channel_type,
+            client, ticker_rx, ticker_tx,
+            sender_data
+        });
+
+        let this_cl = this.clone();
+        this_cl.connect();
+
+        this
+    }
+
+    async fn get_ticker_snapshot_with_retry(self: Arc<Self>, ticker: &str) -> Option<SnapshotResponse> {
+        let this = self.clone();
+        let mut delay = Duration::from_secs(0);
+        let max_delay = Duration::from_secs(60);
+        let mut _snapshot = None;
+        
+        let notify = Arc::new(Notify::new());
+        notify.notify_one();
+        loop {
+            notify.notified().await;
+            let result = this.clone().get_ticker_snapshot(ticker).await;
+            if let Some((status, snapshot)) = result {
+                if status == 429 {
+                    delay = std::cmp::min(delay * 2, max_delay);
+                    warn!("{} Reconnecting to ticker: {} in {} secs", this.title, ticker, delay.as_secs_f64());
+                    tokio::time::sleep(delay).await;
+                    notify.notify_one();
+                } else if status == 418 {
+                    error!("{} too many attempts. Reconneting in 10 minutes", this.title);
+                    tokio::time::sleep(Duration::from_mins(10)).await;
+                    notify.notify_one();
+                } else {
+                    _snapshot = Some(snapshot);
+                    break;
                 }
-                
-                if channel.contains("24hrTicker") {
-                    let json = serde_json::from_str::<TickerEvent>(&channel).unwrap();
-                    handle_price(json, local_book.clone()).await;
-                }
-            }, 
-            _ => {}
+            }
         }
+
+        _snapshot
+    }
+
+    async fn get_ticker_snapshot(self: Arc<Self>, ticker: &str) -> Option<(u16, SnapshotResponse)> {
+        let url = format!("https://api.binance.com/api/v3/depth?symbol={}&limit=5000", ticker);
+        let response = self.client.get(url).send().await;
+        let Ok(response) = response else { return None };
+        let status = response.status().as_u16();
+        let Ok(mut snapshot) = response.json::<SnapshotResponse>().await else { return None };
+        snapshot.symbol = Some(ticker.to_string());
+        Some((status, snapshot))
     }
 }
 
+impl Websocket for BinanceWebsocket {
+    type Snapshot = SnapshotResponse;
+    type Delta = OrderBookEvent;
+    type Price = TickerEvent;
 
-async fn handle_snapshot(json: SnapshotResponse, local_book: Arc<RwLock<LocalOrderBook>>) {
-    let book = {
-        local_book.read().await.clone()
-    };
+    fn connect(self: Arc<Self>) {
+        tokio::spawn(async move {
+            if !self.enabled {
+                warn!("{} is disabled", self.title);
+                return;
+            }
 
-    if let Some(t) = json.symbol {
-        let asks = book.parse_levels(json.asks).await;
-        let bids = book.parse_levels(json.bids).await;
-
-        book.books.insert(t.to_lowercase(), Snapshot {
-            a: asks,
-            b: bids,
-            last_price: 0.0
+            let tickers = self.get_tickers(&self.channel_type).await;
+            if let Some(tickers) = tickers {
+                self.reconnect(&tickers).await;
+            }
         });
     }
 
-    let mut lock = local_book.write().await;
-    *lock = book;
-    drop(lock);
-}
+    async fn reconnect(self: Arc<Self>, tickers: &Vec<super::websocket::Ticker>) {
+        let chunk_size = 5;
+        let batch_delay = 1.25;
 
-async fn handle_delta(json: OrderBookEvent, local_book: Arc<RwLock<LocalOrderBook>>) {
-    let mut lock = local_book.write().await;
+        let semaphore = Arc::new(Semaphore::new(10));
+        let rate_limiter = Arc::new(Semaphore::new(0));
+        
+        tokio::spawn({
+            let rl = rate_limiter.clone();
+            async move {
+                let mut interval = tokio::time::interval(Duration::from_millis(25)); // 40 rps
+                loop { 
+                    interval.tick().await;
+                    rl.add_permits(1);
+                }
+            }
+        });
 
-    let ticker = json.symbol.clone().to_lowercase();
-    let asks = lock.parse_levels(json.asks).await;
-    let bids = lock.parse_levels(json.bids).await;
+        let notify = Arc::new(Notify::new());
+        notify.notify_one();
+        loop {
+            notify.notified().await;
+            info!("{}", format!("{} Reconnection...", self.title));
 
-    lock.apply_snapshot_updates(&ticker, asks, bids).await;
-    drop(lock);
-}
+            let token = CancellationToken::new();
 
-async fn handle_price(json: TickerEvent, local_book: Arc<RwLock<LocalOrderBook>>) {
-    let mut lock = local_book.write().await;
+            for chunk in tickers.chunks(chunk_size) {
+                let (cmd_tx, cmd_rx) = mpsc::channel::<WsCmd>(chunk_size);
+                for ticker in chunk {
+                    let symbol = ticker.symbol.clone().unwrap();
+                    let symbol_cl = symbol.clone();
+                    if cmd_tx.send(WsCmd::Subscribe(symbol)).await.is_err() {
+                        error!("{} is it not possible to send the command", self.title)
+                    }
 
-    let ticker = json.symbol;
-    let last_price = json.last_price.parse::<f64>().expect("[Bybit-Websocket] Bad price");
+                    tokio::spawn({
+                        let semaphore = semaphore.clone();
+                        let rate_limiter = rate_limiter.clone();
+                        let this = self.clone();
 
-    lock.set_last_price(&ticker.to_lowercase(), last_price);
-    drop(lock);
+                        async move {
+                            let _permit = semaphore.acquire_owned().await.unwrap();
+                            let _rl = rate_limiter.acquire().await.unwrap();
+                            let this_cl = this.clone();
+
+                            let result = this.get_ticker_snapshot_with_retry(&symbol_cl).await;
+                            if let Some(snapshot) = result {
+                                let this_cl_2 = this_cl.clone();
+                                let result = this_cl.handle_snapshot(snapshot).await;
+                                if let Some(event) = result {
+                                    match this_cl_2.sender_data.send(event).await {
+                                        Ok(_) => {}
+                                        Err(e) => {
+                                            error!("{} Failed to send event: {e}", this_cl_2.title);
+                                        }
+                                    }
+                                }
+                            }
+
+                            tokio::time::sleep(Duration::from_secs_f64(batch_delay)).await;
+                        }
+                    });
+                }
+
+                tokio::spawn({
+                    let mut cmd_rx = cmd_rx;
+                    let this = self.clone();
+                    let token = token.clone();
+                    let notify = notify.clone();
+
+                    async move {
+                        tokio::select! {
+                            _ = token.cancelled() => {
+                                return ;
+                            }
+                            _ = this.run_websocket(&mut cmd_rx) => {
+                                token.cancel();
+                            }
+                        };
+                        
+                        tokio::time::sleep(Duration::from_secs(1)).await; 
+                        notify.notify_one(); // Реконектемся
+                    }
+                });
+            }
+        }
+    }
+
+    async fn run_websocket(self: Arc<Self>, cmd_rx: &mut tokio::sync::mpsc::Receiver<super::websocket::WsCmd>) -> super::websocket::WebSocketStatus {
+        let url = Url::parse("wss://stream.binance.com:443/ws").unwrap();
+        let (ws_stream, _) = connect_async(url.to_string()).await.expect("[Binance] Failed to connect");
+        let (mut write, mut read) = ws_stream.split();
+
+        info!("{}", format!("{} is now live", self.title));
+
+        while let Some(cmd) = cmd_rx.recv().await {
+            match cmd {
+                WsCmd::Subscribe(ticker) => {
+                    info!("{}", ticker);
+
+                    let orderbook = format!("{}@depth@100ms", ticker.to_lowercase());
+                    let price = format!("{}@ticker", ticker.to_lowercase());
+
+                    write.send(tokio_tungstenite::tungstenite::Message::Text(
+                        serde_json::json!({
+                            "method": "SUBSCRIBE",
+                            "params": [
+                                orderbook,
+                                price
+                            ]
+                        }).to_string().into()
+                    )).await.unwrap();
+                }
+            }
+        }   
+
+        let this = self.clone();
+        while let Some(msg) = read.next().await {
+            let msg = match msg {
+                Ok(m) => Some(m),
+                Err(e) => {
+                    error!("{} {}", self.title, e);
+                    None
+                }
+            };
+
+            let this = this.clone();
+            if let Some(msg_type) = msg {
+                match msg_type {
+                    Message::Text(channel) => {
+                        if channel.contains("depthUpdate") {
+                            let data: OrderBookEvent = serde_json::from_str(&channel).unwrap();
+                            let this_cl = this.clone();
+
+                            let result = this.handle_delta(data).await;
+                            if let Some(event) = result {
+                                match this_cl.sender_data.send(event).await {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        error!("{} Failed to send event: {e}", this_cl.title);
+                                        break;
+                                    }
+                                }
+                            }
+                        } else if channel.contains("24hrTicker") {
+                            let data: TickerEvent = serde_json::from_str(&channel).unwrap();
+                            let this_cl = this.clone();
+
+                            let result = this.handle_price(data).await;
+                            if let Some(event) = result {
+                                match this_cl.sender_data.send(event).await {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        error!("{} Failed to send event: {e}", this_cl.title);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        WebSocketStatus::Finished
+    }
+
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<super::orderbook::SnapshotUi>) {
+        if !self.enabled {
+            return;
+        }
+        
+        while let Ok((_uuid, ticker)) = self.ticker_rx.recv().await {
+            let (tx, mut rx) = mpsc::channel(10);
+            let this = Arc::clone(&self);
+
+            loop {
+                let ticker = ticker.clone();
+
+                match this.sender_data.send(BookEvent::GetBook { ticker, reply: tx.clone() }).await {
+                    Ok(_) => {},
+                    Err(e) => {
+                        tracing::error!("{}: {}", this.title, e)
+                    }
+                }
+
+                tokio::select! {
+                    data = rx.recv() => {
+                        if let Some(snapshot_ui) = data {
+                            if let Some(snapshot) = snapshot_ui {
+                                match snapshot_tx.send(snapshot) {
+                                    Ok(_) => {},
+                                    Err(_) => {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    async fn get_tickers(&self, channel_type: &str) -> Option<Vec<super::websocket::Ticker>> {
+        let url = "https://api.binance.com/api/v3/ticker/bookTicker";
+        let response = self.client.get(url).send().await;
+        let Ok(response) = response else { return None };
+        let Ok(tickers) = response.json::<Vec<Ticker>>().await else { return None };
+        let usdt_tickers: Vec<Ticker> = tickers
+            .into_iter()
+            .filter(|x| x.symbol.clone().unwrap().ends_with("USDT"))
+            .collect();
+        
+        Some(usdt_tickers)
+    }
+
+    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<super::orderbook::BookEvent> {
+        let Some(ticker) = json.symbol else { return None };
+        let ticker = ticker.to_lowercase();
+        let asks = parse_levels__(json.asks).await;
+        let bids = parse_levels__(json.bids).await;
+        let last_update_id = json.last_update_id;
+
+        Some(BookEvent::Snapshot {
+            ticker, 
+            snapshot: Snapshot {
+                a: asks,
+                b: bids,
+                last_price: 0.0,
+                last_update_id: Some(last_update_id)
+            }
+        })
+    }
+
+    async fn handle_delta(self: Arc<Self>, json: Self::Delta) -> Option<super::orderbook::BookEvent> {
+        let ticker = json.symbol.to_lowercase();
+        let asks = parse_levels__(json.asks).await;
+        let bids = parse_levels__(json.bids).await;
+        let from_version = json.from_version;
+        let to_version = json.to_version;
+
+        Some(BookEvent::Delta { 
+            ticker, 
+            delta: Delta {
+                a: asks,
+                b: bids,
+                from_version: Some(from_version),
+                to_version: Some(to_version)
+            }
+        })
+    }
+
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<super::orderbook::BookEvent> {
+        let ticker = json.symbol.to_lowercase();
+        let last_price = match json.last_price.parse::<f64>() {
+            Ok(p) => p,
+            Err(_) => 0.0
+        };
+        
+        Some(BookEvent::Price { ticker, last_price })
+    }
 }

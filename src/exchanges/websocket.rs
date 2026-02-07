@@ -7,7 +7,7 @@ use crate::exchanges::orderbook::{BookEvent, SnapshotUi};
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Ticker {
-    #[serde(rename="symbol")]
+    #[serde(rename="symbol", alias="id")]
     pub symbol: Option<String>
 }
 

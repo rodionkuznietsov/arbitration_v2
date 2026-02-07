@@ -5,6 +5,7 @@ use tokio::sync::{Notify, Semaphore, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::Message as TungsteniteMessage};
 use futures_util::{SinkExt, StreamExt};
 use tokio_util::sync::CancellationToken;
+use tracing::warn;
 use url::Url;
 
 use crate::{exchanges::{orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, parse_levels__}, websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}}, mexc_orderbook::{Event, OrderBookEvent, TickerEvent}};
@@ -69,7 +70,7 @@ impl MexcWebsocket {
         let max_delay = Duration::from_secs(60);
         let mut _snapshot = None;
                 
-        tracing::warn!(ticker);
+        println!("Ticker: {}", ticker);
 
         notify.notify_one();
         loop {
@@ -111,7 +112,7 @@ impl Websocket for MexcWebsocket {
     fn connect(self: std::sync::Arc<Self>) {
         tokio::spawn(async move {
             if !self.enabled {
-                println!("{} enabled:", self.title);
+                warn!("{} is disabled", self.title)
             }
 
             let tickers = self.get_tickers(&self.channel_type).await;
@@ -152,13 +153,8 @@ impl Websocket for MexcWebsocket {
             println!("{}: Reconnecting...", self.title);
 
             let token = CancellationToken::new();
-
             let this = self.clone();
             
-            // let tickers: Vec<&Ticker> = tickers.iter()
-            //     .filter(|x| x.symbol.as_deref() == Some("SOLUSDT"))
-            //     .collect();
-
             for chunk in tickers.chunks(chunk_size) {
                 let (cmd_tx, mut cmd_rx) = mpsc::channel::<WsCmd>(chunk_size);
 
@@ -182,7 +178,6 @@ impl Websocket for MexcWebsocket {
                         let _permit = semaphore.clone().acquire_owned().await.unwrap();
                         let _rl = rate_limiter.acquire().await.unwrap();
 
-                        tokio::time::sleep(Duration::from_secs_f64(batch_delay)).await; // Задержка перед следущим батчем
                         let data = this.clone().get_ticker_snapshot_with_retry(&symbol_cl).await;
 
                         if let Some(json) = data {
@@ -196,6 +191,7 @@ impl Websocket for MexcWebsocket {
                                 }
                             }
                         }
+                        tokio::time::sleep(Duration::from_secs_f64(batch_delay)).await; // Задержка перед следущим батчем
                     }); 
                 }
 
@@ -269,10 +265,6 @@ impl Websocket for MexcWebsocket {
                             }
                         }
 
-                        if event.symbol == "SOLUSDT" {
-                            println!("ssss{}", event.channel)
-                        }
-                    
                         if event.channel.contains("miniTicker") {
                             let data = TickerEvent::decode(&*binary).unwrap();
                             let json = TickerEventWithSymbol {

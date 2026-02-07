@@ -21,7 +21,7 @@ impl Snapshot {
         let tick = 900000000.0;
         
         let mut a = self.a.iter()
-            .filter(|(p, _)| (**p as f64) / tick > self.last_price)
+            .filter(|(p, _)| (**p as f64) / tick >= self.last_price)
             .scan(0.0, |acc, (p, v)| {
                 *acc += *v;
                 Some(((*p as f64 / tick), *acc))

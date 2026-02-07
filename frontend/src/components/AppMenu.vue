@@ -7,11 +7,11 @@
         <div id="menu_overlay">
             <div id="menu_element">
                 <img src="../assets/icons/growth.svg" alt="">
-                <span>Курс</span>
+                <router-link class="router-link" to="/">Курс</router-link>
             </div>
             <div id="menu_element">
                 <img src="../assets/icons/graph.svg" alt="">
-                <span>График</span>
+                <router-link class="router-link" to="/chart">График</router-link>
             </div>
             <div id="menu_element">
                 <img src="../assets/icons/logs.svg" alt="">
@@ -33,6 +33,11 @@
         margin-right: 60px;
         border-radius: 30px;
         font-size: 16px;
+    }
+
+    .router-link {
+        color: var(--default-font-color);
+        text-decoration: none;
     }
 
     #menu_overlay {

@@ -161,33 +161,20 @@
             "en-US", {
                 minimumFractionDigits: 1,
                 maximumFractionDigits: 2,
-                style: "decimal"
             }
         ).format(value)
     }   
 
     function getFillPercentAsk(value, method) {
-        if (method == "long") {
-            let max = Math.max(...longAsks.value.map(a => a.volume))
-            const result = (value.volume / max) * 100;
-            return result
-        } else if (method == 'short') {
-            let max = Math.max(...shortAsks.value.map(a => a.volume))
-            const result = (value.volume / max) * 100;
-            return result   
-        }
+        const source = method == 'long' ? longAsks : shortAsks
+        const max = Math.max(...source.value.map(a => a.price * a.volume))
+        return (value.price * value.volume) / max * 100
     }
 
     function getFillPercentBid(value, method) {
-        if (method == "long") {
-            let max = Math.max(...longBids.value.map(a => a.volume))
-            const result = (value.volume / max) * 100;
-            return result
-        } else if (method == 'short') {
-            let max = Math.max(...shortBids.value.map(a => a.volume))
-            const result = (value.volume / max) * 100;
-            return result   
-        }
+        const source = method == 'long' ? longBids : shortBids
+        const max = Math.max(...source.value.map(a => a.price * a.volume))
+        return (value.price * value.volume) / max * 100
     }
 
     defineExpose({ show, start, stop, exchanges, isWarningStatus })
@@ -210,9 +197,12 @@
                         <th>Цена</th>
                         <th>Обьем $</th>
                     </tr>
-                    <tr v-for="ask in longAsks" :key="ask" class="ask_row">
+                    <tr v-for="ask in longAsks" :key="ask.price" class="ask_row">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
-                        <td class="sell_label volume-bar" :style="{ '--fill': getFillPercentAsk(ask, 'long') + '%' }">{{ formatVolume(ask.price *  ask.volume) }}</td>
+                        <td class="sell_label volume-bar">
+                            <span class="volume-value">{{ formatVolume(ask.price *  ask.volume) }}</span>
+                            <div class="bar" :style="{ 'min-width': getFillPercentAsk(ask, 'long') + '%'}" style="width: 0%; background-color: var(--color-error-opacity-0_15); right: 0px; top: 0px;"></div>
+                        </td>
                     </tr>
                     <tr>
                         <td colspan="2" class="mid_price" tabindex="3">
@@ -223,9 +213,12 @@
                         </td>
                     </tr>
 
-                    <tr v-for="bid in longBids" :key="bid" class="bid_row">
+                    <tr v-for="bid in longBids" :key="bid.price" class="bid_row">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
-                        <td class="buy_label bid-volume-bar" :style="{ '--fill': getFillPercentBid(bid, 'long') + '%' }">{{ formatVolume(bid.price *  bid.volume) }}</td>
+                        <td class="buy_label volume-bar">
+                            <span class="volume-value">{{ formatVolume(bid.price *  bid.volume) }}</span>
+                            <div class="bar" :style="{ 'min-width': getFillPercentBid(bid, 'long') + '%'}" style="width: 0%; background-color: var(--color-success-opacity-0_15); right: 0px; top: 0px;"></div>
+                        </td>
                     </tr>
                 </table>
             </div>
@@ -245,9 +238,12 @@
                         <th>Цена</th>
                         <th>Обьем $</th>
                     </tr>
-                    <tr v-for="ask in shortAsks" :key="ask" class="ask_row">
+                    <tr v-for="ask in shortAsks" :key="ask.price" class="ask_row">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
-                        <td class="sell_label volume-bar" :style="{ '--fill': getFillPercentAsk(ask, 'short') + '%' }">{{ formatVolume(ask.price *  ask.volume) }}</td>
+                        <td class="sell_label volume-bar">
+                            <span class="volume-value">{{ formatVolume(ask.price *  ask.volume) }}</span>
+                            <div class="bar" :style="{ 'min-width': getFillPercentAsk(ask, 'short') + '%'}" style="width: 0%; background-color: var(--color-error-opacity-0_15); right: 0px; top: 0px;"></div>
+                        </td>
                     </tr>
                     <tr>
                         <td colspan="2" class="mid_price" tabindex="3">
@@ -258,9 +254,12 @@
                         </td>
                     </tr>
 
-                    <tr v-for="bid in shortBids" :key="bid" class="bid_row">
+                    <tr v-for="bid in shortBids" :key="bid.price" class="bid_row">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
-                        <td class="buy_label bid-volume-bar" :style="{ '--fill': getFillPercentBid(bid, 'short') + '%' }">{{ formatVolume(bid.price *  bid.volume) }}</td>
+                        <td class="buy_label volume-bar">
+                            <span class="volume-value">{{ formatVolume(bid.price *  bid.volume) }}</span>
+                            <div class="bar" :style="{ 'min-width': getFillPercentBid(bid, 'short') + '%'}" style="width: 0%; background-color: var(--color-success-opacity-0_15); right: 0px; top: 0px;"></div>
+                        </td>
                     </tr>
                 </table>
             </div>
@@ -278,28 +277,13 @@
         position: relative;
     }
 
-    .volume-bar::before {
-        content: "";
+    .bar {
         position: absolute;
         top: 0;
-        right: 0;
         bottom: 0;
-        width: var(--fill);
-        background: var(--color-error-opacity-0_15);
-        z-index: 0;
-        transition: width 0.3s ease;
-    }
-
-    .bid-volume-bar::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: var(--fill);
-        background: var(--color-success-opacity-0_15);
-        z-index: 0;
-        transition: width 0.3s ease;
+        left: auto;
+        z-index: -1;
+        transition: width 0.12s linear;
     }
 
     .ask_row td, .bid_row td{
