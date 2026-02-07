@@ -36,6 +36,7 @@ onMounted(() => {
     --default-padding: 8px;
     --default-icon-size: 16px;
     --default-border-radius: 8px;
+    --default-input-color: #303c51;
   }
  
   #form {

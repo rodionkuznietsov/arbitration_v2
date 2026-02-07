@@ -77,6 +77,9 @@ import { onMounted, ref } from 'vue';
 </script>
 
 <template>
+    <div class="toolbar">
+        <input class="toolbar-button" type="button" value="5m">
+    </div>
     <div class="chart" ref="container" id="chart"></div>
 </template>
 
@@ -84,5 +87,24 @@ import { onMounted, ref } from 'vue';
     .chart {
         width: 100%;
         height: 87vh;
+    }
+
+    .toolbar {
+        display: flex;
+        justify-content: flex-start;
+        padding: 10px;
+        position: absolute;
+        z-index: 1000000000;
+    }
+
+    .toolbar-button {
+        background-color: var(--default-input-color);
+        color: #EAECEF;
+        border: none;
+        padding: 8px 16px;
+        margin-right: 10px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: var(--default-font-size);
     }
 </style>
