@@ -33,7 +33,9 @@
         background-color: rgba(48, 60, 81, 0.404);
         left: 0;
         right: 0;
-        margin: 0 125px;
+        margin: 0 auto;
+        margin-left: 125px;
+        margin-right: 125px;
         border-radius: 30px;
         font-size: 16px;
         z-index: 1;
