@@ -18,6 +18,9 @@ import { onMounted, ref } from 'vue';
                 background: { color: '#202630', type: 'solid' },
                 textColor: '#EAECEF',
             },
+            crosshair: {
+                mode: 0,
+            },
             grid: {
                 vertLines: {
                     color: '#333B47',
@@ -45,13 +48,29 @@ import { onMounted, ref } from 'vue';
             { time: Math.floor(new Date('2026-01-07T00:20:00Z').getTime() / 1000), open: 0.2, high: 0.25, low: 0.18, close: 0.07 },
         ]);
 
-        chart.timeScale().fitContent()
-        chart.timeScale().scrollToPosition(0.5, false)
-        chart.timeScale().applyOptions({
-            fixLeftEdge: true,
-            lockVisibleTimeRangeOnResize: true,
-            rightOffset: 0,
+        chart.priceScale('right').applyOptions({
             borderVisible: false,
+            scaleMargins: {
+                top: 0.1,
+                bottom: 0.1,
+            },
+        })
+
+        const vr = chart.timeScale().getVisibleLogicalRange();
+        chart.timeScale().setVisibleLogicalRange({
+            from: vr.from - 5 * 60, // 5 minutes before
+            to: vr.to + 5 * 60,
+        });
+
+        chart.timeScale().applyOptions({
+            lockVisibleTimeRangeOnResize: false,
+            borderVisible: true,
+            barSpacing: 25,
+            rightOffset: 5,
+            tickMarkFormatter: (time, tickMarkType, locale) => {
+                const date = new Date(time * 1000);
+                return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+            }
         })
     })
     
