@@ -65,7 +65,7 @@ import { onMounted, ref } from 'vue';
         chart.timeScale().applyOptions({
             lockVisibleTimeRangeOnResize: false,
             borderVisible: true,
-            barSpacing: 25,
+            barSpacing: 20,
             rightOffset: 5,
             tickMarkFormatter: (time, tickMarkType, locale) => {
                 const date = new Date(time * 1000);
