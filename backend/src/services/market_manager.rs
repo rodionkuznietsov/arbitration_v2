@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::sync::mpsc;
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket, orderbook::{OrderType, SnapshotUi}, websocket::Websocket}, websocket::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket, orderbook::{OrderType, SnapshotUi}, websocket::Websocket}, transport::ws::ConnectedClient};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExchangeType {

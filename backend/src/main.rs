@@ -1,9 +1,9 @@
 use std::{time::Duration};
-use crate::{websocket::ConnectedClient};
+use crate::{transport::ws::ConnectedClient};
 
 mod exchanges;
-mod exchange;
-mod websocket;
+mod transport;
+mod services;
 
 mod mexc_orderbook {
     include!(concat!(env!("OUT_DIR"), "/_.rs"));
@@ -20,7 +20,7 @@ async fn main() {
 
     tokio::spawn({
         async move {
-            exchange::run_websockets(
+            services::market_manager::run_websockets(
                 receiver_exchange_names,
             ).await;
         }
@@ -28,7 +28,7 @@ async fn main() {
     
     tokio::spawn({
         async move {
-            websocket::connect_async(
+            transport::ws::connect_async(
                 sender_exchange_names,
             ).await;
         }

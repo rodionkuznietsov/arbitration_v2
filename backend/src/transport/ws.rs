@@ -5,7 +5,7 @@ use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::{exchange::ExchangeType, exchanges::orderbook::{OrderType, SnapshotUi}};
+use crate::{services::market_manager::ExchangeType, exchanges::orderbook::{OrderType, SnapshotUi}};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebsocketReceiverParams {
