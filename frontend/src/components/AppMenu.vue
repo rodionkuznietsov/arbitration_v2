@@ -4,24 +4,26 @@
 
 <template>
     <div id="app_menu">
-        <div id="menu_overlay">
-            <div id="menu_element">
-                <router-link class="router-link" to="/">
-                    <img src="../assets/icons/growth.svg" alt="">
-                    <span>Курс</span>
-                </router-link>
-            </div>
-            <div id="menu_element">
-                <router-link class="router-link" to="/chart">
-                    <img src="../assets/icons/graph.svg" alt="">
-                    <span>График</span>
-                </router-link>
-            </div>
-            <div id="menu_element">
-                <img src="../assets/icons/logs.svg" alt="">
-                <span>История</span>
-            </div>
-        </div>  
+        <div class="app_menu_wrapper">
+            <div id="menu_overlay">
+                <div id="menu_element">
+                    <router-link class="router-link" to="/">
+                        <img src="../assets/icons/growth.svg" alt="">
+                        <span>Курс</span>
+                    </router-link>
+                </div>
+                <div id="menu_element">
+                    <router-link class="router-link" to="/chart">
+                        <img src="../assets/icons/graph.svg" alt="">
+                        <span>График</span>
+                    </router-link>
+                </div>
+                <div id="menu_element">
+                    <img src="../assets/icons/logs.svg" alt="">
+                    <span>История</span>
+                </div>
+            </div>  
+        </div>
     </div>
 </template>
 
@@ -30,13 +32,20 @@
         display: flex;
         position: fixed;
         bottom: 10px;
-        background-color: rgba(48, 60, 81, 0.404);
+        background-color: transparent;
         left: 0;
         right: 0;
-        margin: 0 60px;
-        border-radius: 30px;
         font-size: 16px;
         z-index: 1;
+    }
+
+    .app_menu_wrapper {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        background-color: rgba(48, 60, 81, 0.404);
+        margin: 0 60px;
+        border-radius: 30px;
     }
 
     .router-link {
