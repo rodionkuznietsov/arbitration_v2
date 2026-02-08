@@ -1,7 +1,8 @@
 <script setup>
     import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-charts';
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 
+    let chart;
     const container = ref(null)
 
     onMounted(() => {
@@ -31,7 +32,7 @@ import { onMounted, ref } from 'vue';
             },
         }
         
-        const chart = createChart(container.value, chartOptions);
+        chart = createChart(container.value, chartOptions);
         const candleSeries = chart.addSeries(CandlestickSeries,{
             upColor: '#2EBD85',
             downColor: '#F6465D',
@@ -73,40 +74,71 @@ import { onMounted, ref } from 'vue';
             }
         })
     })
+
+    onUnmounted(() => {
+        if (chart) {
+            chart.remove();
+            chart = null;
+        }
+    })
     
 </script>
 
 <template>
-    <div class="toolbar">
-        <input class="toolbar-button" type="button" value="5m">
+    <div>
+        <div class="toolbar">
+            <div class="intervals">
+                <input class="toolbar-button" type="button" value="5m">
+            </div>
+            <input type="button" value="Вход" class="toolbar-button">
+            <input type="button" value="Выход" class="toolbar-button">
+        </div>
+        <div class="chart" ref="container" id="chart"></div>
+        <div class="title_bg">Arbitration Bot</div>
     </div>
-    <div class="chart" ref="container" id="chart"></div>
-    <div class="title_bg">Arbitration Bot</div>
 </template>
 
 <style scoped>
     .chart {
         width: 100%;
-        height: 87vh;
+        height: 88vh;
     }
 
     .toolbar {
         display: flex;
         justify-content: flex-start;
-        padding: 10px;
+        padding: var(--default-padding);
         position: absolute;
         z-index: 1000000000;
+    }
+
+    .intervals {
+        display: flex;
+    }
+
+    .intervals::after {
+        content: '';
+        display: flex;
+        margin-right: 10px;
+        align-items: center;
+        width: 1px;
+        background-color: var(--default-font-color);
+        font-size: var(--default-font-size);
     }
 
     .toolbar-button {
         background-color: var(--default-input-color);
         color: #EAECEF;
         border: none;
-        padding: 8px 16px;
         margin-right: 10px;
         cursor: pointer;
+        padding: var(--default-border-radius);
         border-radius: 4px;
         font-size: var(--default-font-size);
+    }
+
+    .toolbar-button:hover {
+        background-color: #303c517a;
     }
 
     .title_bg {
