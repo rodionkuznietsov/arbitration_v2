@@ -1,5 +1,5 @@
 <script setup>
-    import { CandlestickSeries, createChart } from 'lightweight-charts';
+    import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-charts';
 import { onMounted, ref } from 'vue';
 
     const container = ref(null)
@@ -19,7 +19,7 @@ import { onMounted, ref } from 'vue';
                 textColor: '#EAECEF',
             },
             crosshair: {
-                mode: 0,
+                mode: CrosshairMode.Normal,
             },
             grid: {
                 vertLines: {
@@ -51,8 +51,8 @@ import { onMounted, ref } from 'vue';
         chart.priceScale('right').applyOptions({
             borderVisible: false,
             scaleMargins: {
-                top: 0.1,
-                bottom: 0.1,
+                top: 0.4,
+                bottom: 0.4,
             },
         })
 
