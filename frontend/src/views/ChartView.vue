@@ -57,22 +57,17 @@ import { onMounted, onUnmounted, ref } from 'vue';
             },
         })
 
-        const vr = chart.timeScale().getVisibleLogicalRange();
-        chart.timeScale().setVisibleLogicalRange({
-            from: vr.from - 5 * 60, // 5 minutes before
-            to: vr.to + 5 * 60,
-        });
+        // 
 
         chart.timeScale().applyOptions({
             lockVisibleTimeRangeOnResize: false,
             borderVisible: true,
-            barSpacing: 20,
-            rightOffset: 5,
             tickMarkFormatter: (time, tickMarkType, locale) => {
                 const date = new Date(time * 1000);
                 return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
             }
         })
+        chart.timeScale().fitContent();
     })
 
     onUnmounted(() => {
