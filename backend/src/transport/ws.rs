@@ -5,7 +5,7 @@ use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::{services::market_manager::ExchangeType, exchanges::orderbook::{OrderType, SnapshotUi}};
+use crate::{exchanges::orderbook::{OrderType, SnapshotUi}, models::candle::Candle, services::market_manager::ExchangeType};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebsocketReceiverParams {
@@ -55,6 +55,12 @@ impl ConnectedClient {
 
     pub async fn send_snapshot(&mut self, order_type: OrderType, snapshot: SnapshotUi) {
         self.sender.send((order_type.clone(), snapshot)).await.expect("[ConnectedClient] Failed to send snapshot")
+    }
+
+    pub async fn send_user_candles(&mut self, candles: Vec<Candle>) {
+        // for candle in candles {
+        println!("Sending candle: {:#?}", candles);
+        // }
     }
 }
 

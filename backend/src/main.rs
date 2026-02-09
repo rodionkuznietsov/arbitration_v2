@@ -4,6 +4,8 @@ use crate::{transport::ws::ConnectedClient};
 mod exchanges;
 mod transport;
 mod services;
+mod storage;
+mod models;
 
 mod mexc_orderbook {
     include!(concat!(env!("OUT_DIR"), "/_.rs"));
@@ -15,13 +17,15 @@ async fn main() {
         .with_max_level(tracing::Level::INFO)
         .pretty()
         .init();
+    
+    let storage_pool = storage::pool::create_pool().await;
 
     let (sender_exchange_names, receiver_exchange_names) = async_channel::unbounded::<ConnectedClient>();
 
     tokio::spawn({
         async move {
             services::market_manager::run_websockets(
-                receiver_exchange_names,
+                receiver_exchange_names, storage_pool
             ).await;
         }
     });

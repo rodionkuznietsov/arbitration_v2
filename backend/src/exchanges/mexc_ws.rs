@@ -8,7 +8,11 @@ use tokio_util::sync::CancellationToken;
 use tracing::warn;
 use url::Url;
 
-use crate::{exchanges::{orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, parse_levels__}, websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}}, mexc_orderbook::{Event, OrderBookEvent, TickerEvent}};
+use crate::{
+    exchanges::{orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, parse_levels__}, 
+    websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}}, 
+    mexc_orderbook::{Event, OrderBookEvent, TickerEvent}
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SnapshotResponse {

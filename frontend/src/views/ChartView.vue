@@ -57,8 +57,6 @@ import { onMounted, onUnmounted, ref } from 'vue';
             },
         })
 
-        // 
-
         chart.timeScale().applyOptions({
             lockVisibleTimeRangeOnResize: false,
             borderVisible: true,
