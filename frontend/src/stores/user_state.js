@@ -7,6 +7,7 @@ export const useUserState = defineStore('userState', {
         shortExchange: null,
         longOrderType: null,
         shortOrderType: null,
+        currentStatus: 'offline'
     }),
 
     actions: {
@@ -24,6 +25,10 @@ export const useUserState = defineStore('userState', {
             this.shortOrderType = shortOrderType.toLowerCase()
         },
 
+        changeStatus(status) {
+            this.currentStatus = status
+        },
+
         get_data() {
             return {
                 ticker: this.ticker,
@@ -36,6 +41,8 @@ export const useUserState = defineStore('userState', {
 
         clearValues() {
             this.ticker = null
+            this.currentStatus = 'offline'
+
             this.longExchange = null
             this.shortExchange = null
             this.longOrderType = null

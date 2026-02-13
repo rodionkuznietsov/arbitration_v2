@@ -1,16 +1,14 @@
 <script setup>
-  import { defineExpose, ref } from 'vue';
+  import { ref } from 'vue';
   import soundOn from '../assets/icons/sound_on.svg'
   import soundOff from '../assets/icons/sound_off.svg'
   import Tooltip from './TooltipWidget.vue';
+import { useUserState } from '@/stores/user_state';
 
-  const workStatus = ref('offline')
+  const userState = useUserState()
+
   const img_sound = ref(null)
   const isOn = ref(false)
-
-  function change_work_status(status) {
-    workStatus.value = status
-  }
 
   function is_sound_on() {
     if (img_sound.value) {
@@ -18,15 +16,13 @@
       img_sound.value.src = isOn.value ? soundOn : soundOff
     }
   }
-
-  defineExpose({ change_work_status })
 </script>
 
 <template>
     <div id="header">
       <div id="status">
-        <div id="status_circle" :class="workStatus == 'online' ? 'online' : workStatus == 'warning' ? 'warning' : 'offline'"></div>
-        <span>{{ workStatus == 'online' ? 'Онлайн' : workStatus == 'warning' ? 'Неполадки' : 'Офлайн' }}</span>
+        <div id="status_circle" :class="userState.currentStatus == 'online' ? 'online' : userState.currentStatus == 'warning' ? 'warning' : 'offline'"></div>
+        <span>{{ userState.currentStatus == 'online' ? 'Онлайн' : userState.currentStatus == 'warning' ? 'Неполадки' : 'Офлайн' }}</span>
         <div v-if="workStatus == 'warning'">
           <Tooltip :work-status="workStatus"/>
         </div>

@@ -11,10 +11,8 @@
 
     const exchanges = ["Bybit", "Binance", "KuCoin", "BinX", "Mexc", "Gate", "Lbank"]
     const market_types = ["Спот", "Фьючерс"]
-    const isWarning = ref(false)
 
     const orderBook = ref(null)
-    const header = ref(null)
 
     // Данные с полей
     const longExchange = ref("Binance")
@@ -39,23 +37,13 @@
       )
 
       orderBook.value.start()
-
-      setTimeout(() => {
-          if (isWarning.value) {
-            header.value.change_work_status("warning")
-          } else {
-            header.value.change_work_status("online")
-          }
-      }, 10)
+      userState.changeStatus('online')
     }    
     
-    function stop() {
+    async function stop() {
+      await ws.disconnect()
       orderBook.value.stop()
-      ws.disconnect()
-
-      if (header.value) {
-        header.value.change_work_status('offline')
-      }
+      userState.changeStatus('offline')
     }
 </script>
 
@@ -118,6 +106,6 @@
           <button id="stop" @click="stop">Стоп</button>
         </div>
 
-      <OrderBook ref="orderBook" v-model="isWarning"/>
+      <OrderBook ref="orderBook"/>
     </footer>
 </template>

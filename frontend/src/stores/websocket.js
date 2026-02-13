@@ -11,8 +11,8 @@ export const useWebsocketStore = defineStore('websocket', {
         connect(url) {
             return new Promise((resolve) => {
                 if (this.socket) {
-                    resolve()
                     console.warn('WebSocket is already connected.')
+                    resolve()
                     return
                 }
 
@@ -92,20 +92,12 @@ export const useWebsocketStore = defineStore('websocket', {
         },
 
         disconnect() {
-            if (this.socket && this.isConnected) {
-                // // Отписываемся от оставшиехся подписок
-                // for (const channel of this.channels) {
-                //     const [ch, ticker] = channel[0].split(':')
-
-                //     this.send({
-                //         action: "unsubscribe",
-                //         channel: ch,
-                //         ticker: ticker,
-                //     })
-                // }
-                
-                this.socket.close()
-            }
+            return new Promise((resolve) => {
+                if (this.socket && this.isConnected) {
+                    this.socket.close()
+                    resolve()
+                }
+            })
         }
     }
 })
