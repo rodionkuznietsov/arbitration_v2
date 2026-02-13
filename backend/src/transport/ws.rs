@@ -149,6 +149,7 @@ async fn handle_connection(
                     println!("{}", msg);
                     if let Ok(subscription) = serde_json::from_str::<Subscription>(&msg.to_text().unwrap()) {                        
                         let ticker = subscription.ticker.to_lowercase();
+                        let task_token = client.token.clone();
                         
                         match subscription.action.as_str() {
                             "subscribe" => {
@@ -189,7 +190,7 @@ async fn handle_connection(
                             }
                             "ubsubscribe" => {
                                 println!("unsubscribe");
-                                // task_token.cancel();
+                                task_token.cancel();
                                 break;
                             }
                             _ => {}
