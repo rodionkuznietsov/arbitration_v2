@@ -47,10 +47,7 @@ impl MexcWebsocket {
         let channel_type = String::from("spot");
         let client = reqwest::Client::new();
 
-        let book_manager = OrderBookManager {
-            books: HashMap::new(),
-            rx: rx_data
-        };
+        let book_manager = OrderBookManager::new(rx_data);
 
         tokio::spawn(async move {
             book_manager.set_data().await;

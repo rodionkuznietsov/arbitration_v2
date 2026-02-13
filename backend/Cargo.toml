@@ -31,6 +31,7 @@ wiremock = "0.6.5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "ansi"] }
 sqlx = {version="0.6", features=["postgres", "bigdecimal"]}
+lru = "0.16.3"
 
 [build-dependencies]
 prost-build = "0.12"

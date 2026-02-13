@@ -71,10 +71,7 @@ impl BybitWebsocket {
         let (sender_data, rx_data) = mpsc::channel(10);
         let (ticker_tx, ticker_rx) = async_channel::bounded::<(String, String)>(1);
 
-        let book_manager = OrderBookManager {
-            books: HashMap::new(),
-            rx: rx_data
-        };
+        let book_manager = OrderBookManager::new(rx_data);
 
         tokio::spawn(async move {
             book_manager.set_data().await;

@@ -55,12 +55,9 @@ impl GateWebsocket {
         let (ticker_tx, ticker_rx) = async_channel::bounded(1);
         let channel_type = String::from("spot");
         let client = reqwest::Client::new();
-        let (sender_data, rx_data) = mpsc::channel::<BookEvent>(10);
+        let (sender_data, rx_data) = mpsc::channel::<BookEvent>(1000);
 
-        let book_manager = OrderBookManager {
-            books: HashMap::new(),
-            rx: rx_data
-        };
+        let book_manager = OrderBookManager::new(rx_data);
 
         tokio::spawn(async move {
             book_manager.set_data().await;
@@ -160,7 +157,7 @@ impl Websocket for GateWebsocket {
                         serde_json::json!({
                             "channel": "spot.order_book",
                             "event": "subscribe",
-                            "payload": [ticker, "50", "100ms"]
+                            "payload": [ticker, "100", "100ms"]
                         }).to_string().into()
                     )).await.unwrap();
 

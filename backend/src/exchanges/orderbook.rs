@@ -1,4 +1,5 @@
-use std::{collections::{BTreeMap, HashMap}};
+use std::{collections::{BTreeMap, HashMap}, num::NonZeroUsize};
+use lru::LruCache;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc};
 
@@ -107,24 +108,37 @@ pub enum BookEvent {
 }
 
 pub struct OrderBookManager {
-    pub books: HashMap<String, Snapshot>,
+    pub books: LruCache<String, Snapshot>,
     pub rx: mpsc::Receiver<BookEvent>
 }
 
 impl OrderBookManager {
+    pub fn new(rx: mpsc::Receiver<BookEvent>) -> Self {
+        let cache_capacity = std::env::var("ORDERBOOK_CACHE_CAPACITY")
+            .unwrap_or_else(|_| "1000".into())
+            .parse::<usize>()
+            .expect("ORDERBOOK_CACHE_CAPACITY must be a number");
+        
+        Self {
+            books: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
+            rx: rx
+        }
+    }
+
     pub async fn set_data(mut self) {
         let mut last_version_id = 0;
         while let Some(event) = self.rx.recv().await {
             match event {
                 BookEvent::Snapshot { ticker, snapshot  } => {
-                    let snapshot_ = snapshot.clone();
-                    self.books
-                        .entry(ticker.clone())
-                        .and_modify(|book| {
-                            book.a = snapshot_.a;
-                            book.b = snapshot_.b;
-                        })
-                        .or_insert_with(|| Snapshot { a: snapshot.a, b: snapshot.b, last_price: 0.0, last_update_id: snapshot.last_update_id });
+                    match self.books.get_mut(&ticker) {
+                        Some(book) => {
+                            book.a = snapshot.a;
+                            book.b = snapshot.b;
+                        }
+                        None => {
+                            self.books.put(ticker.clone(), snapshot);
+                        }
+                    }
                 }
                 BookEvent::Delta { ticker, delta } => {
                     if let Some(snapshot) = self.books.get_mut(&ticker) {
