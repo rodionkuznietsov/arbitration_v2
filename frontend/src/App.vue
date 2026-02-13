@@ -13,14 +13,7 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
-import WebApp from "@twa-dev/sdk"
 import AppMenu from './components/AppMenu.vue';
-
-onMounted(() => {
-  WebApp.ready()
-  WebApp.expand()
-})
 
 </script>
 

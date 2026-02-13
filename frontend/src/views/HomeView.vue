@@ -3,6 +3,11 @@
     import FormCombobox from '../components/FormCombobox.vue';
     import OrderBook from '../components/OrderBook.vue';
     import AppHeader from '../components/AppHeader.vue'
+    import { useWebsocketStore } from '@/stores/websocket';
+    import { useUserState } from '@/stores/user_state';
+
+    const ws = useWebsocketStore()
+    const userState = useUserState()
 
     const exchanges = ["Bybit", "Binance", "KuCoin", "BinX", "Mexc", "Gate", "Lbank"]
     const market_types = ["Спот", "Фьючерс"]
@@ -19,40 +24,38 @@
     const ticker = ref("BTC")
 
     function filterInput(event) {
-    ticker.value = event.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+      ticker.value = event.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
     }
 
-    function start() {
-    const data = {
-        exchanges: {
-        longExchange: longExchange.value,
-        shortExchange: shortExchange.value,
-        },
-        types: {
-        longType: longOrderType.value,
-        shortType: shortOrderType.value,
-        },
-        ticker: ticker
-    }
+    async function start() {
+      await ws.connect("ws://localhost:9000/ws")
 
-    orderBook.value.exchanges(data)
-    orderBook.value.show()  
-    orderBook.value.start()
+      userState.set_data(
+        ticker.value, 
+        longExchange.value, 
+        shortExchange.value,
+        longOrderType.value,
+        shortOrderType.value,
+      )
 
-    setTimeout(() => {
-        if (isWarning.value) {
-        header.value.change_work_status("warning")
-        } else {
-        header.value.change_work_status("online")
-        }
-    }, 10)
+      orderBook.value.start()
+
+      setTimeout(() => {
+          if (isWarning.value) {
+            header.value.change_work_status("warning")
+          } else {
+            header.value.change_work_status("online")
+          }
+      }, 10)
     }    
     
     function stop() {
-        orderBook.value.stop()
-        if (header.value) {
+      orderBook.value.stop()
+      ws.disconnect()
+
+      if (header.value) {
         header.value.change_work_status('offline')
-        }
+      }
     }
 </script>
 

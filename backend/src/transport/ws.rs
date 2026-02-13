@@ -1,6 +1,7 @@
 use std::{collections::HashMap, time::Duration};
 use futures_util::{StreamExt, SinkExt};
 use serde::Deserialize;
+use serde_json::Value;
 use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
@@ -8,9 +9,13 @@ use uuid::Uuid;
 use crate::{exchanges::orderbook::{OrderType, SnapshotUi}, models::candle::Candle, services::market_manager::ExchangeType};
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct WebsocketReceiverParams {
-    pub exchanges: Exchanges,
-    pub ticker: String
+#[serde(rename_all="camelCase")]
+pub struct Subscription {
+    action: String,
+    channel: String,
+    long_exchange: Option<String>, 
+    short_exchange: Option<String>,
+    ticker: String
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -117,12 +122,15 @@ async fn handle_connection(
                             continue;
                         }
 
-                        let json = match serde_json::to_string(&books) {
-                            Ok(res) => res,
-                            Err(_) => continue,
-                        };
+                        let json: Value = serde_json::json!({
+                            "channel": "order_book",
+                            "result": {
+                                "books": books
+                            },
+                            "ticker": "btc"
+                        });
 
-                        if ws_sender.send(Message::Text(json.into())).await.is_err() {
+                        if ws_sender.send(Message::Text(json.to_string().into())).await.is_err() {
                             task_token.cancel();
                         }
                     }
@@ -136,34 +144,54 @@ async fn handle_connection(
         while let Some(msg) = ws_receiver.next().await {
             if let Ok(msg) = msg {
                 if msg.is_text() {
-                    if let Ok(new_params) = serde_json::from_str::<WebsocketReceiverParams>(&msg.to_text().unwrap()) {
-                        let long_exchange = new_params.exchanges.long_exchange.to_lowercase();
-                        let short_exchange = new_params.exchanges.short_exchange.to_lowercase();
-                        let ticker = new_params.ticker.to_lowercase();
-                                                
-                        let long_exchange= match long_exchange.as_str() {
-                            "binance" => ExchangeType::Binance,
-                            "bybit" => ExchangeType::Bybit,
-                            "kucoin" => ExchangeType::KuCoin,
-                            "binx" => ExchangeType::BinX,
-                            "mexc" => ExchangeType::Mexc,
-                            "gate" => ExchangeType::Gate,
-                            "lbank" => ExchangeType::LBank,
-                            _ => ExchangeType::Unknown
-                        };
+                    println!("{}", msg);
+                    if let Ok(subscription) = serde_json::from_str::<Subscription>(&msg.to_text().unwrap()) {                        
+                        let ticker = subscription.ticker.to_lowercase();
+                        
+                        match subscription.action.as_str() {
+                            "subscribe" => {
+                                match subscription.channel.as_str() {
+                                    "order_book" => {
+                                        let long_exchange = subscription.long_exchange.unwrap().to_lowercase();
+                                        let short_exchange = subscription.short_exchange.unwrap().to_lowercase();
 
-                        let short_exchange= match short_exchange.as_str() {
-                            "binance" => ExchangeType::Binance,
-                            "bybit" => ExchangeType::Bybit,
-                            "kucoin" => ExchangeType::KuCoin,
-                            "binx" => ExchangeType::BinX,
-                            "mexc" => ExchangeType::Mexc,
-                            "gate" => ExchangeType::Gate,
-                            "lbank" => ExchangeType::LBank,
-                            _ => ExchangeType::Unknown
-                        };
+                                        let long_exchange= match long_exchange.as_str() {
+                                            "binance" => ExchangeType::Binance,
+                                            "bybit" => ExchangeType::Bybit,
+                                            "kucoin" => ExchangeType::KuCoin,
+                                            "binx" => ExchangeType::BinX,
+                                            "mexc" => ExchangeType::Mexc,
+                                            "gate" => ExchangeType::Gate,
+                                            "lbank" => ExchangeType::LBank,
+                                            _ => ExchangeType::Unknown
+                                        };
 
-                        client.update(&ticker, long_exchange, short_exchange);
+                                        let short_exchange= match short_exchange.as_str() {
+                                            "binance" => ExchangeType::Binance,
+                                            "bybit" => ExchangeType::Bybit,
+                                            "kucoin" => ExchangeType::KuCoin,
+                                            "binx" => ExchangeType::BinX,
+                                            "mexc" => ExchangeType::Mexc,
+                                            "gate" => ExchangeType::Gate,
+                                            "lbank" => ExchangeType::LBank,
+                                            _ => ExchangeType::Unknown
+                                        };
+
+                                        client.update(&ticker, long_exchange, short_exchange);
+                                    },
+                                    "candles_history" => {
+                                        println!("candles_history is offend")
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            "ubsubscribe" => {
+                                println!("unsubscribe");
+                                // task_token.cancel();
+                                break;
+                            }
+                            _ => {}
+                        }
 
                         sender.send(client.clone()).await.expect("[Arbitration-Websocket] Failed to send exchange names");
                     }

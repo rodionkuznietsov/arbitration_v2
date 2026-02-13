@@ -11,6 +11,7 @@
     "@twa-dev/sdk": "^8.0.2",
     "core-js": "^3.8.3",
     "lightweight-charts": "^5.1.0",
+    "pinia": "^3.0.4",
     "vue": "^3.2.13",
     "vue-router": "^5.0.2"
   },

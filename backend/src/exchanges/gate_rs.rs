@@ -242,6 +242,7 @@ impl Websocket for GateWebsocket {
                     data = rx.recv() => {
                         if let Some(snapshot_ui) = data {
                             if let Some(snapshot) = snapshot_ui {
+                                // println!("{:?}", snapshot);
                                 match snapshot_tx.send(snapshot) {
                                     Ok(_) => {},
                                     Err(_) => {}

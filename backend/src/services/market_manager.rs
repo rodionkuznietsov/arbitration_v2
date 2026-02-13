@@ -177,22 +177,22 @@ pub async fn run_websockets(
                         websocket.get_snapshot(snapshot_tx).await;
                     });
 
-                    tokio::spawn({
-                        let mut client = client.clone();
-                        let token = token.clone();
-                        let pool = pool.clone();
+                    // tokio::spawn({
+                    //     let mut client = client.clone();
+                    //     let token = token.clone();
+                    //     let pool = pool.clone();
 
-                        async move {
-                            let ticker = format!("{}{}", client.ticker.to_lowercase(), "usdt");
-                            println!("Fetching candle history for ticker: {}", ticker);
-                            let candle_history = storage::candle::get_user_candles(&pool, &ticker, "12").await;
+                    //     async move {
+                    //         let ticker = format!("{}{}", client.ticker.to_lowercase(), "usdt");
+                    //         println!("Fetching candle history for ticker: {}", ticker);
+                    //         let candle_history = storage::candle::get_user_candles(&pool, &ticker, "12").await;
 
-                            tokio::select! {
-                                _ = token.cancelled() => return ,
-                                _ = client.send_user_candles(candle_history.unwrap()) => {}
-                            }
-                        }
-                    });
+                    //         tokio::select! {
+                    //             _ = token.cancelled() => return ,
+                    //             _ = client.send_user_candles(candle_history.unwrap()) => {}
+                    //         }
+                    //     }
+                    // });
                     
                     while let Some(snapshot) = snapshot_rx.recv().await {
                         let mut client = client.clone();      

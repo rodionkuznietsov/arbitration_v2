@@ -1,8 +1,9 @@
 use std::{collections::{BTreeMap, HashMap}};
-use serde::{Serialize};
+use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum OrderType {
     Long, 
     Short

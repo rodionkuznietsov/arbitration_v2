@@ -1,11 +1,19 @@
 <script setup>
-    import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-charts';
-import { onMounted, onUnmounted, ref } from 'vue';
+    import { useWebsocketStore } from '@/stores/websocket';
+import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-charts';
+    import { onMounted, onUnmounted, ref } from 'vue';
+
+    const ws = useWebsocketStore()
+    let unsubscribe
 
     let chart;
     const container = ref(null)
 
     onMounted(() => {
+        unsubscribe = ws.subscribe('btc', 'candles_history', (msg) => {
+            console.log(msg)
+        })
+
         const chartOptions = {
             width: container.value.clientWidth,
             height: container.value.clientHeight,
@@ -69,6 +77,8 @@ import { onMounted, onUnmounted, ref } from 'vue';
     })
 
     onUnmounted(() => {
+        unsubscribe?.()
+
         if (chart) {
             chart.remove();
             chart = null;

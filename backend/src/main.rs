@@ -1,4 +1,4 @@
-use std::{time::Duration};
+use std::{sync::Arc, time::Duration};
 use crate::{transport::ws::ConnectedClient};
 
 mod exchanges;
@@ -20,12 +20,12 @@ async fn main() {
     
     let storage_pool = storage::pool::create_pool().await;
 
-    let (sender_exchange_names, receiver_exchange_names) = async_channel::unbounded::<ConnectedClient>();
+    let (client_tx, client_rx) = async_channel::unbounded::<ConnectedClient>();
 
     tokio::spawn({
         async move {
             services::market_manager::run_websockets(
-                receiver_exchange_names, storage_pool
+                client_rx, storage_pool
             ).await;
         }
     });
@@ -33,7 +33,7 @@ async fn main() {
     tokio::spawn({
         async move {
             transport::ws::connect_async(
-                sender_exchange_names,
+                client_tx,
             ).await;
         }
     });

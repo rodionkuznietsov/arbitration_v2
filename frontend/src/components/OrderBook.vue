@@ -1,5 +1,8 @@
 <script setup>
-    import { ref, defineExpose, defineProps, defineEmits, computed } from 'vue';
+    import { useOrderBookStore } from '@/stores/orderbook';
+    import { useUserState } from '@/stores/user_state';
+    import { useWebsocketStore } from '@/stores/websocket';
+    import { ref, defineExpose, defineProps, defineEmits } from 'vue';
 
     const props = defineProps({
         modelValue: Boolean
@@ -9,134 +12,34 @@
     const emit = defineEmits(["update:modelValue"])
     const isWarningStatus = ref(props.modelValue)
 
-    let websoket = null
-    const formData = ref({})
-
-    const longAsks = ref([])
-    const longFirstAskPrice = ref(0.0)
-
-    const longBids = ref([])
-    const longFirstBidPrice = ref(0.0)
-
-    const longLastPrice = ref(0.0)
-    const longExchange = ref('')
-    const longExchangeLogo = ref('')
-    const longOrderType = ref('')
-
-    const longArrow = computed(() => {
-        if (longLastPrice.value == longFirstAskPrice.value) {
-            return '⬆'
-        } else if (longLastPrice.value == longFirstBidPrice.value) {
-            return '⬇'
-        } 
-        return '⬆'
-    })
-
-    const shortAsks = ref([])
-    const shortFirstAskPrice = ref(0.0)
-
-    const shortBids = ref([])
-    const shortFirstBidPrice = ref(0.0)
-
-    const shortLastPrice = ref(0.0)
-    const shortExchange = ref('')
-    const shortExchangeLogo = ref('')
-    const shortOrderType = ref('')
-
-    const shortArrow = computed(() => {
-        if (shortLastPrice.value == shortFirstAskPrice.value) {
-            return '⬆'
-        } else if (shortLastPrice.value == shortFirstBidPrice.value) {
-            return '⬇'
-        } 
-        return '⬆'
-    })
-
-    const currentTicker = ref('')
-
-    function exchanges(
-        data
-    ) {
-        formData.value = data
-        longExchange.value = formData.value.exchanges.longExchange
-        longExchangeLogo.value = `../assets/icons/${longExchange.value.toLowerCase()}_logo.svg`
-        longOrderType.value = formData.value.types.longType
-
-        shortExchange.value = formData.value.exchanges.shortExchange
-        shortExchangeLogo.value = `../assets/icons/${shortExchange.value.toLowerCase()}_logo.svg`
-        currentTicker.value = formData.value.ticker
-        shortOrderType.value = formData.value.types.shortType
-    }
+    const userState = useUserState()
+    const orderBookStore = useOrderBookStore()
+    const ws = useWebsocketStore()
+    let unsubscribe
 
     function start() {
-        if (websoket) return
+        emit("update:modelValue", true)
+        const data = userState.get_data()
 
-        websoket = new WebSocket("ws://localhost:9000")
+        unsubscribe = ws.subscribe(data.ticker.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (msg) => {
+            orderBookStore.updateHeader(
+                data.ticker,
+                data.longExchange, 
+                data.longOrderType,
+                data.shortExchange,
+                data.shortOrderType
+            )
 
-        websoket.onerror = () => {
-            console.log("[Websocket] Прервано соединение")
-            emit("update:modelValue", true)
-        }
-
-        websoket.onmessage = (event) => {
-            const data = JSON.parse(event.data)
-            longAsks.value = data.long?.a.map(x => ({
-                price: x[0],
-                volume: x[1],
-            }))
-
-            longBids.value = data.long?.b.map(x => ({
-                price: x[0],
-                volume: x[1],
-            }))
-
-            longLastPrice.value = data.long?.last_price
-
-            shortAsks.value = data.short?.a.map(x => ({
-                price: x[0],
-                volume: x[1],
-            }))
-
-            shortBids.value = data.short?.b.map(x => ({
-                price: x[0],
-                volume: x[1],
-            }))
-
-            shortLastPrice.value = data.short?.last_price
-
-            // Для стрелочки
-            longFirstAskPrice.value = data.long?.a?.[0]?.[0];
-            longFirstBidPrice.value = data.long?.b?.[0]?.[0];
-
-            shortFirstAskPrice.value = data.short?.a[0]?.[0];
-            shortFirstBidPrice.value = data.short?.b?.[0]?.[0];
-        }
-
-        websoket.onopen = () => {
-            websoket.send(JSON.stringify(formData.value))
-        }
-
-        websoket.onclose = () => {
-            websoket = null
-        }
-    }
-
-    function show() {
-        isVisible.value = "display: block;"
+            orderBookStore.updateData(msg.books)
+            isVisible.value = "display: block;"
+        })
     }
 
     function stop() {
-        if (websoket) {
-            websoket.close()
-            websoket = null
-        }
-        longAsks.value = []
-        longBids.value = []
-        
-        shortAsks.value = []
-        shortBids.value = []
-        
         isVisible.value = "display: none;"
+        userState.clearValues()
+        orderBookStore.clearValues()
+        unsubscribe?.()
     }
 
     function formatCurrency(value) {
@@ -166,18 +69,18 @@
     }   
 
     function getFillPercentAsk(value, method) {
-        const source = method == 'long' ? longAsks : shortAsks
-        const max = Math.max(...source.value.map(a => a.price * a.volume))
+        const source = method == 'long' ? orderBookStore.longAsks : orderBookStore.shortAsks
+        const max = Math.max(...source.map(a => a.price * a.volume))
         return (value.price * value.volume) / max * 100
     }
 
     function getFillPercentBid(value, method) {
-        const source = method == 'long' ? longBids : shortBids
-        const max = Math.max(...source.value.map(a => a.price * a.volume))
+        const source = method == 'long' ? orderBookStore.longBids : orderBookStore.shortBids
+        const max = Math.max(...source.map(b => b.price * b.volume))
         return (value.price * value.volume) / max * 100
     }
 
-    defineExpose({ show, start, stop, exchanges, isWarningStatus })
+    defineExpose({ start, stop, isWarningStatus })
 </script>
 
 <template>
@@ -186,9 +89,9 @@
         <div id="order_book" :style="isVisible">
             <div id="exchange_name">
                 <div class="with_img">
-                    <img :src="longExchangeLogo" alt="">
-                    <span>{{ longExchange }}</span>
-                    <span class="ticker_name">{{ currentTicker }} - {{ longOrderType }}</span>
+                    <img :src="orderBookStore.longExchangeLogo" alt="">
+                    <span>{{ orderBookStore.longExchange }}</span>
+                    <span class="ticker_name">{{ orderBookStore.ticker }} - {{ orderBookStore.longOrderType }}</span>
                 </div>
             </div>
             <div id="order_book_element">
@@ -197,7 +100,7 @@
                         <th>Цена</th>
                         <th>Обьем $</th>
                     </tr>
-                    <tr v-for="ask in longAsks" :key="ask.price" class="ask_row">
+                    <tr v-for="ask in orderBookStore.longAsks" :key="ask.price" class="ask_row">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
                         <td class="sell_label volume-bar">
                             <span class="volume-value">{{ formatVolume(ask.price *  ask.volume) }}</span>
@@ -206,14 +109,14 @@
                     </tr>
                     <tr>
                         <td colspan="2" class="mid_price" tabindex="3">
-                            <div class="with_arrow" :class="longArrow == '⬇' ? 'down' : 'up'">
-                                <div>{{ longArrow }} </div>
-                                <div>{{ formatCurrency(longLastPrice) }}</div>
+                            <div class="with_arrow" :class="orderBookStore.longArrow == '⬇' ? 'down' : 'up'">
+                                <div>{{ orderBookStore.longArrow }} </div>
+                                <div>{{ formatCurrency(orderBookStore.longLastPrice) }}</div>
                             </div>
                         </td>
                     </tr>
 
-                    <tr v-for="bid in longBids" :key="bid.price" class="bid_row">
+                    <tr v-for="bid in orderBookStore.longBids" :key="bid.price" class="bid_row">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
                         <td class="buy_label volume-bar">
                             <span class="volume-value">{{ formatVolume(bid.price *  bid.volume) }}</span>
@@ -227,9 +130,9 @@
         <div id="order_book" :style="isVisible">
             <div id="exchange_name">
                 <div class="with_img">
-                    <img :src="shortExchangeLogo" alt="">
-                    <span>{{ shortExchange }}</span>
-                    <span class="ticker_name">{{ currentTicker }} - {{ shortOrderType }}</span>
+                    <img :src="orderBookStore.shortExchangeLogo" alt="">
+                    <span>{{ orderBookStore.shortExchange }}</span>
+                    <span class="ticker_name">{{ orderBookStore.ticker }} - {{ orderBookStore.shortOrderType }}</span>
                 </div>
             </div>
             <div id="order_book_element">
@@ -238,7 +141,7 @@
                         <th>Цена</th>
                         <th>Обьем $</th>
                     </tr>
-                    <tr v-for="ask in shortAsks" :key="ask.price" class="ask_row">
+                    <tr v-for="ask in orderBookStore.shortAsks" :key="ask.price" class="ask_row">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
                         <td class="sell_label volume-bar">
                             <span class="volume-value">{{ formatVolume(ask.price *  ask.volume) }}</span>
@@ -247,14 +150,14 @@
                     </tr>
                     <tr>
                         <td colspan="2" class="mid_price" tabindex="3">
-                            <div class="with_arrow" :class="shortArrow == '⬇' ? 'down' : 'up'">
-                                <div>{{ shortArrow }} </div>
-                                <div>{{ formatCurrency(shortLastPrice) }}</div>
+                            <div class="with_arrow" :class="orderBookStore.shortArrow == '⬇' ? 'down' : 'up'">
+                                <div>{{ orderBookStore.shortArrow }} </div>
+                                <div>{{ formatCurrency(orderBookStore.shortLastPrice) }}</div>
                             </div>
                         </td>
                     </tr>
 
-                    <tr v-for="bid in shortBids" :key="bid.price" class="bid_row">
+                    <tr v-for="bid in orderBookStore.shortBids" :key="bid.price" class="bid_row">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
                         <td class="buy_label volume-bar">
                             <span class="volume-value">{{ formatVolume(bid.price *  bid.volume) }}</span>
