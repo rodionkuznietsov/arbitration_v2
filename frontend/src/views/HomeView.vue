@@ -46,9 +46,9 @@
     }    
     
     async function stop() {
-      orderBook.value.stop()  
       userState.changeStatus('offline')
       await ws.disconnect()
+      orderBook.value.stop()  
     }
 </script>
 

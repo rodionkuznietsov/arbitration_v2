@@ -133,10 +133,11 @@ pub async fn run_websockets(
                     
                     while let Some(snapshot) = snapshot_rx.recv().await {
                         let mut client = client.clone();      
+                        let ticker = client.ticker.clone();
 
                         tokio::select! {
                             _ = token.cancelled() => return ,
-                            _ = client.send_snapshot(OrderType::Long, snapshot) => {}
+                            _ = client.send_snapshot(OrderType::Long, snapshot, ticker) => {}
                         }
                     }
                 }
@@ -196,10 +197,11 @@ pub async fn run_websockets(
                     
                     while let Some(snapshot) = snapshot_rx.recv().await {
                         let mut client = client.clone();      
+                        let ticker = client.ticker.clone();
 
                         tokio::select! {
                             _ = token.cancelled() => return ,
-                            _ = client.send_snapshot(OrderType::Short, snapshot) => {}
+                            _ = client.send_snapshot(OrderType::Short, snapshot, ticker) => {}
                         }
                     }
                 }

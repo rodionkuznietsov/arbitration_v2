@@ -32,14 +32,14 @@ pub struct ConnectedClient {
     pub ticker: String,
     pub long_exchange: ExchangeType,
     pub short_exchange: ExchangeType,
-    pub sender: async_channel::Sender<(OrderType, SnapshotUi)>,
-    pub receiver: async_channel::Receiver<(OrderType, SnapshotUi)>,
+    pub sender: async_channel::Sender<(OrderType, SnapshotUi, String)>,
+    pub receiver: async_channel::Receiver<(OrderType, SnapshotUi, String)>,
     pub token: tokio_util::sync::CancellationToken,
 }
 
 impl ConnectedClient {
     pub fn new() -> Self {
-        let (sender, receiver) = async_channel::unbounded::<(OrderType, SnapshotUi)>();
+        let (sender, receiver) = async_channel::unbounded::<(OrderType, SnapshotUi, String)>();
         
         Self { 
             uuid: Uuid::new_v4(),
@@ -58,8 +58,8 @@ impl ConnectedClient {
         self.short_exchange = short_exchange;
     }
 
-    pub async fn send_snapshot(&mut self, order_type: OrderType, snapshot: SnapshotUi) {
-        self.sender.send((order_type.clone(), snapshot)).await.expect("[ConnectedClient] Failed to send snapshot")
+    pub async fn send_snapshot(&mut self, order_type: OrderType, snapshot: SnapshotUi, ticker: String) {
+        self.sender.send((order_type.clone(), snapshot, ticker)).await.expect("[ConnectedClient] Failed to send snapshot")
     }
 
     pub async fn send_user_candles(&mut self, candles: Vec<Candle>) {
@@ -102,7 +102,8 @@ async fn handle_connection(
     tokio::spawn({
         async move {
             let mut books = HashMap::new();
-            let mut ticker = interval(Duration::from_millis(50));        
+            let mut ticker = String::new();
+            let mut interval = interval(Duration::from_millis(50));        
             loop {
                 tokio::select! {
                     _ = task_token.cancelled() => {
@@ -110,14 +111,15 @@ async fn handle_connection(
                         break;
                     }
 
-                    Ok((order_type, snapshot)) = receiver.recv() => {
+                    Ok((order_type, snapshot, symbol)) = receiver.recv() => {
+                        ticker = symbol;
                         match order_type {
                             OrderType::Long => { books.insert("long", snapshot); },
                             OrderType::Short => { books.insert("short", snapshot);}
                         }
                     }
 
-                    _ = ticker.tick() => {
+                    _ = interval.tick() => {
                         if books.is_empty() {
                             continue;
                         }
@@ -127,7 +129,7 @@ async fn handle_connection(
                             "result": {
                                 "books": books
                             },
-                            "ticker": "btc"
+                            "ticker": ticker
                         });
 
                         if ws_sender.send(Message::Text(json.to_string().into())).await.is_err() {

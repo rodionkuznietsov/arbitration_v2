@@ -230,7 +230,6 @@ impl Websocket for GateWebsocket {
 
             loop {
                 let ticker = ticker.clone();
-
                 match this.sender_data.send(BookEvent::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
@@ -242,7 +241,6 @@ impl Websocket for GateWebsocket {
                     data = rx.recv() => {
                         if let Some(snapshot_ui) = data {
                             if let Some(snapshot) = snapshot_ui {
-                                // println!("{:?}", snapshot);
                                 match snapshot_tx.send(snapshot) {
                                     Ok(_) => {},
                                     Err(_) => {}
