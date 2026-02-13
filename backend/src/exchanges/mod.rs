@@ -1,4 +1,3 @@
-pub mod orderbook;
 pub mod kucoin_ws;
 pub mod binx_ws;
 pub mod mexc_ws;

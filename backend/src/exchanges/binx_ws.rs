@@ -7,7 +7,7 @@ use tokio::sync::{Notify, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
 
-use crate::exchanges::{orderbook::{BookEvent, OrderBookManager, Snapshot, parse_levels__}, websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}};
+use crate::{exchanges::websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}, models::orderbook::{BookEvent, OrderBookManager, Snapshot, SnapshotUi, parse_levels__}};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct TickerResponse {
@@ -225,7 +225,7 @@ impl Websocket for BinXWebsocket {
         WebSocketStatus::Finished
     }
 
-    async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<super::orderbook::SnapshotUi>) {
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<SnapshotUi>) {
         if !self.enabled {
             return;
         }
@@ -282,7 +282,7 @@ impl Websocket for BinXWebsocket {
         Some(usdt_tickers)
     }
 
-    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<super::orderbook::BookEvent> {
+    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<BookEvent> {
         let ticker = json.topic.replace("-USDT@depth50", "USDT").to_lowercase();
         let asks = parse_levels__(json.data.asks).await;
         let bids = parse_levels__(json.data.bids).await;
@@ -293,11 +293,11 @@ impl Websocket for BinXWebsocket {
         })
     }
 
-    async fn handle_delta(self: Arc<Self>, _json: Self::Snapshot) -> Option<super::orderbook::BookEvent> {
+    async fn handle_delta(self: Arc<Self>, _json: Self::Snapshot) -> Option<BookEvent> {
         todo!()
     }
 
-    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<super::orderbook::BookEvent> {
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<BookEvent> {
         let ticker = json.data.symbol.replace("-USDT", "USDT").to_lowercase();
         let last_price = match json.data.last_price.parse::<f64>() {
             Ok(p) => p,

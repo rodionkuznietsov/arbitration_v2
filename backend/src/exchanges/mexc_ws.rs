@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::{Duration}};
+use std::{sync::Arc, time::{Duration}};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Notify, Semaphore, mpsc};
@@ -9,9 +9,7 @@ use tracing::warn;
 use url::Url;
 
 use crate::{
-    exchanges::{orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, parse_levels__}, 
-    websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}}, 
-    mexc_orderbook::{Event, OrderBookEvent, TickerEvent}
+    exchanges::websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}, mexc_orderbook::{Event, OrderBookEvent, TickerEvent}, models::orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, SnapshotUi, parse_levels__}
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -293,7 +291,7 @@ impl Websocket for MexcWebsocket {
         WebSocketStatus::Finished
     }
 
-    async fn get_snapshot(self: std::sync::Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<super::orderbook::SnapshotUi>) {
+    async fn get_snapshot(self: std::sync::Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<SnapshotUi>) {
         if !self.enabled {
             return;
         }
@@ -341,7 +339,7 @@ impl Websocket for MexcWebsocket {
         Some(usdt_tickers)
     }
 
-    async fn handle_snapshot(self: std::sync::Arc<Self>, json: Self::Snapshot) -> Option<super::orderbook::BookEvent> {
+    async fn handle_snapshot(self: std::sync::Arc<Self>, json: Self::Snapshot) -> Option<BookEvent> {
         let Some(ticker) = json.symbol else { return None };
         let asks = parse_levels__(json.asks).await;
         let bids = parse_levels__(json.bids).await;
@@ -353,7 +351,7 @@ impl Websocket for MexcWebsocket {
         })
     }
 
-    async fn handle_delta(self: std::sync::Arc<Self>, json: Self::Delta) -> Option<super::orderbook::BookEvent> {
+    async fn handle_delta(self: std::sync::Arc<Self>, json: Self::Delta) -> Option<BookEvent> {
         let Some(depths) = json.public_increase_depths else { return None };
         let asks_vec: Vec<Vec<String>> = depths.asks
             .into_iter()
@@ -378,7 +376,7 @@ impl Websocket for MexcWebsocket {
         }) 
     }
 
-    async fn handle_price(self: std::sync::Arc<Self>, json: Self::Price) -> Option<super::orderbook::BookEvent> {
+    async fn handle_price(self: std::sync::Arc<Self>, json: Self::Price) -> Option<BookEvent> {
         let Some(deals) = json.data.public_deals else { return None };
         let Some(ticker) = json.symbol else { return None };
         let ticker = ticker.to_lowercase();

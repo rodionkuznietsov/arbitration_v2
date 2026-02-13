@@ -8,7 +8,8 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
 
-use crate::exchanges::{orderbook::{BookEvent, OrderBookManager, Snapshot, parse_levels__}, websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}};
+use crate::{exchanges::{websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}}, models::orderbook::SnapshotUi};
+use crate::models::orderbook::{BookEvent, OrderBookManager, Snapshot, parse_levels__};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OrderBookEvent {
@@ -216,7 +217,7 @@ impl Websocket for GateWebsocket {
         WebSocketStatus::Finished
     }
 
-    async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<super::orderbook::SnapshotUi>) {
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<SnapshotUi>) {
         if !self.enabled {
             return;
         }
@@ -263,7 +264,7 @@ impl Websocket for GateWebsocket {
         Some(usdt_tickers)
     }
 
-    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<super::orderbook::BookEvent> {
+    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<BookEvent> {
         let Some(ticker) = json.result.symbol else { return None };
         let ticker = ticker.replace("_", "").to_lowercase();
 
@@ -281,11 +282,11 @@ impl Websocket for GateWebsocket {
         }})
     }
 
-    async fn handle_delta(self: Arc<Self>, _json: Self::Delta) -> Option<super::orderbook::BookEvent> {
+    async fn handle_delta(self: Arc<Self>, _json: Self::Delta) -> Option<BookEvent> {
         todo!()
     }
 
-    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<super::orderbook::BookEvent> {
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<BookEvent> {
         let Some(ticker) = json.result.symbol else { return None };
         let ticker = ticker.replace("_", "").to_lowercase();
         let Some(last_price_str) = json.result.last_price else { return None };

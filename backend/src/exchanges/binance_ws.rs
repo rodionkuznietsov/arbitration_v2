@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
 
-use crate::exchanges::{orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, parse_levels__}, websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}};
+use crate::{exchanges::websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}, models::orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, SnapshotUi, parse_levels__}};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OrderBookEvent {
@@ -308,7 +308,7 @@ impl Websocket for BinanceWebsocket {
         WebSocketStatus::Finished
     }
 
-    async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<super::orderbook::SnapshotUi>) {
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<SnapshotUi>) {
         if !self.enabled {
             return;
         }
@@ -343,7 +343,7 @@ impl Websocket for BinanceWebsocket {
         }
     }
 
-    async fn get_tickers(&self, channel_type: &str) -> Option<Vec<super::websocket::Ticker>> {
+    async fn get_tickers(&self, _channel_type: &str) -> Option<Vec<super::websocket::Ticker>> {
         let url = "https://api.binance.com/api/v3/ticker/bookTicker";
         let response = self.client.get(url).send().await;
         let Ok(response) = response else { return None };
@@ -356,7 +356,7 @@ impl Websocket for BinanceWebsocket {
         Some(usdt_tickers)
     }
 
-    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<super::orderbook::BookEvent> {
+    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<BookEvent> {
         let Some(ticker) = json.symbol else { return None };
         let ticker = ticker.to_lowercase();
         let asks = parse_levels__(json.asks).await;
@@ -374,7 +374,7 @@ impl Websocket for BinanceWebsocket {
         })
     }
 
-    async fn handle_delta(self: Arc<Self>, json: Self::Delta) -> Option<super::orderbook::BookEvent> {
+    async fn handle_delta(self: Arc<Self>, json: Self::Delta) -> Option<BookEvent> {
         let ticker = json.symbol.to_lowercase();
         let asks = parse_levels__(json.asks).await;
         let bids = parse_levels__(json.bids).await;
@@ -392,7 +392,7 @@ impl Websocket for BinanceWebsocket {
         })
     }
 
-    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<super::orderbook::BookEvent> {
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<BookEvent> {
         let ticker = json.symbol.to_lowercase();
         let last_price = match json.last_price.parse::<f64>() {
             Ok(p) => p,

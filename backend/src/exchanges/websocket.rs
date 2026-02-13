@@ -3,7 +3,7 @@ use std::{sync::Arc};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc};
 
-use crate::exchanges::orderbook::{BookEvent, SnapshotUi};
+use crate::models::orderbook::{BookEvent, SnapshotUi};
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Ticker {

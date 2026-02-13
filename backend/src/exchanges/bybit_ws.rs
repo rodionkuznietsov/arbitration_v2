@@ -6,7 +6,8 @@ use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 use tokio_util::sync::CancellationToken;
 
-use crate::exchanges::{orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, SnapshotUi, parse_levels__}, websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}};
+use crate::exchanges::{websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}};
+use crate::models::orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, SnapshotUi, parse_levels__};
 
 #[derive(Deserialize, Debug, Serialize)]
 struct TickerResponse {

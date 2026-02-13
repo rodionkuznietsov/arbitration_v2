@@ -7,7 +7,8 @@ use futures_util::{SinkExt, StreamExt};
 use anyhow::{Result};
 use tokio_util::sync::CancellationToken;
 
-use crate::exchanges::{orderbook::{BookEvent, OrderBookManager, Snapshot, SnapshotUi, parse_levels__}, websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}};
+use crate::{exchanges::{websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}}, models::orderbook::SnapshotUi};
+use crate::models::orderbook::{BookEvent, OrderBookManager, Snapshot, parse_levels__};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct ApiKeyResponse {

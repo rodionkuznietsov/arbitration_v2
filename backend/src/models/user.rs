@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::models::candle::Candle;
-use crate::exchanges::orderbook::{OrderType, SnapshotUi};
+use crate::models::orderbook::{OrderType, SnapshotUi};
 use crate::services::market_manager::ExchangeType;
 
 #[derive(Debug, Clone)]

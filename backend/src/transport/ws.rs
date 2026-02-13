@@ -6,7 +6,7 @@ use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::{exchanges::orderbook::{OrderType, SnapshotUi}, models::candle::Candle, services::market_manager::ExchangeType};
+use crate::{models::{candle::Candle, orderbook::{OrderType, SnapshotUi}}, services::market_manager::ExchangeType};
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all="camelCase")]
