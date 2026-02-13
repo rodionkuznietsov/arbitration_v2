@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use tokio::sync::mpsc;
 
@@ -53,7 +53,7 @@ impl ExchangeWs {
         }
     }
 
-    async fn get_snapshot(&self, snapshot_tx: mpsc::UnboundedSender<SnapshotUi> ) {
+    async fn get_snapshot(&self, snapshot_tx: mpsc::Sender<SnapshotUi> ) {
         match self {
             Self::Bybit(ws) => {
                 ws.clone().get_snapshot(snapshot_tx).await
@@ -125,10 +125,16 @@ pub async fn run_websockets(
                     };
 
                     websocket.ticker_tx().send((client.uuid.to_string().clone(), client.ticker.to_string())).await.unwrap();
-                    let (snapshot_tx, mut snapshot_rx) = mpsc::unbounded_channel();
+                    let (snapshot_tx, mut snapshot_rx) = mpsc::channel(100);
                     
-                    tokio::spawn(async move {
-                        websocket.get_snapshot(snapshot_tx).await;
+                    tokio::spawn({
+                        let token  = token.clone();
+                        async move {
+                            tokio::select! {
+                                _ = token.cancelled() => return,
+                                _ = websocket.get_snapshot(snapshot_tx) => {}
+                            }
+                        }
                     });
                     
                     while let Some(snapshot) = snapshot_rx.recv().await {
@@ -136,17 +142,18 @@ pub async fn run_websockets(
                         let ticker = client.ticker.clone();
 
                         tokio::select! {
-                            _ = token.cancelled() => return ,
+                            _ = token.cancelled() => return,
                             _ = client.send_snapshot(OrderType::Long, snapshot, ticker) => {}
                         }
                     }
+
+                    return ;
                 }
             }
         });
 
         let pool = pool.clone();
         tokio::spawn({
-            // let binance_book = binance_book.clone();
             let bybit = bybit_websocket.clone();
             let kucoin = kucoin_websocket.clone();
             let binx = binx_websocket.clone();
@@ -172,28 +179,17 @@ pub async fn run_websockets(
                     };
 
                     websocket.ticker_tx().send((client.uuid.to_string().clone(), client.ticker.to_string())).await.unwrap();
-                    let (snapshot_tx, mut snapshot_rx) = mpsc::unbounded_channel();
+                    let (snapshot_tx, mut snapshot_rx) = mpsc::channel(100);
                     
-                    tokio::spawn(async move {
-                        websocket.get_snapshot(snapshot_tx).await;
+                    tokio::spawn({
+                        let token  = token.clone();
+                        async move {
+                            tokio::select! {
+                                _ = token.cancelled() => return,
+                                _ = websocket.get_snapshot(snapshot_tx) => {}
+                            }
+                        }
                     });
-
-                    // tokio::spawn({
-                    //     let mut client = client.clone();
-                    //     let token = token.clone();
-                    //     let pool = pool.clone();
-
-                    //     async move {
-                    //         let ticker = format!("{}{}", client.ticker.to_lowercase(), "usdt");
-                    //         println!("Fetching candle history for ticker: {}", ticker);
-                    //         let candle_history = storage::candle::get_user_candles(&pool, &ticker, "12").await;
-
-                    //         tokio::select! {
-                    //             _ = token.cancelled() => return ,
-                    //             _ = client.send_user_candles(candle_history.unwrap()) => {}
-                    //         }
-                    //     }
-                    // });
                     
                     while let Some(snapshot) = snapshot_rx.recv().await {
                         let mut client = client.clone();      
@@ -204,6 +200,8 @@ pub async fn run_websockets(
                             _ = client.send_snapshot(OrderType::Short, snapshot, ticker) => {}
                         }
                     }
+
+                    return ;
                 }
             }
         });

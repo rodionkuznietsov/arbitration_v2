@@ -2,6 +2,7 @@ use std::{collections::{BTreeMap}, num::NonZeroUsize};
 use lru::LruCache;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc};
+use tracing::warn;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -220,7 +221,7 @@ impl OrderBookManager {
                         match reply.send(Some(snapshot_ui)).await {
                             Ok(_) => {}
                             Err(e) => {
-                                println!("{}", format!("[OrderBookManager]: {}", e))
+                                warn!("[OrderBookManager]: {}", e)
                             }
                         }   
                     }

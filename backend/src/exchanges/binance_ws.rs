@@ -308,7 +308,7 @@ impl Websocket for BinanceWebsocket {
         WebSocketStatus::Finished
     }
 
-    async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::UnboundedSender<SnapshotUi>) {
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::Sender<SnapshotUi>) {
         if !self.enabled {
             return;
         }
@@ -331,7 +331,7 @@ impl Websocket for BinanceWebsocket {
                     data = rx.recv() => {
                         if let Some(snapshot_ui) = data {
                             if let Some(snapshot) = snapshot_ui {
-                                match snapshot_tx.send(snapshot) {
+                                match snapshot_tx.send(snapshot).await {
                                     Ok(_) => {},
                                     Err(_) => {}
                                 }

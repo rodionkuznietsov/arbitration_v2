@@ -18,14 +18,6 @@ pub struct Subscription {
     ticker: String
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct Exchanges {
-    #[serde(rename="longExchange")]
-    pub long_exchange: String,
-    #[serde(rename="shortExchange")]
-    pub short_exchange: String
-}
-
 #[derive(Debug, Clone)]
 pub struct ConnectedClient {
     pub uuid: Uuid,
@@ -137,7 +129,6 @@ async fn handle_connection(
                         }
                     }
                 }
-
             }
         }
     });
@@ -188,7 +179,7 @@ async fn handle_connection(
                                     _ => {}
                                 }
                             }
-                            "ubsubscribe" => {
+                            "unsubscribe" => {
                                 println!("unsubscribe");
                                 task_token.cancel();
                                 break;
