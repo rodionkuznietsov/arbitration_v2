@@ -39,6 +39,8 @@ export const useWebsocketStore = defineStore('websocket', {
 
                 this.socket.onerror = (error) => {
                     console.error('WebSocket error:', error)
+                    resolve()
+                    return;
                 }
 
                 this.socket.onclose = () => {

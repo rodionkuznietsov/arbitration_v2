@@ -1,15 +1,12 @@
 <script setup>
-    import { ref, onMounted, onUnmounted, defineProps } from 'vue'
+    import { ref, onMounted, onUnmounted } from 'vue'
     import promptImg from '../assets/icons/prompt.svg'
-    
-    const props = defineProps({
-        workStatus: String
-    })
-    
+import { useUserState } from '@/stores/user_state'
+        
     const isVisible = ref(false)
     const insideTooltip = ref({x: 0.0, y: 0.0})
     const warningMsg = 'Связь с сервером потеряна. Повторите попытку позже.'
-    const workStatus = ref(props.workStatus)
+    const userState = useUserState()
 
     function popup() {
         isVisible.value = true
@@ -42,7 +39,7 @@
 
 <template>
     <div @click="getPosInsideTooltip">
-        <img class="status_img" :src="workStatus == 'online' ? '' : workStatus == 'warning' ? promptImg : ''" alt="" @click="popup">
+        <img class="status_img" :src="userState.currentStatus == 'online' ? '' : userState.currentStatus == 'warning' ? promptImg : ''" alt="" @click="popup">
         <div id="tooltip_overlay" v-show="isVisible">{{ warningMsg }}</div>
     </div>
 </template>

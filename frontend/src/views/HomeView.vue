@@ -28,6 +28,11 @@
     async function start() {
       await ws.connect("ws://localhost:9000/ws")
 
+      if (ws.socket.readyState == 3) {
+        userState.changeStatus('warning')
+        return;
+      }
+
       userState.set_data(
         ticker.value, 
         longExchange.value, 
@@ -41,14 +46,14 @@
     }    
     
     async function stop() {
-      await ws.disconnect()
-      orderBook.value.stop()
+      orderBook.value.stop()  
       userState.changeStatus('offline')
+      await ws.disconnect()
     }
 </script>
 
 <template>
-    <AppHeader ref="header"/>
+    <AppHeader/>
 
     <form id="form">
       <div id="form-column">

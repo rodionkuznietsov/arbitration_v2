@@ -2,23 +2,15 @@
     import { useOrderBookStore } from '@/stores/orderbook';
     import { useUserState } from '@/stores/user_state';
     import { useWebsocketStore } from '@/stores/websocket';
-    import { ref, defineExpose, defineProps, defineEmits } from 'vue';
-
-    const props = defineProps({
-        modelValue: Boolean
-    })
+    import { ref, defineExpose } from 'vue';
 
     const isVisible = ref("display: none;")
-    const emit = defineEmits(["update:modelValue"])
-    const isWarningStatus = ref(props.modelValue)
-
     const userState = useUserState()
     const orderBookStore = useOrderBookStore()
     const ws = useWebsocketStore()
     let unsubscribe
 
     function start() {
-        emit("update:modelValue", true)
         const data = userState.get_data()
 
         unsubscribe = ws.subscribe(data.ticker.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (msg) => {
@@ -80,7 +72,7 @@
         return (value.price * value.volume) / max * 100
     }
 
-    defineExpose({ start, stop, isWarningStatus })
+    defineExpose({ start, stop })
 </script>
 
 <template>

@@ -23,8 +23,8 @@ import { useUserState } from '@/stores/user_state';
       <div id="status">
         <div id="status_circle" :class="userState.currentStatus == 'online' ? 'online' : userState.currentStatus == 'warning' ? 'warning' : 'offline'"></div>
         <span>{{ userState.currentStatus == 'online' ? 'Онлайн' : userState.currentStatus == 'warning' ? 'Неполадки' : 'Офлайн' }}</span>
-        <div v-if="workStatus == 'warning'">
-          <Tooltip :work-status="workStatus"/>
+        <div v-if="userState.currentStatus == 'warning'">
+          <Tooltip/>
         </div>
       </div>
       <div id="reight_element">
