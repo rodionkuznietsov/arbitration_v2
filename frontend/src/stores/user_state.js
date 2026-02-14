@@ -7,7 +7,8 @@ export const useUserState = defineStore('userState', {
         shortExchange: null,
         longOrderType: null,
         shortOrderType: null,
-        currentStatus: 'offline'
+        currentStatus: 'offline',
+        candles_history: []
     }),
 
     actions: {

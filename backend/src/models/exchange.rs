@@ -1,3 +1,5 @@
+use std::fmt::{self, Display};
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -11,6 +13,22 @@ pub enum ExchangeType {
     Gate,
     LBank,
     Unknown
+}
+
+impl Display for ExchangeType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            ExchangeType::Binance => "binance",
+            ExchangeType::Bybit => "bybit",
+            ExchangeType::BinX => "binx",
+            ExchangeType::Gate => "gate",
+            ExchangeType::KuCoin => "kucoin",
+            ExchangeType::LBank => "lbank",
+            ExchangeType::Mexc => "mexc",
+            ExchangeType::Unknown => "unknown"
+        };
+        write!(f, "{}", s)
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]

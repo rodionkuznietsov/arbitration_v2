@@ -13,8 +13,15 @@ import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-chart
     const container = ref(null)
 
     onMounted(() => {
-        unsubscribe = ws.subscribe(userStateStore.ticker, 'candles_history', (msg) => {
-            console.log(msg)
+        unsubscribe = ws.subscribe(userStateStore.ticker, 'candles_history', userStateStore.longExchange, userStateStore.shortExchange, (msg) => {
+            userStateStore.candles_history = msg.candles.map(c => ({
+                time: Math.floor(new Date(c.timestamp).getTime() / 1000),
+                ticker: c.symbol,
+                open: parseFloat(c.open),
+                high: parseFloat(c.high),
+                low: parseFloat(c.low),
+                close: parseFloat(c.close),
+            }))
         })
 
         const chartOptions = {
@@ -52,13 +59,11 @@ import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-chart
             wickDownColor: '#F6465D',
             wickUpColor: '#2EBD85',
         });
-        candleSeries.setData([
-            { time: Math.floor(new Date('2026-01-07T00:00:00Z').getTime() / 1000), open: 0.0, high: 0.19, low: 0.09, close: 0.05 },
-            { time: Math.floor(new Date('2026-01-07T00:05:00Z').getTime() / 1000), open: 0.05, high: 0.15, low: 0.10, close: 0.09 },
-            { time: Math.floor(new Date('2026-01-07T00:10:00Z').getTime() / 1000), open: 0.09, high: 0.18, low: 0.13, close: 0.17 },
-            { time: Math.floor(new Date('2026-01-07T00:15:00Z').getTime() / 1000), open: 0.17, high: 0.22, low: 0.16, close: 0.2 },
-            { time: Math.floor(new Date('2026-01-07T00:20:00Z').getTime() / 1000), open: 0.2, high: 0.25, low: 0.18, close: 0.07 },
-        ]);
+
+        setTimeout(() => {
+            candleSeries.setData(userStateStore.candles_history)
+            chart.timeScale().fitContent();
+        }, 100)
 
         chart.priceScale('right').applyOptions({
             borderVisible: false,
@@ -76,7 +81,6 @@ import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-chart
                 return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
             }
         })
-        chart.timeScale().fitContent();
     })
 
     onUnmounted(() => {

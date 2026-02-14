@@ -2,7 +2,7 @@ use std::{sync::Arc};
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}, websocket::ChannelType}, storage::pool, transport::ws::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, storage::{candle::get_user_candles, pool}, transport::ws::ConnectedClient};
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
@@ -27,7 +27,23 @@ pub async fn run_websockets(
         let token = client.token.clone();
         let long_exchange = client.long_exchange.clone();
         let short_exchange = client.short_exchange.clone();
+        let exchange_pair = client.exchange_pair.clone();
+        let ticker = client.ticker.clone();
         let client = client.clone();
+
+        // Инициализация последних 100 свечей
+        tokio::spawn({
+            let pool = pool.clone();
+            let mut client = client.clone();
+            async move {
+                if !exchange_pair.is_empty() {
+                    let init_candles = get_user_candles(&pool, &ticker, &exchange_pair).await;
+                    if let Ok(candles) = init_candles {
+                        client.send_to_client(ServerToClientEvent::CandlesHistory(ChannelType::CandlesHistory, candles, ticker)).await;
+                    }
+                }
+            }
+        });
 
         tokio::spawn({
             let bybit = bybit_websocket.clone();
@@ -73,7 +89,14 @@ pub async fn run_websockets(
 
                         tokio::select! {
                             _ = token.cancelled() => return,
-                            _ = client.send_snapshot(ChannelType::OrderBook, OrderType::Long, snapshot, ticker) => {}
+                            _ = client.send_to_client(
+                                    ServerToClientEvent::OrderBook(
+                                    ChannelType::OrderBook, 
+                                    OrderType::Long, 
+                                    snapshot, 
+                                    ticker
+                                )
+                            ) => {}
                         }
                     }
 
@@ -82,7 +105,6 @@ pub async fn run_websockets(
             }
         });
 
-        let pool = pool.clone();
         tokio::spawn({
             let bybit = bybit_websocket.clone();
             let kucoin = kucoin_websocket.clone();
@@ -127,7 +149,14 @@ pub async fn run_websockets(
 
                         tokio::select! {
                             _ = token.cancelled() => return ,
-                            _ = client.send_snapshot(ChannelType::OrderBook, OrderType::Short, snapshot, ticker) => {}
+                            _ = client.send_to_client(
+                                    ServerToClientEvent::OrderBook(
+                                    ChannelType::OrderBook, 
+                                    OrderType::Short, 
+                                    snapshot, 
+                                    ticker
+                                )
+                            ) => {}
                         }
                     }
 

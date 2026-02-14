@@ -30,9 +30,10 @@ prost-types = "0.12"
 wiremock = "0.6.5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "ansi"] }
-sqlx = {version="0.6", features=["postgres", "bigdecimal"]}
+sqlx = {version="0.6", features=["postgres", "bigdecimal", "chrono"]}
 lru = "0.16.3"
 async-trait = "0.1.89"
+chrono = "0.4.43"
 
 [build-dependencies]
 prost-build = "0.12"
