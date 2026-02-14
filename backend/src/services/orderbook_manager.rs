@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use lru::LruCache;
 use tokio::sync::mpsc;
-use tracing::{Event, warn};
+use tracing::{warn};
 
 use crate::models::orderbook::{BookEvent, Snapshot, SnapshotUi};
 

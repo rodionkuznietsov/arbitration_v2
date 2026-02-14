@@ -7,7 +7,7 @@ use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 use tokio_util::sync::CancellationToken;
 
-use crate::{models::websocket::{Ticker, WebSocketStatus, WsCmd}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
+use crate::{models::{exchange::{OrderBookEventData, TickerEvent}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
 use crate::models::orderbook::{BookEvent, Delta, Snapshot, SnapshotUi};
 use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
 
@@ -29,30 +29,6 @@ pub struct OrderBookEvent {
     order_type: Option<String>,
     #[serde(rename="data")]
     data: Option<OrderBookEventData>
-}
-
-#[derive(Deserialize, Debug, Serialize, Clone)]
-struct OrderBookEventData {
-    #[serde(rename="s")]
-    symbol: Option<String>,
-    #[serde(rename="a")]
-    asks: Option<Vec<Vec<String>>>,
-    #[serde(rename="b")]
-    bids: Option<Vec<Vec<String>>>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct TickerEvent {
-    #[serde(rename="data")]
-    data: Option<TickerEventData>
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct TickerEventData {
-    #[serde(rename="symbol")]
-    symbol: String,
-    #[serde(rename="lastPrice")]
-    last_price: String
 }
 
 #[derive(Clone)]
@@ -350,9 +326,10 @@ impl Websocket for BybitWebsocket {
     }
 
     async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<OrderBookComand> {
-       let Some(data) = json.data else { return None };
-        let ticker = data.symbol;
-        let last_price = match data.last_price.parse::<f64>() {
+       let Some(data) = json.result else { return None };
+        let Some(ticker) = data.symbol else { return None };
+        let Some(last_price) = data.last_price else { return None };
+        let last_price = match last_price.parse::<f64>() {
             Ok(p) => p,
             Err(_) => 0.0
         };

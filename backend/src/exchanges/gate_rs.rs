@@ -9,7 +9,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
 
-use crate::{models::{self, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
+use crate::{models::{self, exchange::{OrderBookEventData, TickerEvent}, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
 use crate::models::orderbook::{BookEvent, Snapshot};
 use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
 
@@ -17,29 +17,6 @@ use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, 
 pub struct OrderBookEvent {
     #[serde(rename="result")]
     result: OrderBookEventData
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct OrderBookEventData {
-    #[serde(rename="s", alias="s")]
-    symbol: Option<String>,
-    #[serde(rename="bids")]
-    bids: Option<Vec<Vec<String>>>,
-    #[serde(rename="asks")]
-    asks: Option<Vec<Vec<String>>>
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct TickerEvent {
-    result: TickerEventData
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct TickerEventData {
-    #[serde(rename="currency_pair")]
-    symbol: Option<String>,
-    #[serde(rename="last")]
-    last_price: Option<String>
 }
 
 pub struct GateWebsocket {
@@ -294,9 +271,10 @@ impl Websocket for GateWebsocket {
     }
 
     async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<OrderBookComand> {
-        let Some(ticker) = json.result.symbol else { return None };
+        let Some(data) = json.result else { return None };
+        let Some(ticker) = data.symbol else { return None };
         let ticker = ticker.replace("_", "").to_lowercase();
-        let Some(last_price_str) = json.result.last_price else { return None };
+        let Some(last_price_str) = data.last_price else { return None };
         let last_price = match last_price_str.parse::<f64>() {
             Ok(p) => p,
             Err(_) => 0.0
