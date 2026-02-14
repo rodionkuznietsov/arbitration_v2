@@ -178,7 +178,7 @@
         bottom: 0;
         left: auto;
         z-index: -1;
-        transition: width 0.12s linear;
+        transition: width 0.15s linear;
     }
 
     .ask_row td, .bid_row td{

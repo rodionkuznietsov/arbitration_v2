@@ -11,7 +11,7 @@ mod mexc_orderbook {
     include!(concat!(env!("OUT_DIR"), "/_.rs"));
 }
 
-#[tokio::main]
+#[tokio::main(flavor="multi_thread")]
 async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)

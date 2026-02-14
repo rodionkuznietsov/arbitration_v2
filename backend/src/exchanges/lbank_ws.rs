@@ -1,16 +1,17 @@
-use std::{collections::{HashMap}, sync::Arc, time::{Duration}};
+use std::{sync::Arc, time::{Duration}};
 
+use async_trait::async_trait;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use tokio::{sync::{Notify, mpsc}, time::timeout};
+use tokio::{sync::{Notify, mpsc}};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
-use uuid::Uuid;
 
-use crate::{exchanges::{websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}}, models::orderbook::SnapshotUi};
-use crate::models::orderbook::{BookEvent, OrderBookManager, Snapshot, parse_levels__};
+use crate::{models::{self, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
+use crate::models::orderbook::{BookEvent, Snapshot};
+use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OrderBookEvent {
@@ -46,11 +47,6 @@ struct TickerEventData {
     last_price: f64
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-struct PingEvent {
-    ping: String
-}
-
 pub struct LBankWebsocket {
     title: String,
     enabled: bool,
@@ -58,7 +54,7 @@ pub struct LBankWebsocket {
     ticker_rx: async_channel::Receiver<(String, String)>,
     channel_type: String,
     client: reqwest::Client,
-    sender_data: mpsc::Sender<BookEvent>,
+    sender_data: mpsc::Sender<OrderBookComand>,
 }
 
 impl LBankWebsocket {
@@ -67,7 +63,7 @@ impl LBankWebsocket {
         let (ticker_tx, ticker_rx) = async_channel::bounded(1);
         let channel_type = String::from("spot");
         let client = reqwest::Client::new();
-        let (sender_data, rx_data) = mpsc::channel::<BookEvent>(10);
+        let (sender_data, rx_data) = mpsc::channel::<OrderBookComand>(1);
 
         let book_manager = OrderBookManager::new(rx_data);
 
@@ -107,7 +103,7 @@ impl Websocket for LBankWebsocket {
         });
     }
 
-    async fn reconnect(self: Arc<Self>, tickers: &Vec<super::websocket::Ticker>) {
+    async fn reconnect(self: Arc<Self>, tickers: &Vec<models::websocket::Ticker>) {
         // let (cmd_tx, cmd_rx) = mpsc::channel(1); 
 
         // cmd_tx.send(WsCmd::Subscribe("btc_usdt".to_string())).await.unwrap();
@@ -166,10 +162,10 @@ impl Websocket for LBankWebsocket {
         }
     }
 
-    async fn run_websocket(self: Arc<Self>, cmd_rx: &mut tokio::sync::mpsc::Receiver<super::websocket::WsCmd>) -> super::websocket::WebSocketStatus {
+    async fn run_websocket(self: Arc<Self>, cmd_rx: &mut tokio::sync::mpsc::Receiver<models::websocket::WsCmd>) -> models::websocket::WebSocketStatus {
         let url = Url::parse("wss://www.lbkex.net/ws/V2/").unwrap();
         let (ws_stream, _) = connect_async(url.to_string()).await.unwrap();
-        let (mut write, read) = ws_stream.split();
+        let (mut write, _read) = ws_stream.split();
 
         info!("{}", format!("{} is now live", self.title));
 
@@ -212,13 +208,11 @@ impl Websocket for LBankWebsocket {
             }
         }
 
-        let this = self.clone();
-
         write_handle.abort();
         WebSocketStatus::Finished
     }
 
-    async fn get_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::Sender<SnapshotUi>) {
+    async fn get_last_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::Sender<SnapshotUi>) {
         if !self.enabled {
             return;
         }
@@ -230,7 +224,7 @@ impl Websocket for LBankWebsocket {
             loop {
                 let ticker = ticker.clone();
 
-                match this.sender_data.send(BookEvent::GetBook { ticker, reply: tx.clone() }).await {
+                match this.sender_data.send(OrderBookComand::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
                         tracing::error!("{}: {}", this.title, e)
@@ -253,7 +247,7 @@ impl Websocket for LBankWebsocket {
         }
     }
 
-    async fn get_tickers(&self, _channel_type: &str) -> Option<Vec<super::websocket::Ticker>> {
+    async fn get_tickers(&self, _channel_type: &str) -> Option<Vec<models::websocket::Ticker>> {
         let url = "https://api.lbkex.com/v2/accuracy.do";
         let response = self.client.get(url).send().await;
         let Ok(response) = response else { return None };
@@ -266,7 +260,7 @@ impl Websocket for LBankWebsocket {
         Some(usdt_tickers)
     }
 
-    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<BookEvent> {
+    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<OrderBookComand> {
         let Some(ticker) = json.symbol else { return None };
         let ticker = ticker.replace("_", "").to_lowercase();
 
@@ -276,22 +270,43 @@ impl Websocket for LBankWebsocket {
         let asks = parse_levels__(asks).await;
         let bids = parse_levels__(bids).await;
 
-        Some(BookEvent::Snapshot { ticker: ticker, snapshot: Snapshot {
-            a: asks,
-            b: bids,
-            last_price: 0.0,
-            last_update_id: None
-        }})
+        Some(OrderBookComand::Event(
+            BookEvent::Snapshot { 
+                ticker: ticker, 
+                snapshot: Snapshot {
+                    a: asks,
+                    b: bids,
+                    last_price: 0.0,
+                    last_update_id: None
+                }
+            }
+        ))
     }
 
-    async fn handle_delta(self: Arc<Self>, _json: Self::Delta) -> Option<BookEvent> {
+    async fn handle_delta(self: Arc<Self>, _json: Self::Delta) -> Option<OrderBookComand> {
         todo!()
     }
 
-    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<BookEvent> {
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<OrderBookComand> {
         let Some(ticker) = json.symbol else { return None };
         let ticker = ticker.replace("_", "").to_lowercase();
         
-        Some(BookEvent::Price { ticker, last_price: json.tick.last_price })
+        Some(OrderBookComand::Event(
+            BookEvent::Price { 
+                ticker, 
+                last_price: json.tick.last_price 
+            }
+        ))
+    }
+}
+
+#[async_trait]
+impl ExchangeWebsocket for LBankWebsocket {
+    fn ticker_tx(&self) -> async_channel::Sender<(String, String)> {
+        self.ticker_tx.clone()
+    }
+
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
+        self.get_last_snapshot(snapshot_tx).await
     }
 }

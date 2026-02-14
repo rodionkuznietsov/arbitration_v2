@@ -1,13 +1,15 @@
-use std::{collections::{HashMap}, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Notify, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 use tokio_util::sync::CancellationToken;
 
-use crate::exchanges::{websocket::{Ticker, WebSocketStatus, Websocket, WsCmd}};
-use crate::models::orderbook::{BookEvent, Delta, OrderBookManager, Snapshot, SnapshotUi, parse_levels__};
+use crate::{models::websocket::{Ticker, WebSocketStatus, WsCmd}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
+use crate::models::orderbook::{BookEvent, Delta, Snapshot, SnapshotUi};
+use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
 
 #[derive(Deserialize, Debug, Serialize)]
 struct TickerResponse {
@@ -59,7 +61,7 @@ pub struct BybitWebsocket {
     enabled: bool,
     client: reqwest::Client,
     channel_type: String,
-    sender_data: mpsc::Sender<BookEvent>,
+    sender_data: mpsc::Sender<OrderBookComand>,
     pub ticker_tx: async_channel::Sender<(String, String)>,
     ticker_rx: async_channel::Receiver<(String, String)>
 }
@@ -199,9 +201,9 @@ impl Websocket for BybitWebsocket {
                             match json.order_type.as_deref() {
                                 Some("snapshot") => {
                                     let result = this.clone().handle_snapshot(json).await;
-
-                                    if let Some(event) = result {
-                                        match this.sender_data.send(event).await {
+                                    
+                                    if let Some(cmd) = result {
+                                        match this.sender_data.send(cmd).await {
                                             Ok(_) => {}
                                             Err(e) => {
                                                 tracing::error!("{}: {}", this.title, e);
@@ -249,7 +251,7 @@ impl Websocket for BybitWebsocket {
         WebSocketStatus::Finished
     }
 
-    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
+    async fn get_last_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
         if !self.enabled {
             return ;
         }
@@ -261,7 +263,7 @@ impl Websocket for BybitWebsocket {
             loop {
                 let ticker = ticker.clone();
 
-                match this.sender_data.send(BookEvent::GetBook { ticker, reply: tx.clone() }).await {
+                match this.sender_data.send(OrderBookComand::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
                         tracing::error!("{}: {}", this.title, e);
@@ -301,7 +303,7 @@ impl Websocket for BybitWebsocket {
         Some(usdt_tickers)
     }
 
-    async fn handle_snapshot(self: Arc<Self>, json: OrderBookEvent) -> Option<BookEvent> {
+    async fn handle_snapshot(self: Arc<Self>, json: OrderBookEvent) -> Option<OrderBookComand> {
         let Some(data) = json.data else { return None };
         let Some(ticker) = data.symbol else { return None };
         let Some(asks) = data.asks else { return None };
@@ -311,13 +313,20 @@ impl Websocket for BybitWebsocket {
         let bids = parse_levels__(bids).await;
 
         let ticker = ticker.to_lowercase();
-        Some(BookEvent::Snapshot { 
-            ticker, 
-            snapshot: Snapshot { a: asks, b: bids, last_price: 0.0, last_update_id: None } 
-        })
+        Some(OrderBookComand::Event(
+            BookEvent::Snapshot { 
+                ticker, 
+                snapshot: Snapshot { 
+                    a: asks, 
+                    b: bids, 
+                    last_price: 0.0, 
+                    last_update_id: None 
+                } 
+            }
+        ))
     }
 
-    async fn handle_delta(self: Arc<Self>, json: OrderBookEvent) -> Option<BookEvent> {
+    async fn handle_delta(self: Arc<Self>, json: OrderBookEvent) -> Option<OrderBookComand> {
         let Some(data) = json.data else { return None };
         let Some(ticker) = data.symbol else { return None };
         let Some(asks) = data.asks else { return None };
@@ -327,10 +336,20 @@ impl Websocket for BybitWebsocket {
         let bids = parse_levels__(bids).await;
 
         let ticker = ticker.to_lowercase();
-        Some(BookEvent::Delta { ticker, delta: Delta { a: asks, b: bids, from_version: None, to_version: None} })
+        Some(OrderBookComand::Event(
+            BookEvent::Delta { 
+                ticker, 
+                delta: Delta { 
+                    a: asks, 
+                    b: bids, 
+                    from_version: None, 
+                    to_version: None
+                } 
+            }
+        ))
     }
 
-    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<BookEvent> {
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<OrderBookComand> {
        let Some(data) = json.data else { return None };
         let ticker = data.symbol;
         let last_price = match data.last_price.parse::<f64>() {
@@ -340,6 +359,22 @@ impl Websocket for BybitWebsocket {
 
         let ticker = ticker.to_lowercase();
 
-        Some(BookEvent::Price { ticker, last_price })
+        Some(OrderBookComand::Event(
+            BookEvent::Price { 
+                ticker, 
+                last_price 
+            }
+        ))
+    }
+}
+
+#[async_trait]
+impl ExchangeWebsocket for BybitWebsocket {
+    fn ticker_tx(&self) -> async_channel::Sender<(String, String)> {
+        self.ticker_tx.clone()
+    }
+
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
+        self.get_last_snapshot(snapshot_tx).await
     }
 }

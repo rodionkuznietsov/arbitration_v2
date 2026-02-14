@@ -1,22 +1,11 @@
 use std::{collections::HashMap, time::Duration};
 use futures_util::{StreamExt, SinkExt};
-use serde::Deserialize;
 use serde_json::Value;
 use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::{models::{candle::Candle, orderbook::{OrderType, SnapshotUi}}, services::market_manager::ExchangeType};
-
-#[derive(Deserialize, Debug, Clone)]
-#[serde(rename_all="camelCase")]
-pub struct Subscription {
-    action: String,
-    channel: String,
-    long_exchange: Option<String>, 
-    short_exchange: Option<String>,
-    ticker: String
-}
+use crate::models::{candle::Candle, exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}, websocket::Subscription};
 
 #[derive(Debug, Clone)]
 pub struct ConnectedClient {
@@ -141,35 +130,37 @@ async fn handle_connection(
                     if let Ok(subscription) = serde_json::from_str::<Subscription>(&msg.to_text().unwrap()) {                        
                         let ticker = subscription.ticker.to_lowercase();
                         let task_token = client.token.clone();
-                        
+
                         match subscription.action.as_str() {
                             "subscribe" => {
                                 match subscription.channel.as_str() {
                                     "order_book" => {
-                                        let long_exchange = subscription.long_exchange.unwrap().to_lowercase();
-                                        let short_exchange = subscription.short_exchange.unwrap().to_lowercase();
+                                        println!("{:?}", subscription);
 
-                                        let long_exchange= match long_exchange.as_str() {
-                                            "binance" => ExchangeType::Binance,
-                                            "bybit" => ExchangeType::Bybit,
-                                            "kucoin" => ExchangeType::KuCoin,
-                                            "binx" => ExchangeType::BinX,
-                                            "mexc" => ExchangeType::Mexc,
-                                            "gate" => ExchangeType::Gate,
-                                            "lbank" => ExchangeType::LBank,
-                                            _ => ExchangeType::Unknown
-                                        };
+                                        let long_exchange = subscription.long_exchange.unwrap();
+                                        let short_exchange = subscription.short_exchange.unwrap();
 
-                                        let short_exchange= match short_exchange.as_str() {
-                                            "binance" => ExchangeType::Binance,
-                                            "bybit" => ExchangeType::Bybit,
-                                            "kucoin" => ExchangeType::KuCoin,
-                                            "binx" => ExchangeType::BinX,
-                                            "mexc" => ExchangeType::Mexc,
-                                            "gate" => ExchangeType::Gate,
-                                            "lbank" => ExchangeType::LBank,
-                                            _ => ExchangeType::Unknown
-                                        };
+                                        // let long_exchange= match long_exchange.as_str() {
+                                        //     "binance" => ExchangeType::Binance,
+                                        //     "bybit" => ExchangeType::Bybit,
+                                        //     "kucoin" => ExchangeType::KuCoin,
+                                        //     "binx" => ExchangeType::BinX,
+                                        //     "mexc" => ExchangeType::Mexc,
+                                        //     "gate" => ExchangeType::Gate,
+                                        //     "lbank" => ExchangeType::LBank,
+                                        //     _ => ExchangeType::Unknown
+                                        // };
+
+                                        // let short_exchange= match short_exchange.as_str() {
+                                        //     "binance" => ExchangeType::Binance,
+                                        //     "bybit" => ExchangeType::Bybit,
+                                        //     "kucoin" => ExchangeType::KuCoin,
+                                        //     "binx" => ExchangeType::BinX,
+                                        //     "mexc" => ExchangeType::Mexc,
+                                        //     "gate" => ExchangeType::Gate,
+                                        //     "lbank" => ExchangeType::LBank,
+                                        //     _ => ExchangeType::Unknown
+                                        // };
 
                                         client.update(&ticker, long_exchange, short_exchange);
                                     },

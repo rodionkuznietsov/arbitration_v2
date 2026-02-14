@@ -1,8 +1,11 @@
 <script setup>
-    import { useWebsocketStore } from '@/stores/websocket';
+    import { useUserState } from '@/stores/user_state';
+import { useWebsocketStore } from '@/stores/websocket';
 import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-charts';
     import { onMounted, onUnmounted, ref } from 'vue';
 
+    const userStateStore = useUserState()
+    
     const ws = useWebsocketStore()
     let unsubscribe
 
@@ -10,7 +13,7 @@ import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-chart
     const container = ref(null)
 
     onMounted(() => {
-        unsubscribe = ws.subscribe('btc', 'candles_history', (msg) => {
+        unsubscribe = ws.subscribe(userStateStore.ticker, 'candles_history', (msg) => {
             console.log(msg)
         })
 

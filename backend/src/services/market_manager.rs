@@ -1,83 +1,13 @@
-use std::{sync::Arc, time::Duration};
-
+use std::{sync::Arc};
+use async_trait::async_trait;
 use tokio::sync::mpsc;
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket, websocket::Websocket}, models::orderbook::{OrderType, SnapshotUi}, storage::{self, pool}, transport::ws::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}}, storage::pool, transport::ws::ConnectedClient};
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ExchangeType {
-    Binance, 
-    Bybit,
-    KuCoin,
-    BinX,
-    Mexc,
-    Gate,
-    LBank,
-    Unknown
-}
-
-enum ExchangeWs {
-    Bybit(Arc<BybitWebsocket>),
-    KuCoin(Arc<KuCoinWebsocket>),
-    BinX(Arc<BinXWebsocket>),
-    Mexc(Arc<MexcWebsocket>),
-    Binance(Arc<BinanceWebsocket>),
-    Gate(Arc<GateWebsocket>),
-    LBank(Arc<LBankWebsocket>)
-}
-
-impl ExchangeWs {
-    fn ticker_tx(&self) -> async_channel::Sender<(String, String)> {
-        match self {
-            Self::Bybit(ws) => {
-                ws.ticker_tx.clone()
-            }
-            Self::KuCoin(ws) => {
-                ws.ticker_tx.clone()
-            }
-            Self::BinX(ws) => {
-                ws.ticker_tx.clone()
-            }
-            Self::Mexc(ws) => {
-                ws.ticker_tx.clone()
-            }
-            Self::Binance(ws) => {
-                ws.ticker_tx.clone()
-            }
-            Self::Gate(ws) => {
-                ws.ticker_tx.clone()
-            }
-            Self::LBank(ws) => {
-                ws.ticker_tx.clone()
-            }
-        }
-    }
-
-    async fn get_snapshot(&self, snapshot_tx: mpsc::Sender<SnapshotUi> ) {
-        match self {
-            Self::Bybit(ws) => {
-                ws.clone().get_snapshot(snapshot_tx).await
-            }
-            Self::KuCoin(ws) => {
-                ws.clone().get_snapshot(snapshot_tx).await
-            }
-            Self::BinX(ws) => {
-                ws.clone().get_snapshot(snapshot_tx).await
-            }
-            Self::Mexc(ws) => {
-                ws.clone().get_snapshot(snapshot_tx).await
-            }
-            Self::Binance(ws) => {
-                ws.clone().get_snapshot(snapshot_tx).await
-            }
-            Self::Gate(ws) => {
-                ws.clone().get_snapshot(snapshot_tx).await
-            }
-            Self::LBank(ws) => {
-                ws.clone().get_snapshot(snapshot_tx).await
-            }
-        }
-    }
+#[async_trait]
+pub trait ExchangeWebsocket: Send + Sync {
+    fn ticker_tx(&self) -> async_channel::Sender<(String, String)>;
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>); 
 }
 
 pub async fn run_websockets(
@@ -113,14 +43,14 @@ pub async fn run_websockets(
 
             async move {
                 if long_exchange != ExchangeType::Unknown {
-                    let websocket = match long_exchange {
-                        ExchangeType::Binance => ExchangeWs::Binance(binance),
-                        ExchangeType::Bybit => ExchangeWs::Bybit(bybit),
-                        ExchangeType::KuCoin => ExchangeWs::KuCoin(kucoin),
-                        ExchangeType::BinX => ExchangeWs::BinX(binx),
-                        ExchangeType::Mexc => ExchangeWs::Mexc(mexc),
-                        ExchangeType::Gate => ExchangeWs::Gate(gate),
-                        ExchangeType::LBank => ExchangeWs::LBank(lbank),
+                    let websocket: Arc<dyn ExchangeWebsocket> = match long_exchange {
+                        ExchangeType::Binance => binance.clone(),
+                        ExchangeType::Bybit => bybit.clone(),
+                        ExchangeType::KuCoin => kucoin.clone(),
+                        ExchangeType::BinX => binx.clone(),
+                        ExchangeType::Mexc => mexc.clone(),
+                        ExchangeType::Gate => gate.clone(),
+                        ExchangeType::LBank => lbank.clone(),
                         ExchangeType::Unknown => return,
                     };
 
@@ -167,14 +97,14 @@ pub async fn run_websockets(
 
             async move {
                 if short_exchange != ExchangeType::Unknown {
-                    let websocket = match short_exchange {
-                        ExchangeType::Binance => ExchangeWs::Binance(binance),
-                        ExchangeType::Bybit => ExchangeWs::Bybit(bybit),
-                        ExchangeType::KuCoin => ExchangeWs::KuCoin(kucoin),
-                        ExchangeType::BinX => ExchangeWs::BinX(binx),
-                        ExchangeType::Mexc => ExchangeWs::Mexc(mexc),
-                        ExchangeType::Gate => ExchangeWs::Gate(gate),
-                        ExchangeType::LBank => ExchangeWs::LBank(lbank),
+                    let websocket: Arc<dyn ExchangeWebsocket> = match short_exchange {
+                        ExchangeType::Binance => binance.clone(),
+                        ExchangeType::Bybit => bybit.clone(),
+                        ExchangeType::KuCoin => kucoin.clone(),
+                        ExchangeType::BinX => binx.clone(),
+                        ExchangeType::Mexc => mexc.clone(),
+                        ExchangeType::Gate => gate.clone(),
+                        ExchangeType::LBank => lbank.clone(),
                         ExchangeType::Unknown => return,
                     };
 
