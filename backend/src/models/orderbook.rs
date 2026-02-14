@@ -1,8 +1,9 @@
 use std::{collections::{BTreeMap}};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[derive(Hash)]
 pub enum OrderType {
     Long, 
     Short

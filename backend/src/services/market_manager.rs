@@ -2,7 +2,7 @@ use std::{sync::Arc};
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}}, storage::pool, transport::ws::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}, websocket::ChannelType}, storage::pool, transport::ws::ConnectedClient};
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
@@ -73,7 +73,7 @@ pub async fn run_websockets(
 
                         tokio::select! {
                             _ = token.cancelled() => return,
-                            _ = client.send_snapshot(OrderType::Long, snapshot, ticker) => {}
+                            _ = client.send_snapshot(ChannelType::OrderBook, OrderType::Long, snapshot, ticker) => {}
                         }
                     }
 
@@ -127,7 +127,7 @@ pub async fn run_websockets(
 
                         tokio::select! {
                             _ = token.cancelled() => return ,
-                            _ = client.send_snapshot(OrderType::Short, snapshot, ticker) => {}
+                            _ = client.send_snapshot(ChannelType::OrderBook, OrderType::Short, snapshot, ticker) => {}
                         }
                     }
 

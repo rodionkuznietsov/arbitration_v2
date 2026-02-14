@@ -5,7 +5,7 @@ use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::models::{candle::Candle, exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}, websocket::Subscription};
+use crate::models::{candle::Candle, exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ClientCmd, Subscription}};
 
 #[derive(Debug, Clone)]
 pub struct ConnectedClient {
@@ -13,14 +13,14 @@ pub struct ConnectedClient {
     pub ticker: String,
     pub long_exchange: ExchangeType,
     pub short_exchange: ExchangeType,
-    pub sender: async_channel::Sender<(OrderType, SnapshotUi, String)>,
-    pub receiver: async_channel::Receiver<(OrderType, SnapshotUi, String)>,
+    pub sender: async_channel::Sender<(ChannelType, OrderType, SnapshotUi, String)>,
+    pub receiver: async_channel::Receiver<(ChannelType, OrderType, SnapshotUi, String)>,
     pub token: tokio_util::sync::CancellationToken,
 }
 
 impl ConnectedClient {
     pub fn new() -> Self {
-        let (sender, receiver) = async_channel::unbounded::<(OrderType, SnapshotUi, String)>();
+        let (sender, receiver) = async_channel::unbounded::<(ChannelType, OrderType, SnapshotUi, String)>();
         
         Self { 
             uuid: Uuid::new_v4(),
@@ -39,8 +39,14 @@ impl ConnectedClient {
         self.short_exchange = short_exchange;
     }
 
-    pub async fn send_snapshot(&mut self, order_type: OrderType, snapshot: SnapshotUi, ticker: String) {
-        self.sender.send((order_type.clone(), snapshot, ticker)).await.expect("[ConnectedClient] Failed to send snapshot")
+    pub async fn send_snapshot(
+        &mut self, 
+        channel: ChannelType, 
+        order_type: OrderType, 
+        snapshot: SnapshotUi, 
+        ticker: String
+    ) {
+        self.sender.send((channel, order_type.clone(), snapshot, ticker)).await.expect("[ConnectedClient] Failed to send snapshot")
     }
 
     pub async fn send_user_candles(&mut self, candles: Vec<Candle>) {
@@ -82,9 +88,15 @@ async fn handle_connection(
 
     tokio::spawn({
         async move {
+            let mut json: Value = serde_json::json!({
+                "channel": "unknown",
+                "result": {},
+                "ticker": "unknown"
+            });
+
             let mut books = HashMap::new();
-            let mut ticker = String::new();
             let mut interval = interval(Duration::from_millis(50));        
+
             loop {
                 tokio::select! {
                     _ = task_token.cancelled() => {
@@ -92,11 +104,32 @@ async fn handle_connection(
                         break;
                     }
 
-                    Ok((order_type, snapshot, symbol)) = receiver.recv() => {
-                        ticker = symbol;
-                        match order_type {
-                            OrderType::Long => { books.insert("long", snapshot); },
-                            OrderType::Short => { books.insert("short", snapshot);}
+                    Ok((
+                        channel,
+                        order_type,
+                        snapshot, 
+                        ticker
+                    )) = receiver.recv() => {
+                        match channel {
+                            ChannelType::OrderBook => {
+                                books.insert(order_type, snapshot);
+                                json = serde_json::json!({
+                                    "channel": channel,
+                                    "result": {
+                                        "books": books
+                                    },
+                                    "ticker": ticker
+                                });
+                            },
+                            ChannelType::CandlesHistory => {
+                                json = serde_json::json!({
+                                    "channel": channel,
+                                    "result": {
+                                        "candles": books
+                                    },
+                                    "ticker": ticker
+                                });
+                            }
                         }
                     }
 
@@ -104,14 +137,6 @@ async fn handle_connection(
                         if books.is_empty() {
                             continue;
                         }
-
-                        let json: Value = serde_json::json!({
-                            "channel": "order_book",
-                            "result": {
-                                "books": books
-                            },
-                            "ticker": ticker
-                        });
 
                         if ws_sender.send(Message::Text(json.to_string().into())).await.is_err() {
                             task_token.cancel();
@@ -131,47 +156,23 @@ async fn handle_connection(
                         let ticker = subscription.ticker.to_lowercase();
                         let task_token = client.token.clone();
 
-                        match subscription.action.as_str() {
-                            "subscribe" => {
-                                match subscription.channel.as_str() {
-                                    "order_book" => {
-                                        println!("{:?}", subscription);
-
+                        match subscription.action {
+                            ClientCmd::Subscribe => {
+                                match subscription.channel {
+                                    ChannelType::OrderBook => {
                                         let long_exchange = subscription.long_exchange.unwrap();
                                         let short_exchange = subscription.short_exchange.unwrap();
 
-                                        // let long_exchange= match long_exchange.as_str() {
-                                        //     "binance" => ExchangeType::Binance,
-                                        //     "bybit" => ExchangeType::Bybit,
-                                        //     "kucoin" => ExchangeType::KuCoin,
-                                        //     "binx" => ExchangeType::BinX,
-                                        //     "mexc" => ExchangeType::Mexc,
-                                        //     "gate" => ExchangeType::Gate,
-                                        //     "lbank" => ExchangeType::LBank,
-                                        //     _ => ExchangeType::Unknown
-                                        // };
-
-                                        // let short_exchange= match short_exchange.as_str() {
-                                        //     "binance" => ExchangeType::Binance,
-                                        //     "bybit" => ExchangeType::Bybit,
-                                        //     "kucoin" => ExchangeType::KuCoin,
-                                        //     "binx" => ExchangeType::BinX,
-                                        //     "mexc" => ExchangeType::Mexc,
-                                        //     "gate" => ExchangeType::Gate,
-                                        //     "lbank" => ExchangeType::LBank,
-                                        //     _ => ExchangeType::Unknown
-                                        // };
-
                                         client.update(&ticker, long_exchange, short_exchange);
                                     },
-                                    "candles_history" => {
+                                    ChannelType::CandlesHistory => {
                                         println!("candles_history is offend")
                                     }
                                     _ => {}
                                 }
                             }
-                            "unsubscribe" => {
-                                println!("unsubscribe");
+                            ClientCmd::UnSubscribe => {
+                                println!("{:?}", subscription);
                                 task_token.cancel();
                                 break;
                             }
