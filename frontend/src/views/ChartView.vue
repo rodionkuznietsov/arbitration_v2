@@ -1,7 +1,7 @@
 <script setup>
     import { useUserState } from '@/stores/user_state';
-import { useWebsocketStore } from '@/stores/websocket';
-import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-charts';
+    import { useWebsocketStore } from '@/stores/websocket';
+    import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-charts';
     import { onMounted, onUnmounted, ref } from 'vue';
 
     const userStateStore = useUserState()
@@ -84,7 +84,10 @@ import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-chart
     })
 
     onUnmounted(() => {
-        unsubscribe?.()
+        if (unsubscribe) {
+            unsubscribe()
+            unsubscribe = null
+        }
 
         if (chart) {
             chart.remove();

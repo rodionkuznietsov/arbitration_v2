@@ -68,6 +68,12 @@ pub enum OrderBookComand {
         ticker: String,
         reply: mpsc::Sender<Option<SnapshotUi>> 
     },
+    GetBestAskPrice {
+        ticker: String
+    },
+    GetBestBidPrice {
+        ticker: String
+    }
 } 
 
 pub struct OrderBookManager {
@@ -192,6 +198,12 @@ impl OrderBookManager {
                             }
                         }   
                     }
+                }
+                OrderBookComand::GetBestAskPrice { ticker } => {
+                    
+                }
+                OrderBookComand::GetBestBidPrice { ticker } => {
+                    
                 }
             }
         }

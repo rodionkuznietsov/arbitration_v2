@@ -44,13 +44,3 @@ pub struct TickerEvent {
     #[serde(rename="result", alias="data")]
     pub result: Option<TickerEventData>
 }
-
-#[derive(Deserialize, Debug, Serialize, Clone)]
-pub struct OrderBookEventData {
-    #[serde(rename="s")]
-    pub symbol: Option<String>,
-    #[serde(rename="a", alias="asks")]
-    pub asks: Option<Vec<Vec<String>>>,
-    #[serde(rename="b", alias="bids")]
-    pub bids: Option<Vec<Vec<String>>>,
-}

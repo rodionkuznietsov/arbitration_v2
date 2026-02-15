@@ -31,7 +31,9 @@
         isVisible.value = "display: none;"
         userState.clearValues()
         orderBookStore.clearValues()
-        unsubscribe?.()
+        if (unsubscribe) {
+            unsubscribe()
+        }
     }
 
     function formatCurrency(value) {

@@ -2,22 +2,15 @@ use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use futures_util::{SinkExt, StreamExt};
-use serde::{Deserialize, Serialize};
 use tokio::sync::{Notify, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
 
-use crate::{models::{self, exchange::{OrderBookEventData, TickerEvent}, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
+use crate::{models::{self, exchange::TickerEvent, orderbook::{OrderBookEvent, SnapshotUi}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
 use crate::models::orderbook::{BookEvent, Snapshot};
 use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct OrderBookEvent {
-    #[serde(rename="result")]
-    result: OrderBookEventData
-}
 
 pub struct GateWebsocket {
     title: String,
@@ -244,11 +237,12 @@ impl Websocket for GateWebsocket {
     }
 
     async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<OrderBookComand> {
-        let Some(ticker) = json.result.symbol else { return None };
+        let Some(data) = json.data else { return None };
+        let Some(ticker) = data.symbol else { return None };
         let ticker = ticker.replace("_", "").to_lowercase();
 
-        let Some(asks) = json.result.asks else { return None };
-        let Some(bids) = json.result.bids else { return None };
+        let Some(asks) = data.asks else { return None };
+        let Some(bids) = data.bids else { return None };
 
         let asks = parse_levels__(asks).await;
         let bids = parse_levels__(bids).await;

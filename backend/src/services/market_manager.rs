@@ -2,7 +2,7 @@ use std::{sync::Arc};
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, storage::{candle::get_user_candles, pool}, transport::ws::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, storage::{candle::get_user_candles}, transport::ws::ConnectedClient};
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
@@ -100,7 +100,7 @@ pub async fn run_websockets(
                         }
                     }
 
-                    return ;
+                    return;
                 }
             }
         });

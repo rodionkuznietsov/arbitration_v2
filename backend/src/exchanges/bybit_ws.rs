@@ -7,7 +7,7 @@ use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 use tokio_util::sync::CancellationToken;
 
-use crate::{models::{exchange::{OrderBookEventData, TickerEvent}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
+use crate::{models::{exchange::TickerEvent, orderbook::OrderBookEvent, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
 use crate::models::orderbook::{BookEvent, Delta, Snapshot, SnapshotUi};
 use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
 
@@ -21,14 +21,6 @@ struct TickerResponse {
 struct TickerResult {
     #[serde(rename="list")]
     list: Vec<Ticker>
-}
-
-#[derive(Deserialize, Debug, Serialize)]
-pub struct OrderBookEvent {
-    #[serde(rename="type")]
-    order_type: Option<String>,
-    #[serde(rename="data")]
-    data: Option<OrderBookEventData>
 }
 
 #[derive(Clone)]

@@ -6,7 +6,7 @@ use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::models::{candle::Candle, exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ClientCmd, ServerToClientEvent, Subscription}};
+use crate::models::{candle::Candle, exchange::ExchangeType, websocket::{ChannelType, ClientCmd, ServerToClientEvent, Subscription}};
 
 #[derive(Debug, Clone)]
 pub struct ConnectedClient {
@@ -191,7 +191,6 @@ async fn handle_connection(
                                         let pair = format!("{}/{}", long_exchange, short_exchange);
                                         client.exchange_pair = pair;
                                     }
-                                    _ => {}
                                 }
                             }
                             ClientCmd::UnSubscribe => {
@@ -199,7 +198,6 @@ async fn handle_connection(
                                 task_token.cancel();
                                 break;
                             }
-                            _ => {}
                         }
 
                         sender.send(client.clone()).await.expect("[Arbitration-Websocket] Failed to send exchange names");
