@@ -162,7 +162,7 @@
         left: 50%;
         transform: translate(-50%, -50%);
         font-size: 18px;
-        color: #ffffff27;
+        color: var(--chart-title-font-color);
         pointer-events: none;
         z-index: 1000000000;
         font-weight: bold;

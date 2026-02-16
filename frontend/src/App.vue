@@ -38,6 +38,7 @@ import AppMenu from './components/AppMenu.vue';
     --default-font: "Noto Sans", sans-serif;
     --default-input-bg: #DFDFDF80;
     --default-orderbook-bg: #DFDFDF80;
+    --chart-title-font-color: #DFDFDF80;
   }
  
   #form {
