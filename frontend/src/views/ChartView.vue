@@ -34,8 +34,8 @@
             },
                     
             layout: {
-                background: { color: '#202630', type: 'solid' },
-                textColor: '#EAECEF',
+                background: { color: '#ffffff', type: 'solid' },
+                textColor: '#1f1f1f',
             },
             crosshair: {
                 mode: CrosshairMode.Normal,
@@ -141,7 +141,7 @@
 
     .toolbar-button {
         background-color: var(--default-input-color);
-        color: #EAECEF;
+        color: var(--default-font-color);
         border: none;
         margin-right: 10px;
         cursor: pointer;
