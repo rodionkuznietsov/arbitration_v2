@@ -198,7 +198,7 @@
         box-sizing: border-box;
         position: relative;
         border-radius: var(--default-border-radius);
-        background-color: #303c5199;
+        background-color: var(--default-orderbook-bg);
     }
 
     #order_book_element {
@@ -240,7 +240,7 @@
         font-size: 10px;
         margin-top: -5px;
         margin-left: -5px;
-        color: #d8d8d8;
+        color: var(--default-font-color);
     }
 
     .orderbook_table {

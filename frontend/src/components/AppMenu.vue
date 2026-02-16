@@ -43,9 +43,9 @@
         display: flex;
         justify-content: center;
         width: 100%;
-        background-color: rgba(48, 60, 81, 0.404);
+        background-color: var(--basic-Bg);
         margin: 0 60px;
-        border-radius: 30px;
+        border-radius: 15px;
     }
 
     .router-link {
@@ -59,7 +59,7 @@
     #menu_overlay {
         display: flex;
         gap: 50px;
-        background-color: #303c5127;
+        background-color: #00000013;
         position: relative;
         backdrop-filter: blur(8px); 
         -webkit-backdrop-filter: blur(8px);
@@ -68,7 +68,7 @@
         padding: var(--default-padding);
         box-sizing: border-box;
         justify-content: center;
-        border-radius: 30px;
+        border-radius: 15px;
     }
 
     #menu_element {

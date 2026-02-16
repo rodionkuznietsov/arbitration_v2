@@ -21,19 +21,22 @@ import AppMenu from './components/AppMenu.vue';
   @import url('https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Vollkorn+SC:wght@400;600;700;900&display=swap');
 
   :root {
-    --basic-Bg: #202630;
+    --basic-Bg: rgb(255, 255, 255);
     --color-input-border: #b7bcc4;
     --color-popup: #333B47;
     --color-success: #2EBD85;
     --color-success-opacity-0_15: hsl(157 61% 46% / 0.15);
     --color-error: #F6465D;
     --color-error-opacity-0_15: hsl(352 91% 62% / 0.15);
-    --default-font-color: #EAECEF;
+    --default-font-color: #1f1f1f;
     --default-font-size: 16px;
     --default-padding: 8px;
     --default-icon-size: 16px;
     --default-border-radius: 8px;
-    --default-input-color: #303c51;
+    --default-input-color: #DFDFDF80;
+    --default-font: "Noto Sans", sans-serif;
+    --default-input-bg: #DFDFDF80;
+    --default-orderbook-bg: #DFDFDF80;
   }
  
   #form {
@@ -78,7 +81,7 @@ import AppMenu from './components/AppMenu.vue';
     border-radius: var(--default-border-radius);
     font-size: var(--default-font-size);
     margin-top: 10px;
-    background-color: #303c5199;
+    background-color: var(--default-input-bg);
     outline: none;
     box-sizing: border-box;
     text-transform: uppercase;
@@ -133,7 +136,7 @@ import AppMenu from './components/AppMenu.vue';
     text-align: left;
     color: var(--default-font-color);
     position: relative;
-    font-family: "PT Serif", serif;
+    font-family: var(--default-font);
     font-weight: 400;
     font-style: normal;
   }

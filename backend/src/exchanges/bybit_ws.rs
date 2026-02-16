@@ -6,8 +6,9 @@ use tokio::sync::{Notify, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 use tokio_util::sync::CancellationToken;
+use tracing::{error, warn};
 
-use crate::{models::{exchange::TickerEvent, orderbook::OrderBookEvent, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
+use crate::{models::{exchange::{ExchangeType, TickerEvent}, orderbook::OrderBookEvent, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
 use crate::models::orderbook::{BookEvent, Delta, Snapshot, SnapshotUi};
 use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
 
@@ -26,7 +27,7 @@ struct TickerResult {
 #[derive(Clone)]
 pub struct BybitWebsocket {
     title: String,
-    enabled: bool,
+    pub enabled: bool,
     client: reqwest::Client,
     channel_type: String,
     sender_data: mpsc::Sender<OrderBookComand>,
@@ -42,7 +43,7 @@ impl BybitWebsocket {
         let (sender_data, rx_data) = mpsc::channel(10);
         let (ticker_tx, ticker_rx) = async_channel::bounded::<(String, String)>(1);
 
-        let book_manager = OrderBookManager::new(rx_data);
+        let book_manager = OrderBookManager::new(rx_data, ExchangeType::Bybit);
 
         tokio::spawn(async move {
             book_manager.set_data().await;
@@ -70,7 +71,7 @@ impl Websocket for BybitWebsocket {
         tokio::spawn({
             async move {
                 if !self.enabled {
-                    println!("{} enabled: false", this.title);
+                    warn!("{} is disabled", self.title);
                     return;
                 } 
 
@@ -155,7 +156,7 @@ impl Websocket for BybitWebsocket {
             let msg_type = match msg {
                 Ok(m) => Some(m),
                 Err(e) => {
-                    println!("{}: {e}", this.title);
+                    error!("{} {}", self.title, e);
                     None 
                 }
             };
@@ -345,5 +346,15 @@ impl ExchangeWebsocket for BybitWebsocket {
 
     async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
         self.get_last_snapshot(snapshot_tx).await
+    }
+
+    async fn get_spread(
+        self: Arc<Self>, 
+        spread_tx: mpsc::Sender<Option<(ExchangeType, Option<f64>, Option<f64>)>>
+    ) {
+        self.sender_data.send(OrderBookComand::GetBestAskAndBidPrice { 
+            ticker: "btc".to_string(),
+            reply: spread_tx
+        }).await.unwrap();
     }
 }

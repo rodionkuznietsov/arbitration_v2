@@ -9,7 +9,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
 
-use crate::{models::{self, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
+use crate::{models::{self, exchange::ExchangeType, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
 use crate::models::orderbook::{BookEvent, Snapshot};
 use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
 
@@ -65,7 +65,7 @@ impl LBankWebsocket {
         let client = reqwest::Client::new();
         let (sender_data, rx_data) = mpsc::channel::<OrderBookComand>(1);
 
-        let book_manager = OrderBookManager::new(rx_data);
+        let book_manager = OrderBookManager::new(rx_data, ExchangeType::LBank);
 
         tokio::spawn(async move {
             book_manager.set_data().await;
@@ -308,5 +308,15 @@ impl ExchangeWebsocket for LBankWebsocket {
 
     async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
         self.get_last_snapshot(snapshot_tx).await
+    }
+
+    async fn get_spread(
+        self: Arc<Self>, 
+        spread_tx: mpsc::Sender<Option<(ExchangeType, Option<f64>, Option<f64>)>>
+    ) {
+        self.sender_data.send(OrderBookComand::GetBestAskAndBidPrice { 
+            ticker: "btc".to_string(),
+            reply: spread_tx
+        }).await.unwrap();
     }
 }

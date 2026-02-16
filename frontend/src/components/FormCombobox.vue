@@ -80,7 +80,7 @@
     border-radius: var(--default-border-radius);
     font-size: var(--default-font-size);
     margin-top: 10px;
-    background-color: #303c5199;
+    background-color: var(--default-input-bg);
     outline: none;
     box-sizing: border-box;
     cursor: pointer;

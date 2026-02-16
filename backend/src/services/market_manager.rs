@@ -1,13 +1,15 @@
-use std::{sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use async_trait::async_trait;
-use tokio::sync::mpsc;
+use futures_util::lock::Mutex;
+use tokio::sync::{RwLock, mpsc};
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, storage::{candle::get_user_candles}, transport::ws::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::{ExchangeType, SharedSpreads}, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, services::spread::{calculate_spread_for_chart, spawn_local_spread_engine}, storage::candle::get_user_candles, transport::ws::ConnectedClient};
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
     fn ticker_tx(&self) -> async_channel::Sender<(String, String)>;
-    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>); 
+    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>);
+    async fn get_spread(self: Arc<Self>, spread_tx: mpsc::Sender<Option<(ExchangeType, Option<f64>, Option<f64>)>>);
 }
 
 pub async fn run_websockets(
@@ -15,14 +17,27 @@ pub async fn run_websockets(
     pool: sqlx::PgPool
 ) {
 
-    let kucoin_websocket = KuCoinWebsocket::new(false);
+    let kucoin_websocket = KuCoinWebsocket::new(true);
     let bybit_websocket = BybitWebsocket::new(true);
     let binx_websocket = BinXWebsocket::new(false);
     let mexc_websocket = MexcWebsocket::new(false);
     let binance_websocket = BinanceWebsocket::new(false);
     let gate_websocket = GateWebsocket::new(true);
     let lbank_websocket = LBankWebsocket::new(false);
-    
+
+    let shared_spreads = Arc::new(RwLock::new(SharedSpreads::new()));
+
+    spawn_local_spread_engine(
+        bybit_websocket.clone(),
+        gate_websocket.clone(),
+        kucoin_websocket.clone(),
+        shared_spreads.clone(),
+    );
+
+    calculate_spread_for_chart(
+        shared_spreads
+    );
+
     while let Ok(client) = receiver.recv().await {  
         let token = client.token.clone();
         let long_exchange = client.long_exchange.clone();
@@ -35,6 +50,7 @@ pub async fn run_websockets(
         tokio::spawn({
             let pool = pool.clone();
             let mut client = client.clone();
+
             async move {
                 if !exchange_pair.is_empty() {
                     let init_candles = get_user_candles(&pool, &ticker, &exchange_pair).await;

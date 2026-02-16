@@ -1,12 +1,14 @@
-use std::fmt::{self, Display};
+use std::{collections::HashMap, fmt::{self, Display}};
 
+use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Copy, Eq, Hash)]
 #[serde(rename_all="snake_case")]
 pub enum ExchangeType {
     Binance, 
     Bybit,
+    #[serde(rename="kucoin")]
     KuCoin,
     BinX,
     Mexc,
@@ -43,4 +45,24 @@ pub struct TickerEventData {
 pub struct TickerEvent {
     #[serde(rename="result", alias="data")]
     pub result: Option<TickerEventData>
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Spread {
+    pub ask: OrderedFloat<f64>,
+    pub bid: OrderedFloat<f64>
+}
+
+#[derive(Debug, Clone)]
+#[derive(Eq, PartialEq)]
+pub struct SharedSpreads {
+    pub exchange: HashMap<ExchangeType, Spread>
+}
+
+impl SharedSpreads {
+    pub fn new() -> Self {
+        Self { 
+            exchange: HashMap::new()
+        }
+    }
 }

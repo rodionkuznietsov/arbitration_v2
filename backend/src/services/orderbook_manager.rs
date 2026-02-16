@@ -4,7 +4,7 @@ use lru::LruCache;
 use tokio::sync::mpsc;
 use tracing::{warn};
 
-use crate::models::orderbook::{BookEvent, Snapshot, SnapshotUi};
+use crate::models::{exchange::ExchangeType, orderbook::{BookEvent, Snapshot, SnapshotUi}};
 
 impl Snapshot {
     pub async fn to_ui(&self, depth: usize) -> SnapshotUi {
@@ -68,27 +68,27 @@ pub enum OrderBookComand {
         ticker: String,
         reply: mpsc::Sender<Option<SnapshotUi>> 
     },
-    GetBestAskPrice {
-        ticker: String
-    },
-    GetBestBidPrice {
-        ticker: String
+    GetBestAskAndBidPrice {
+        ticker: String,
+        reply: mpsc::Sender<Option<(ExchangeType, Option<f64>, Option<f64>)>>
     }
 } 
 
 pub struct OrderBookManager {
+    pub id: ExchangeType,
     pub books: LruCache<String, Snapshot>,
     pub rx: mpsc::Receiver<OrderBookComand>
 }
 
 impl OrderBookManager {
-    pub fn new(rx: mpsc::Receiver<OrderBookComand>) -> Self {
+    pub fn new(rx: mpsc::Receiver<OrderBookComand>, id: ExchangeType) -> Self {
         let cache_capacity = std::env::var("ORDERBOOK_CACHE_CAPACITY")
             .unwrap_or_else(|_| "1000".into())
             .parse::<usize>()
             .expect("ORDERBOOK_CACHE_CAPACITY must be a number");
         
         Self {
+            id,
             books: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
             rx: rx
         }
@@ -199,11 +199,31 @@ impl OrderBookManager {
                         }   
                     }
                 }
-                OrderBookComand::GetBestAskPrice { ticker } => {
-                    
-                }
-                OrderBookComand::GetBestBidPrice { ticker } => {
-                    
+                OrderBookComand::GetBestAskAndBidPrice { 
+                    ticker , 
+                    reply
+                } => {
+                    let tick = 900000000.0; 
+                    let exchange_type = self.id;
+
+                    if let Some(snapshot) = self.books.get(&format!("{}usdt", ticker)) {
+                        let best_ask = snapshot.a.iter()
+                            .min_by_key(|x| x.0)
+                            .map(|(price, _)| *price as f64 / tick);
+
+                        let best_bid = snapshot.b.iter()
+                            .max_by_key(|x| x.0)
+                            .map(|(price, _)| *price as f64 / tick);
+
+                        match reply.send(Some((exchange_type, best_ask, best_bid))).await {
+                            Ok(_) => {}
+                            Err(e) => {
+                                warn!("[OrderBookManager]: {}", e)
+                            }
+                        }   
+
+                        drop(reply)
+                    }
                 }
             }
         }
