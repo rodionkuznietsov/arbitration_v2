@@ -147,7 +147,9 @@
         cursor: pointer;
         padding: var(--default-border-radius);
         border-radius: 4px;
-        font-size: var(--default-font-size);
+        font-size: var(--chart-button-font-size);
+        width: 50px;
+        height: 28px;
     }
 
     .toolbar-button:hover {

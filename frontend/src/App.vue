@@ -30,6 +30,7 @@ import AppMenu from './components/AppMenu.vue';
     --color-error-opacity-0_15: hsl(352 91% 62% / 0.15);
     --default-font-color: #1f1f1f;
     --default-font-size: 16px;
+    --chart-button-font-size: 10px;
     --default-padding: 8px;
     --default-icon-size: 16px;
     --default-border-radius: 8px;
