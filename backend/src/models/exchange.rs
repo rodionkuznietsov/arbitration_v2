@@ -1,5 +1,6 @@
-use std::{collections::HashMap, fmt::{self, Display}};
+use std::{fmt::{self, Display}};
 
+use dashmap::DashMap;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
@@ -47,22 +48,21 @@ pub struct TickerEvent {
     pub result: Option<TickerEventData>
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub struct Spread {
     pub ask: OrderedFloat<f64>,
     pub bid: OrderedFloat<f64>
 }
 
 #[derive(Debug, Clone)]
-#[derive(Eq, PartialEq)]
 pub struct SharedSpreads {
-    pub exchange: HashMap<ExchangeType, Spread>
+    pub exchange: DashMap<ExchangeType, Spread>
 }
 
 impl SharedSpreads {
     pub fn new() -> Self {
         Self { 
-            exchange: HashMap::new()
+            exchange: DashMap::new()
         }
     }
 }

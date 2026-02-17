@@ -1,7 +1,7 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{sync::Arc};
 use async_trait::async_trait;
-use futures_util::lock::Mutex;
-use tokio::sync::{RwLock, mpsc};
+use ordered_float::OrderedFloat;
+use tokio::sync::{broadcast, mpsc};
 
 use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::{ExchangeType, SharedSpreads}, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, services::spread::{calculate_spread_for_chart, spawn_local_spread_engine}, storage::candle::get_user_candles, transport::ws::ConnectedClient};
 
@@ -25,7 +25,7 @@ pub async fn run_websockets(
     let gate_websocket = GateWebsocket::new(true);
     let lbank_websocket = LBankWebsocket::new(false);
 
-    let shared_spreads = Arc::new(RwLock::new(SharedSpreads::new()));
+    let shared_spreads = Arc::new(SharedSpreads::new());
 
     spawn_local_spread_engine(
         bybit_websocket.clone(),
@@ -34,8 +34,10 @@ pub async fn run_websockets(
         shared_spreads.clone(),
     );
 
+    let (spread_tx, _) = broadcast::channel::<(String, OrderedFloat<f64>)>(100);
+    let sender_for_calc = Arc::new(spread_tx.clone());
     calculate_spread_for_chart(
-        shared_spreads
+        shared_spreads, sender_for_calc
     );
 
     while let Ok(client) = receiver.recv().await {  
@@ -45,6 +47,7 @@ pub async fn run_websockets(
         let exchange_pair = client.exchange_pair.clone();
         let ticker = client.ticker.clone();
         let client = client.clone();
+        let spread_tx = spread_tx.clone();
 
         // Инициализация последних 100 свечей
         tokio::spawn({
@@ -67,7 +70,28 @@ pub async fn run_websockets(
                             ) => {}
                         }
                     }
+
+                    let mut spread_rx = spread_tx.subscribe();
+                    tokio::spawn(async move {
+                        loop {
+                            tokio::select! {
+                                _ = token.cancelled() => break,
+                                result = spread_rx.recv() => {
+                                    match result {
+                                        Ok((pair, spread)) => {
+                                            if pair != exchange_pair {
+                                                continue;
+                                            }
+                                            println!("Spread: {} -> {:.2}%", pair, spread);
+                                        },
+                                        Err(_) => break 
+                                    }
+                                }
+                            };
+                        }
+                    });
                 }
+                return;
             }
         });
 

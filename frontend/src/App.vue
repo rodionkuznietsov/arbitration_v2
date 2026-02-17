@@ -17,8 +17,6 @@
 
 <script setup>
   import AppMenu from './components/AppMenu.vue';
-// import { useChartStore } from './stores/chart';
-  // const chartStore = useChartStore()
 </script>
 
 <style>
@@ -43,6 +41,7 @@
     --default-input-bg: #DFDFDF80;
     --default-orderbook-bg: #DFDFDF80;
     --chart-title-font-color: #DFDFDF80;
+    --footer-margin-bottom: 20px;
   }
  
   #form {
@@ -104,7 +103,7 @@
     margin-top: 10px;
     padding: var(--default-padding);
     overflow-y: visible;
-    margin-bottom: 70px;
+    margin-bottom: var(--footer-margin-bottom);
   }
 
   #run_buttons {
