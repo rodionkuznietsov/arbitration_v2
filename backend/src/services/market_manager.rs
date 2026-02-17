@@ -50,12 +50,22 @@ pub async fn run_websockets(
         tokio::spawn({
             let pool = pool.clone();
             let mut client = client.clone();
+            let token = token.clone();
 
             async move {
                 if !exchange_pair.is_empty() {
                     let init_candles = get_user_candles(&pool, &ticker, &exchange_pair).await;
                     if let Ok(candles) = init_candles {
-                        client.send_to_client(ServerToClientEvent::CandlesHistory(ChannelType::CandlesHistory, candles, ticker)).await;
+                        tokio::select! {
+                            _ = token.cancelled() => return,
+                            _ = client.send_to_client(
+                                    ServerToClientEvent::CandlesHistory(
+                                    ChannelType::CandlesHistory, 
+                                    candles,
+                                    ticker
+                                )
+                            ) => {}
+                        }
                     }
                 }
             }

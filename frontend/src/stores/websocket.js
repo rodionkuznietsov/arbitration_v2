@@ -68,7 +68,7 @@ export const useWebsocketStore = defineStore('websocket', {
             }
             this.channels.get(key).add(callback)
 
-            return () => {
+            return () => {                
                 const set = this.channels.get(key)
 
                 set.delete(callback)

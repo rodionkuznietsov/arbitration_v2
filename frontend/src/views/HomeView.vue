@@ -5,6 +5,7 @@
     import AppHeader from '../components/AppHeader.vue'
     import { useWebsocketStore } from '@/stores/websocket';
     import { useUserState } from '@/stores/user_state';
+    import { useChartStore } from '@/stores/chart';
 
     const ws = useWebsocketStore()
     const userState = useUserState()
@@ -20,6 +21,7 @@
     const shortExchange = ref("Bybit")
     const shortOrderType = ref("Спот")
     const ticker = ref("BTC")
+    const chartStore = useChartStore()
 
     function filterInput(event) {
       ticker.value = event.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
@@ -40,6 +42,7 @@
         longOrderType.value,
         shortOrderType.value,
       )
+      chartStore.finished = false
 
       orderBook.value.start()
       userState.changeStatus('online')
@@ -47,7 +50,12 @@
     
     async function stop() {
       userState.changeStatus('offline')
-      await ws.disconnect()
+
+      await new Promise(resolve => {
+        ws.disconnect()
+        resolve()
+      })
+      chartStore.finished = true
       orderBook.value.stop() 
     }
 </script>

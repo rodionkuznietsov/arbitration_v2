@@ -10,6 +10,7 @@ const routes = [
     },
     {
         path: "/chart",
+        name: "chart",
         component: Chart,
     },
 ];

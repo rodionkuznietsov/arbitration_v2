@@ -1,7 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc};
 use ordered_float::OrderedFloat;
 use tokio::sync::{RwLock, mpsc};
-use crate::{exchanges::{bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket}, models::exchange::{self, ExchangeType, SharedSpreads, Spread}, services::market_manager::ExchangeWebsocket};
+use crate::{exchanges::{bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket}, models::exchange::{ExchangeType, SharedSpreads, Spread}, services::market_manager::ExchangeWebsocket};
 
 pub fn spawn_local_spread_engine(
     bybit: Arc<BybitWebsocket>,
@@ -24,11 +24,21 @@ pub fn spawn_local_spread_engine(
     tokio::spawn({
         async move {
             while let Some(Some((exchange_type, ask, bid))) = spread_rx.recv().await {
-                // println!("{:?}: {:?}; {:?}", exchange_type, ask, bid);
                 let mut write = shared_spreads.write().await;
+
+                let ask = match ask {
+                    Some(a) => a,
+                    None => continue
+                };
+
+                let bid = match bid {
+                    Some(b) => b,
+                    None => continue
+                };
+                
                 write.exchange.insert(exchange_type, Spread {
-                    ask: OrderedFloat(ask.unwrap()),
-                    bid: OrderedFloat(bid.unwrap()),
+                    ask: OrderedFloat(ask),
+                    bid: OrderedFloat(bid),
                 });
             }
         }

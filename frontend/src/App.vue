@@ -2,7 +2,10 @@
   <div id="app">
     <router-view v-slot="{ Component }">
       <keep-alive>
-        <component :is="Component" />
+        <component 
+          :is="Component"
+          
+        />
       </keep-alive>
     </router-view>
 
@@ -13,8 +16,9 @@
 </template>
 
 <script setup>
-import AppMenu from './components/AppMenu.vue';
-
+  import AppMenu from './components/AppMenu.vue';
+// import { useChartStore } from './stores/chart';
+  // const chartStore = useChartStore()
 </script>
 
 <style>

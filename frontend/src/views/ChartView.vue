@@ -1,8 +1,9 @@
 <script setup>
+    import { useChartStore } from '@/stores/chart';
     import { useUserState } from '@/stores/user_state';
     import { useWebsocketStore } from '@/stores/websocket';
     import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-charts';
-    import { onMounted, onUnmounted, ref } from 'vue';
+    import { onActivated, onDeactivated, ref } from 'vue';
 
     const userStateStore = useUserState()
     
@@ -12,7 +13,9 @@
     let chart;
     const container = ref(null)
 
-    onMounted(() => {
+    const chartStore = useChartStore()
+
+    onActivated(() => {
         unsubscribe = ws.subscribe(userStateStore.ticker, 'candles_history', userStateStore.longExchange, userStateStore.shortExchange, (msg) => {
             userStateStore.candles_history = msg.candles.map(c => ({
                 time: Math.floor(new Date(c.timestamp).getTime() / 1000),
@@ -23,6 +26,8 @@
                 close: parseFloat(c.close),
             }))
         })
+
+        unsubscribe
 
         const chartOptions = {
             width: container.value.clientWidth,
@@ -83,18 +88,21 @@
         })
     })
 
-    onUnmounted(() => {
-        if (unsubscribe) {
-            unsubscribe()
-            unsubscribe = null
-        }
+    onDeactivated(() => {
+        if (chartStore.finished) {
+            console.log(chartStore.finished)
+        } 
+        
+        // if (unsubscribe) {
+        //     unsubscribe()
+        //     unsubscribe = null
+        // }
 
         if (chart) {
             chart.remove();
             chart = null;
         }
     })
-    
 </script>
 
 <template>
