@@ -8,7 +8,8 @@ export const useUserState = defineStore('userState', {
         longOrderType: null,
         shortOrderType: null,
         currentStatus: 'offline',
-        candles_history: []
+        candles_history: [],
+        botWorking: false,
     }),
 
     actions: {

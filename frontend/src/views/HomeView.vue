@@ -32,7 +32,11 @@
 
       if (ws.socket.readyState == 3) {
         userState.changeStatus('warning')
-        return;
+        return
+      }
+
+      if (userState.botWorking) {
+        return
       }
 
       userState.set_data(
@@ -42,6 +46,7 @@
         longOrderType.value,
         shortOrderType.value,
       )
+      userState.botWorking = true
       chartStore.finished = false
 
       orderBook.value.start()
@@ -55,6 +60,7 @@
         ws.disconnect()
         resolve()
       })
+      userState.botWorking = false
       chartStore.finished = true
       orderBook.value.stop() 
     }
