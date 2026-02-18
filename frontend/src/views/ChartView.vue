@@ -148,7 +148,7 @@
             <img class="item" src="../assets/icons/exchange.svg">
         </div>
         <div class="chart" ref="container" id="chart"></div>
-        <div class="title_bg">Arbitration Bot</div>
+        <!-- <div class="title_bg">Arbitration Bot</div> -->
     </div>
 </template>
 
@@ -182,6 +182,7 @@
         border-bottom: 1px solid var(--color-chart-border-bottom);
         box-sizing: border-box;
         right: 0;
+        font-size: var(--default-font-size);
     }
 
     .item {
