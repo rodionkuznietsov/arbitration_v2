@@ -2,7 +2,8 @@ import { defineStore } from "pinia";
 
 export const useChartStore = defineStore('chart', {
     state: () => ({
-        finished: false
+        finished: false,
+        lastCandle: {}
     }),
     actions: {
         

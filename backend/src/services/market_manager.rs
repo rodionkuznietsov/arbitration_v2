@@ -1,9 +1,11 @@
-use std::{sync::Arc};
+use std::{str::FromStr, sync::Arc};
 use async_trait::async_trait;
+use chrono::Utc;
 use ordered_float::OrderedFloat;
-use tokio::sync::{broadcast, mpsc};
+use sqlx::types::BigDecimal;
+use tokio::sync::{Mutex, broadcast, mpsc};
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::{ExchangeType, SharedSpreads}, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, services::spread::{calculate_spread_for_chart, spawn_local_spread_engine}, storage::candle::get_user_candles, transport::ws::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{candle::{Candle, TimeFrame}, exchange::{ExchangeType, SharedSpreads}, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, services::spread::{calculate_spread_for_chart, spawn_local_spread_engine}, storage::candle::get_user_candles, transport::ws::ConnectedClient};
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
@@ -54,24 +56,36 @@ pub async fn run_websockets(
             let pool = pool.clone();
             let mut client = client.clone();
             let token = token.clone();
+            let ticker = ticker.clone();
 
             async move {
                 if !exchange_pair.is_empty() {
                     let init_candles = get_user_candles(&pool, &ticker, &exchange_pair).await;
+                    let last_candle = Arc::new(Mutex::new(Candle::new()));
+
                     if let Ok(candles) = init_candles {
+                        let index_last_element = candles.len()-1;
+                        if let Some(candle) = candles.get(index_last_element) {
+                            let mut lock = last_candle.lock().await;
+                            *lock = candle.clone();
+                        }
+                        
                         tokio::select! {
                             _ = token.cancelled() => return,
                             _ = client.send_to_client(
                                     ServerToClientEvent::CandlesHistory(
                                     ChannelType::CandlesHistory, 
                                     candles,
-                                    ticker
+                                    ticker.clone()
                                 )
                             ) => {}
                         }
                     }
 
                     let mut spread_rx = spread_tx.subscribe();
+                    let ticker = ticker.clone();
+                    
+                    let last_candle = last_candle.clone();
                     tokio::spawn(async move {
                         loop {
                             tokio::select! {
@@ -82,7 +96,25 @@ pub async fn run_websockets(
                                             if pair != exchange_pair {
                                                 continue;
                                             }
-                                            println!("Spread: {} -> {:.2}%", pair, spread);
+                                            let lc = last_candle.lock().await;
+                                            let candle = lc.clone();
+                                            
+                                            client.send_to_client(
+                                                ServerToClientEvent::UpdateCandle(
+                                                    ChannelType::UpdateCandle,
+                                                    Candle {
+                                                        timestamp: candle.timestamp,
+                                                        exchange_pair: pair,
+                                                        symbol: ticker.clone(),
+                                                        timeframe: TimeFrame::Five,
+                                                        open: candle.close,
+                                                        high: BigDecimal::from_str("0.0").unwrap(),
+                                                        close: BigDecimal::from_str(&format!("{:.2}", spread)).unwrap(),
+                                                        low: BigDecimal::from_str("0.0").unwrap()
+                                                    }, 
+                                                    ticker.clone()
+                                                )
+                                            ).await;
                                         },
                                         Err(_) => break 
                                     }

@@ -89,6 +89,7 @@ async fn handle_connection(
             let mut books = HashMap::new();
             let mut orderbooks = HashMap::new();
             let mut candles_history = HashMap::new();
+            // let mut update_candle = HashMap::new();
             let mut interval = interval(Duration::from_millis(50));        
 
             loop {
@@ -127,7 +128,7 @@ async fn handle_connection(
                                         "timestamp": c.timestamp.to_rfc3339(),
                                         "exchange_pair": c.exchange_pair,
                                         "symbol": c.symbol,
-                                        "interval": c.interval.to_string(),
+                                        "timeframe": c.timeframe,
                                         "open": c.open.to_string(),
                                         "high": c.high.to_string(),
                                         "low": c.low.to_string(),
@@ -144,6 +145,37 @@ async fn handle_connection(
                                 });
 
                                 candles_history.insert(channel, json);
+                            },
+                            ServerToClientEvent::UpdateCandle(channel, candle, ticker) => {
+                                println!("{:?}", candle);
+                                
+                                let candle_json = serde_json::json!({
+                                    "timestamp": candle.timestamp.to_rfc3339(),
+                                    "exchange_pair": candle.exchange_pair,
+                                    "symbol": candle.symbol,
+                                    "timeframe": candle.timeframe,
+                                    "open": candle.open.to_string(),
+                                    "high": candle.high.to_string(),
+                                    "low": candle.low.to_string(),
+                                    "close": candle.close.to_string()
+                                });
+
+                                let event = serde_json::json!({
+                                    "events": {
+                                        "event": channel,
+                                        "candle": candle_json
+                                    },
+                                });
+
+                                candles_history.entry(ChannelType::CandlesHistory)
+                                    .and_modify(|json| {
+                                        if let Some(result) = json.get_mut("result").and_then(|v| v.as_object_mut()) {
+                                            result.insert("events".to_string(), event["events"].clone());
+                                        }
+                                    })
+                                    .or_insert_with(|| {
+                                        serde_json::json!({ "result": event  })
+                                    });
                             }
                         }
                     }
@@ -191,7 +223,8 @@ async fn handle_connection(
 
                                         let pair = format!("{}/{}", long_exchange, short_exchange);
                                         client.exchange_pair = pair;
-                                    }
+                                    },
+                                    _ => {}
                                 }
                             }
                             ClientCmd::UnSubscribe => {

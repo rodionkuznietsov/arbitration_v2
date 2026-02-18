@@ -22,14 +22,16 @@ pub enum ClientCmd {
 #[derive(Debug, Clone)]
 pub enum ServerToClientEvent {
     OrderBook(ChannelType, OrderType, SnapshotUi, String),
-    CandlesHistory(ChannelType, Vec<Candle>, String)
+    CandlesHistory(ChannelType, Vec<Candle>, String),
+    UpdateCandle(ChannelType, Candle, String)
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all="snake_case")]
 pub enum ChannelType {
     OrderBook,
-    CandlesHistory
+    CandlesHistory,
+    UpdateCandle
 }
 
 #[derive(Debug, PartialEq)]

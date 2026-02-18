@@ -14,20 +14,32 @@
     const container = ref(null)
 
     const chartStore = useChartStore()
+    let updateInterval
 
     onActivated(() => {
         unsubscribe = ws.subscribe(userStateStore.ticker, 'candles_history', userStateStore.longExchange, userStateStore.shortExchange, (msg) => {
             userStateStore.candles_history = msg.candles.map(c => ({
                 time: Math.floor(new Date(c.timestamp).getTime() / 1000),
                 ticker: c.symbol,
-                open: parseFloat(c.open),
-                high: parseFloat(c.high),
-                low: parseFloat(c.low),
-                close: parseFloat(c.close),
+                open: parseFloat(c.open.toString()),
+                high: parseFloat(c.high.toString()),
+                low: parseFloat(c.low.toString()),
+                close: parseFloat(c.close.toString()),
             }))
-        })
 
-        unsubscribe
+            const candle_event = msg.events?.candle
+
+            if (candle_event) {
+                chartStore.lastCandle = {
+                    time: Math.floor(new Date(candle_event.timestamp).getTime() / 1000),
+                    ticker: candle_event.symbol,
+                    open: parseFloat(candle_event.open.toString()),
+                    high: parseFloat(candle_event.high.toString()),
+                    low: parseFloat(candle_event.low.toString()),
+                    close: parseFloat(candle_event.close.toString()),
+                }
+            }
+        })
 
         const chartOptions = {
             width: container.value.clientWidth,
@@ -47,10 +59,10 @@
             },
             grid: {
                 vertLines: {
-                    color: '#333B47',
+                    color: '#efefef'
                 },
                 horzLines: {
-                    color: '#333B47',
+                    color: '#efefef',
                 },
             },
         }
@@ -70,8 +82,16 @@
             chart.timeScale().fitContent();
         }, 100)
 
+        if (userStateStore.botWorking) {
+            updateInterval = setInterval(() => {
+                if (chartStore.lastCandle) {
+                    candleSeries.update(chartStore.lastCandle)
+                }
+            }, 0);
+        }
+
         chart.priceScale('right').applyOptions({
-            borderVisible: false,
+            borderVisible: true,
             scaleMargins: {
                 top: 0.4,
                 bottom: 0.4,
@@ -89,14 +109,17 @@
     })
 
     onDeactivated(() => {
+        if (updateInterval) {
+            clearInterval(updateInterval)
+            updateInterval = undefined
+        }
+
         if (chartStore.finished) {
-            console.log(chartStore.finished)
+            if (unsubscribe) {
+                unsubscribe()
+                unsubscribe = null
+            }
         } 
-        
-        // if (unsubscribe) {
-        //     unsubscribe()
-        //     unsubscribe = null
-        // }
 
         if (chart) {
             chart.remove();
