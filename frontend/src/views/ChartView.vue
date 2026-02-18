@@ -150,7 +150,7 @@
     .chart {
         display: block;
         width: auto;
-        height: 90vh;
+        height: 88vh;
         box-sizing: border-box;
         position: relative;
         left: 50px;
@@ -160,12 +160,14 @@
     .chart-container {
         width: 100%;
         box-sizing: border-box;
+        position: absolute;
+        height: 100vh;
     }
 
     .toolbar {
         display: block;
         padding: var(--default-padding);
-        position: absolute;
+        position: relative;
         z-index: 1000000000;
         background-color: var(--basic-Bg);
         width: 100%;
@@ -175,7 +177,7 @@
 
     .left-menu {
         display: flex;
-        height: 100%;
+        height: 85vh;
         top: 39px;
         z-index: 1000000000;
         position: absolute;
