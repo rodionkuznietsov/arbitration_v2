@@ -25,6 +25,7 @@
   :root {
     --basic-Bg: rgb(255, 255, 255);
     --color-input-border: #b7bcc4;
+    --color-chart-border-bottom: #dfdede;
     --color-popup: #333B47;
     --color-success: #2EBD85;
     --color-success-opacity-0_15: hsl(157 61% 46% / 0.15);
@@ -42,6 +43,7 @@
     --default-orderbook-bg: #DFDFDF80;
     --chart-title-font-color: #DFDFDF80;
     --footer-margin-bottom: 20px;
+    --default-gap: 10px;
   }
  
   #form {

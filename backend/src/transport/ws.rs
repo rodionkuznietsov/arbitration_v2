@@ -147,8 +147,6 @@ async fn handle_connection(
                                 candles_history.insert(channel, json);
                             },
                             ServerToClientEvent::UpdateCandle(channel, candle, ticker) => {
-                                println!("{:?}", candle);
-                                
                                 let candle_json = serde_json::json!({
                                     "timestamp": candle.timestamp.to_rfc3339(),
                                     "exchange_pair": candle.exchange_pair,

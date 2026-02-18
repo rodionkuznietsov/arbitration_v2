@@ -92,6 +92,7 @@
 
         chart.priceScale('right').applyOptions({
             borderVisible: true,
+            borderColor: '#dfdede',
             scaleMargins: {
                 top: 0.4,
                 bottom: 0.4,
@@ -100,6 +101,7 @@
 
         chart.timeScale().applyOptions({
             lockVisibleTimeRangeOnResize: false,
+            borderColor: '#dfdede',
             borderVisible: true,
             tickMarkFormatter: (time, tickMarkType, locale) => {
                 const date = new Date(time * 1000);
@@ -129,13 +131,15 @@
 </script>
 
 <template>
-    <div>
+    <div class="chart-container">
         <div class="toolbar">
-            <div class="intervals">
-                <input class="toolbar-button" type="button" value="5m">
+            <div class="chart-exchanges">
+                <span>Gate</span>
+                <span>Bybit</span>
             </div>
-            <input type="button" value="Вход" class="toolbar-button">
-            <input type="button" value="Выход" class="toolbar-button">
+        </div>
+        <div class="left-menu">
+            <span class="item"></span>
         </div>
         <div class="chart" ref="container" id="chart"></div>
         <div class="title_bg">Arbitration Bot</div>
@@ -144,16 +148,40 @@
 
 <style scoped>
     .chart {
+        display: block;
+        width: auto;
+        height: 90vh;
+        box-sizing: border-box;
+        position: relative;
+        left: 50px;
+        margin-right: 50px;
+    }
+
+    .chart-container {
         width: 100%;
-        height: 88vh;
+        box-sizing: border-box;
     }
 
     .toolbar {
-        display: flex;
-        justify-content: flex-start;
+        display: block;
         padding: var(--default-padding);
         position: absolute;
         z-index: 1000000000;
+        background-color: var(--basic-Bg);
+        width: 100%;
+        border-bottom: 1px solid var(--color-chart-border-bottom);
+        box-sizing: border-box;
+    }
+
+    .left-menu {
+        display: flex;
+        height: 100%;
+        top: 39px;
+        z-index: 1000000000;
+        position: absolute;
+        border-right: 1px solid var(--color-chart-border-bottom);
+        background-color: var(--basic-Bg);
+        width: 50px;
     }
 
     .intervals {
@@ -185,6 +213,12 @@
 
     .toolbar-button:hover {
         background-color: #303c517a;
+    }
+
+    .chart-exchanges {
+        display: flex;
+        gap: var(--default-gap);
+        justify-content: space-between;
     }
 
     .title_bg {
