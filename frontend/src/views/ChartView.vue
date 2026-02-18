@@ -134,12 +134,18 @@
     <div class="chart-container">
         <div class="toolbar">
             <div class="chart-exchanges">
-                <span>Gate</span>
-                <span>Bybit</span>
+                <div>
+                    <span>Gate</span>
+                    <img class="exchange-icon" src="../assets/icons/gate_logo.svg">
+                </div>
+                <div>
+                    <span>Bybit</span>
+                    <img class="exchange-icon" src="../assets/icons/bybit_logo.svg">
+                </div>
             </div>
         </div>
         <div class="left-menu">
-            <span class="item"></span>
+            <img class="item" src="../assets/icons/exchange.svg">
         </div>
         <div class="chart" ref="container" id="chart"></div>
         <div class="title_bg">Arbitration Bot</div>
@@ -149,12 +155,12 @@
 <style scoped>
     .chart {
         display: block;
-        width: auto;
-        height: 88vh;
+        height: 98vh;
         box-sizing: border-box;
         position: relative;
         left: 50px;
         margin-right: 50px;
+        bottom: 50px;
     }
 
     .chart-container {
@@ -162,28 +168,52 @@
         box-sizing: border-box;
         position: absolute;
         height: 100vh;
+        overflow: hidden;
     }
 
     .toolbar {
+        top: 0;
         display: block;
         padding: var(--default-padding);
-        position: relative;
+        position: fixed;
         z-index: 1000000000;
         background-color: var(--basic-Bg);
         width: 100%;
         border-bottom: 1px solid var(--color-chart-border-bottom);
         box-sizing: border-box;
+        right: 0;
+    }
+
+    .item {
+        width: var(--default-icon-size);
+        height: var(--default-icon-size);
+        background-color: var(--default-input-bg);
+        padding: var(--default-padding);
+        border-radius: var(--default-border-radius);
+        margin-top: 10px;
+        margin-right: 10px;
+    }
+
+    .exchange-icon {
+        width: var(--default-icon-size);
+        height: var(--default-icon-size);
+        display: inline;
+        position: sticky;
+        top: 10px;
+        margin-left: 10px;
     }
 
     .left-menu {
         display: flex;
+        justify-content: center;
         height: 85vh;
         top: 39px;
         z-index: 1000000000;
-        position: absolute;
+        position: fixed;
         border-right: 1px solid var(--color-chart-border-bottom);
         background-color: var(--basic-Bg);
         width: 50px;
+        gap: 10px;
     }
 
     .intervals {
