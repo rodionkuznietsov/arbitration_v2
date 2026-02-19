@@ -2,11 +2,11 @@ use std::{collections::HashMap, num::NonZeroUsize, time::Duration};
 use futures_util::{StreamExt, SinkExt};
 use lru::LruCache;
 use serde_json::Value;
-use tokio::{net::TcpListener, time::interval};
+use tokio::{net::TcpListener, sync::mpsc, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::models::{candle::Candle, exchange::ExchangeType, websocket::{ChannelType, ClientCmd, ServerToClientEvent, Subscription}};
+use crate::models::{line::Line, exchange::ExchangeType, websocket::{ChannelType, ClientCmd, ServerToClientEvent, Subscription}};
 
 #[derive(Debug, Clone)]
 pub struct ConnectedClient {
@@ -18,7 +18,7 @@ pub struct ConnectedClient {
     pub receiver: async_channel::Receiver<ServerToClientEvent>,
     pub token: tokio_util::sync::CancellationToken,
     
-    pub candles: LruCache<String, Candle>,
+    pub candles: LruCache<String, Line>,
     pub exchange_pair: String
 }
 
@@ -88,9 +88,8 @@ async fn handle_connection(
         async move {
             let mut books = HashMap::new();
             let mut orderbooks = HashMap::new();
-            let mut candles_history = HashMap::new();
-            // let mut update_candle = HashMap::new();
-            let mut interval = interval(Duration::from_millis(50));        
+            let mut lines_history = HashMap::new();
+            let mut interval = interval(Duration::from_millis(50));   
 
             loop {
                 tokio::select! {
@@ -117,7 +116,7 @@ async fn handle_connection(
                                 });
                                 orderbooks.insert(channel, json);
                             }
-                            ServerToClientEvent::CandlesHistory(
+                            ServerToClientEvent::LinesHistory(
                                 channel, 
                                 candles,
                                 ticker
@@ -129,43 +128,59 @@ async fn handle_connection(
                                         "exchange_pair": c.exchange_pair,
                                         "symbol": c.symbol,
                                         "timeframe": c.timeframe,
-                                        "open": c.open.to_string(),
-                                        "high": c.high.to_string(),
-                                        "low": c.low.to_string(),
-                                        "close": c.close.to_string()
+                                        "value": c.value.to_string()
                                     })
                                 }).collect();
 
                                 let json = serde_json::json!({
                                     "channel": channel,
                                     "result": {
-                                        "candles": candles_json
+                                        "lines": candles_json
                                     },
                                     "ticker": ticker
                                 });
 
-                                candles_history.insert(channel, json);
+                                lines_history.insert(channel, json);
                             },
-                            ServerToClientEvent::UpdateCandle(channel, candle, ticker) => {
-                                let candle_json = serde_json::json!({
-                                    "timestamp": candle.timestamp.to_rfc3339(),
-                                    "exchange_pair": candle.exchange_pair,
-                                    "symbol": candle.symbol,
-                                    "timeframe": candle.timeframe,
-                                    "open": candle.open.to_string(),
-                                    "high": candle.high.to_string(),
-                                    "low": candle.low.to_string(),
-                                    "close": candle.close.to_string()
+                            ServerToClientEvent::UpdateHistory(channel, line) => {
+                                println!("{:?}, {:?}", channel, line);
+
+                                let line_json: Value = serde_json::json!({
+                                    "timestamp": line.timestamp.to_rfc3339(),
+                                    "exchange_pair": line.exchange_pair,
+                                    "symbol": line.symbol,
+                                    "timeframe": line.timeframe,
+                                    "value": line.value.to_string()
+                                });
+
+                                lines_history.entry(ChannelType::LinesHistory)
+                                    .and_modify(|json| {
+                                        if let Some(result) = json.get_mut("result").and_then(|v| v.as_object_mut()) {
+                                            if let Some(lines) = result.get_mut("lines").and_then(|v| v.as_array_mut()) {
+                                                lines.push(line_json);
+                                            }
+                                        } 
+                                    });
+
+                                print!("{:?}", lines_history);
+                            }
+                            ServerToClientEvent::UpdateLine(channel, line, ticker) => {
+                                let line_json = serde_json::json!({
+                                    "timestamp": line.timestamp.to_rfc3339(),
+                                    "exchange_pair": line.exchange_pair,
+                                    "symbol": line.symbol,
+                                    "timeframe": line.timeframe,
+                                    "value": line.value.to_string()
                                 });
 
                                 let event = serde_json::json!({
                                     "events": {
                                         "event": channel,
-                                        "candle": candle_json
+                                        "line": line_json
                                     },
                                 });
 
-                                candles_history.entry(ChannelType::CandlesHistory)
+                                lines_history.entry(ChannelType::LinesHistory)
                                     .and_modify(|json| {
                                         if let Some(result) = json.get_mut("result").and_then(|v| v.as_object_mut()) {
                                             result.insert("events".to_string(), event["events"].clone());
@@ -185,7 +200,7 @@ async fn handle_connection(
                             }
                         }
 
-                        for json in candles_history.values() {
+                        for json in lines_history.values() {
                             if ws_sender.send(Message::Text(json.to_string().into())).await.is_err() {
                                 task_token.cancel();
                             }
@@ -215,7 +230,7 @@ async fn handle_connection(
 
                                         client.update(&ticker, long_exchange, short_exchange);
                                     },
-                                    ChannelType::CandlesHistory => {
+                                    ChannelType::LinesHistory => {
                                         let long_exchange = subscription.long_exchange.unwrap();
                                         let short_exchange = subscription.short_exchange.unwrap();
 

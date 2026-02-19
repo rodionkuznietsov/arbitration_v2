@@ -1,11 +1,11 @@
 use std::{str::FromStr, sync::Arc};
 use async_trait::async_trait;
-use chrono::Utc;
+use chrono::{TimeZone, Utc};
 use ordered_float::OrderedFloat;
 use sqlx::types::BigDecimal;
 use tokio::sync::{Mutex, broadcast, mpsc};
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{candle::{Candle, TimeFrame}, exchange::{ExchangeType, SharedSpreads}, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, services::spread::{calculate_spread_for_chart, spawn_local_spread_engine}, storage::candle::get_user_candles, transport::ws::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::{ExchangeType, SharedSpreads}, line::{Line, TimeFrame}, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, services::spread::{calculate_spread_for_chart, spawn_local_spread_engine}, storage::candle::{add_new_line, get_user_candles}, transport::ws::ConnectedClient};
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
@@ -42,6 +42,20 @@ pub async fn run_websockets(
         shared_spreads, sender_for_calc
     );
 
+    let (line_tx, mut line_rx) = mpsc::channel::<Line>(1);
+
+    tokio::spawn({
+        let pool = pool.clone();
+        async move {
+            while let Some(line) = line_rx.recv().await {
+                match add_new_line(&pool, line).await {
+                    Ok(_) => { println!("Новая точка добавлена") },
+                    Err(e) => { eprintln!("[MarketManager]: {e}") }
+                }
+            }
+        }
+    });
+
     while let Ok(client) = receiver.recv().await {  
         let token = client.token.clone();
         let long_exchange = client.long_exchange.clone();
@@ -50,6 +64,7 @@ pub async fn run_websockets(
         let ticker = client.ticker.clone();
         let client = client.clone();
         let spread_tx = spread_tx.clone();
+        let line_tx = line_tx.clone();
 
         // Инициализация последних 100 свечей
         tokio::spawn({
@@ -57,35 +72,42 @@ pub async fn run_websockets(
             let mut client = client.clone();
             let token = token.clone();
             let ticker = ticker.clone();
-
+            
             async move {
                 if !exchange_pair.is_empty() {
-                    let init_candles = get_user_candles(&pool, &ticker, &exchange_pair).await;
-                    let last_candle = Arc::new(Mutex::new(Candle::new()));
+                    let init_lines = get_user_candles(&pool, &ticker, &exchange_pair).await;
+                    let last_line = Arc::new(Mutex::new(Line::new()));
 
-                    if let Ok(candles) = init_candles {
-                        let index_last_element = candles.len()-1;
-                        if let Some(candle) = candles.get(index_last_element) {
-                            let mut lock = last_candle.lock().await;
-                            *lock = candle.clone();
-                        }
-                        
-                        tokio::select! {
-                            _ = token.cancelled() => return,
-                            _ = client.send_to_client(
-                                    ServerToClientEvent::CandlesHistory(
-                                    ChannelType::CandlesHistory, 
-                                    candles,
-                                    ticker.clone()
-                                )
-                            ) => {}
+                    if let Ok(lines) = init_lines {
+                        if lines.len() > 0 {
+                            let index_last_element = lines.len()-1;
+                            if let Some(line) = lines.get(index_last_element) {
+                                let mut lock = last_line.lock().await;
+                                *lock = line.clone();
+                            }
+                            
+                            tokio::select! {
+                                _ = token.cancelled() => return,
+                                _ = client.send_to_client(
+                                        ServerToClientEvent::LinesHistory(
+                                        ChannelType::LinesHistory, 
+                                        lines,
+                                        ticker.clone()
+                                    )
+                                ) => {}
+                            }
                         }
                     }
 
                     let mut spread_rx = spread_tx.subscribe();
                     let ticker = ticker.clone();
+                    let line_tx = line_tx.clone();
                     
-                    let last_candle = last_candle.clone();
+                    let last_line_cl = last_line.lock().await.clone();
+                    let last_time = last_line_cl.timestamp;
+                    let last_timestamp = last_time.timestamp();
+                    let mut last_minute = last_timestamp - (last_timestamp % 60);
+
                     tokio::spawn(async move {
                         loop {
                             tokio::select! {
@@ -96,25 +118,49 @@ pub async fn run_websockets(
                                             if pair != exchange_pair {
                                                 continue;
                                             }
-                                            let lc = last_candle.lock().await;
-                                            let candle = lc.clone();
                                             
-                                            client.send_to_client(
-                                                ServerToClientEvent::UpdateCandle(
-                                                    ChannelType::UpdateCandle,
-                                                    Candle {
-                                                        timestamp: candle.timestamp,
-                                                        exchange_pair: pair,
-                                                        symbol: ticker.clone(),
-                                                        timeframe: TimeFrame::Five,
-                                                        open: candle.close,
-                                                        high: BigDecimal::from_str("0.0").unwrap(),
-                                                        close: BigDecimal::from_str(&format!("{:.2}", spread)).unwrap(),
-                                                        low: BigDecimal::from_str("0.0").unwrap()
-                                                    }, 
-                                                    ticker.clone()
-                                                )
-                                            ).await;
+                                            let now = Utc::now();
+                                            let ts = now.timestamp();
+                                            let minute_start = ts - (ts % 60);
+
+                                            // println!("Start: {}; End: {}", minute_start, last_minute);
+                                            
+                                            if minute_start == last_minute {
+                                                client.send_to_client(
+                                                    ServerToClientEvent::UpdateLine(
+                                                        ChannelType::LinesHistory,
+                                                        Line {
+                                                            timestamp: Utc.timestamp_opt(last_minute, 0).unwrap(),
+                                                            exchange_pair: pair,
+                                                            symbol: ticker.clone(),
+                                                            timeframe: TimeFrame::Five,
+                                                            value: BigDecimal::from_str(&format!("{}", spread)).unwrap()
+                                                        }, 
+                                                        ticker.clone()
+                                                    )
+                                                ).await;
+                                            } else if minute_start > last_timestamp {
+                                                println!("Добавление данных");
+                                                last_minute = minute_start;
+
+                                                let new_line = Line {
+                                                    timestamp: Utc.timestamp_opt(last_minute, 0).unwrap(),
+                                                    exchange_pair: pair,
+                                                    symbol: ticker.clone(),
+                                                    timeframe: TimeFrame::Five,
+                                                    value: BigDecimal::from_str(&format!("{}", spread)).unwrap()
+                                                };
+
+                                                if line_tx.clone().send(new_line.clone()).await.is_err() {
+                                                    continue
+                                                }
+
+                                                client.send_to_client(
+                                                    ServerToClientEvent::UpdateHistory(
+                                                        ChannelType::UpdateHistory, new_line.clone()
+                                                    )
+                                                ).await;
+                                            }
                                         },
                                         Err(_) => break 
                                     }

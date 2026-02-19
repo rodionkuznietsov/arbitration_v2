@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 export const useChartStore = defineStore('chart', {
     state: () => ({
         finished: false,
-        lastCandle: {}
+        lastLine: {}
     }),
     actions: {
         

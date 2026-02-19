@@ -2,7 +2,7 @@
     import { useChartStore } from '@/stores/chart';
     import { useUserState } from '@/stores/user_state';
     import { useWebsocketStore } from '@/stores/websocket';
-    import { CandlestickSeries, createChart, CrosshairMode } from 'lightweight-charts';
+    import { createChart, CrosshairMode, LineSeries } from 'lightweight-charts';
     import { onActivated, onDeactivated, ref } from 'vue';
 
     const userStateStore = useUserState()
@@ -17,27 +17,22 @@
     let updateInterval
 
     onActivated(() => {
-        unsubscribe = ws.subscribe(userStateStore.ticker, 'candles_history', userStateStore.longExchange, userStateStore.shortExchange, (msg) => {
-            userStateStore.candles_history = msg.candles.map(c => ({
-                time: Math.floor(new Date(c.timestamp).getTime() / 1000),
-                ticker: c.symbol,
-                open: parseFloat(c.open.toString()),
-                high: parseFloat(c.high.toString()),
-                low: parseFloat(c.low.toString()),
-                close: parseFloat(c.close.toString()),
+        unsubscribe = ws.subscribe(userStateStore.ticker, 'lines_history', userStateStore.longExchange, userStateStore.shortExchange, (msg) => {
+            userStateStore.lineSeriesHistory = msg.lines.map(l => ({
+                time: Math.floor(new Date(l.timestamp).getTime() / 1000),
+                ticker: l.symbol,
+                value: parseFloat(l.value.toString())
             }))
 
-            const candle_event = msg.events?.candle
+            const line_event = msg.events?.line
 
-            if (candle_event) {
-                chartStore.lastCandle = {
-                    time: Math.floor(new Date(candle_event.timestamp).getTime() / 1000),
-                    ticker: candle_event.symbol,
-                    open: parseFloat(candle_event.open.toString()),
-                    high: parseFloat(candle_event.high.toString()),
-                    low: parseFloat(candle_event.low.toString()),
-                    close: parseFloat(candle_event.close.toString()),
+            if (line_event) {
+                chartStore.lastLine = {
+                    time: Math.floor(new Date(line_event.timestamp).getTime() / 1000),
+                    ticker: line_event.symbol,
+                    value: parseFloat(line_event.value.toString())
                 }
+                console.log(chartStore.lastLine.time)
             }
         })
 
@@ -68,34 +63,57 @@
         }
         
         chart = createChart(container.value, chartOptions);
-        const candleSeries = chart.addSeries(CandlestickSeries,{
-            upColor: '#2EBD85',
-            downColor: '#F6465D',
-            borderDownColor: '#F6465D',
-            borderUpColor: '#2EBD85',
-            wickDownColor: '#F6465D',
-            wickUpColor: '#2EBD85',
-        });
+        const lineSeries = chart.addSeries(LineSeries, {
+            color: '#2EBD85',
+            priceFormat: {
+                type: 'percent',
+                precision: 2,
+                minMove: 0.01,
+            }
+        })
+        const lineSeries2 = chart.addSeries(LineSeries, {
+            color: '#F6465D',
+            priceScaleId: 'second-scale',
+            priceFormat: {
+                type: 'percent',
+                precision: 2,
+                minMove: 0.01,
+            }
+        })
 
         setTimeout(() => {
-            candleSeries.setData(userStateStore.candles_history)
+            console.log(userStateStore.lineSeriesHistory)
+            lineSeries.setData(userStateStore.lineSeriesHistory)
+            lineSeries2.setData(userStateStore.lineSeriesHistory)
             chart.timeScale().fitContent();
         }, 100)
 
         if (userStateStore.botWorking) {
             updateInterval = setInterval(() => {
-                if (chartStore.lastCandle) {
-                    candleSeries.update(chartStore.lastCandle)
+                if (chartStore.lastLine) {
+                    lineSeries.update(chartStore.lastLine)
+                    lineSeries2.update(chartStore.lastLine)
                 }
             }, 0);
         }
 
         chart.priceScale('right').applyOptions({
+            autoScale: true,
             borderVisible: true,
             borderColor: '#dfdede',
             scaleMargins: {
-                top: 0.4,
-                bottom: 0.4,
+                top: 0.2,
+                bottom: 0.6,
+            },
+        })
+
+        chart.priceScale('second-scale').applyOptions({
+            autoScale: true,
+            borderVisible: true,
+            borderColor: '#dfdede',
+            scaleMargins: {
+                top: 0.6,
+                bottom: 0.2,
             },
         })
 
