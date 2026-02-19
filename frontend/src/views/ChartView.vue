@@ -32,7 +32,6 @@
                     ticker: line_event.symbol,
                     value: parseFloat(line_event.value.toString())
                 }
-                console.log(chartStore.lastLine.time)
             }
         })
 
@@ -63,21 +62,35 @@
         }
         
         chart = createChart(container.value, chartOptions);
+        
         const lineSeries = chart.addSeries(LineSeries, {
             color: '#2EBD85',
             priceFormat: {
                 type: 'percent',
-                precision: 2,
+                precision: 100,
                 minMove: 0.01,
-            }
+            },
         })
+
         const lineSeries2 = chart.addSeries(LineSeries, {
             color: '#F6465D',
-            priceScaleId: 'second-scale',
+            priceScaleId: 'second',
             priceFormat: {
                 type: 'percent',
-                precision: 2,
+                precision: 100,
                 minMove: 0.01,
+            },
+            autoscaleInfoProvider: () => {
+                const range = lineSeries.priceScale().getVisibleRange()
+                if (range) {
+                    return {
+                        priceRange: {
+                            minValue: range.from,
+                            maxValue: range.to
+                        }
+                    }
+                }
+                return null
             }
         })
 
@@ -102,20 +115,22 @@
             borderVisible: true,
             borderColor: '#dfdede',
             scaleMargins: {
-                top: 0.2,
+                top: 0.12,
                 bottom: 0.6,
             },
         })
 
-        chart.priceScale('second-scale').applyOptions({
+        chart.priceScale('second').applyOptions({
             autoScale: true,
-            borderVisible: true,
+            borderVisible: false,
             borderColor: '#dfdede',
             scaleMargins: {
-                top: 0.6,
-                bottom: 0.2,
+                top: 0.5,
+                bottom: 0.02,
             },
+            ticksVisible: false,
         })
+
 
         chart.timeScale().applyOptions({
             lockVisibleTimeRangeOnResize: false,
@@ -124,7 +139,15 @@
             tickMarkFormatter: (time, tickMarkType, locale) => {
                 const date = new Date(time * 1000);
                 return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-            }
+            },
+        })
+
+        window.addEventListener('resize', () => {
+            chart.resize(
+                window.innerWidth - 75,
+                window.innerHeight - 17
+            )
+            chart.timeScale().fitContent()
         })
     })
 
