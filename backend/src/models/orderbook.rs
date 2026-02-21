@@ -1,10 +1,12 @@
+use strum_macros::Display;
 use std::{collections::{BTreeMap}};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Display, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 #[derive(Hash)]
-pub enum OrderType {
+#[strum(serialize_all="snake_case")]
+pub enum MarketType {
     Long, 
     Short
 }

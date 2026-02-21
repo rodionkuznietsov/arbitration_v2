@@ -1,12 +1,14 @@
 <script setup>
     import { useChartStore } from '@/stores/chart';
+import { useOrderBookStore } from '@/stores/orderbook';
     import { useUserState } from '@/stores/user_state';
     import { useWebsocketStore } from '@/stores/websocket';
     import { createChart, CrosshairMode, LineSeries } from 'lightweight-charts';
     import { onActivated, onDeactivated, ref } from 'vue';
 
     const userStateStore = useUserState()
-    
+    const orderBookStore = useOrderBookStore()
+
     const ws = useWebsocketStore()
     let unsubscribe
 
@@ -17,22 +19,41 @@
     let updateInterval
 
     onActivated(() => {
-        unsubscribe = ws.subscribe(userStateStore.ticker, 'lines_history', userStateStore.longExchange, userStateStore.shortExchange, (msg) => {
-            userStateStore.lineSeriesHistory = msg.lines.map(l => ({
-                time: Math.floor(new Date(l.timestamp).getTime() / 1000),
-                ticker: l.symbol,
-                value: parseFloat(l.value.toString())
-            }))
+        unsubscribe = ws.subscribe(userStateStore.ticker, 'lines_history', userStateStore.longExchange, userStateStore.shortExchange, (result) => {
+            console.log(result)
+            
+            const lines = result.lines
+            if (lines) {
+                const long = lines.long
+                userStateStore.linesLongHistory = long.map(line => ({
+                    time: Math.floor(new Date(line.time).getTime() / 1000),
+                    value: parseFloat(line.value)
+                }))
 
-            const line_event = msg.events?.line
+                const short = lines.short
+                userStateStore.linesShortHistory = short.map(line => ({
+                    time: Math.floor(new Date(line.time).getTime() / 1000),
+                    value: parseFloat(line.value)
+                }))
+            }
 
-            if (line_event) {
-                chartStore.lastLine = {
-                    time: Math.floor(new Date(line_event.timestamp).getTime() / 1000),
-                    ticker: line_event.symbol,
-                    value: parseFloat(line_event.value.toString())
+            const events = result.events
+            if (events) {
+                const updateLine = events.update_line
+                if (updateLine) {
+                    const long = updateLine.long
+                    chartStore.lastLongLine = {
+                        time: Math.floor(new Date(long.time).getTime() / 1000),
+                        value: parseFloat(long.value)
+                    }
+
+                    const short = updateLine.short
+                    chartStore.lastShortLine = {
+                        time: Math.floor(new Date(short.time).getTime() / 1000),
+                        value: parseFloat(short.value)
                 }
             }
+        }
         })
 
         const chartOptions = {
@@ -67,8 +88,8 @@
             color: '#2EBD85',
             priceFormat: {
                 type: 'percent',
-                precision: 100,
-                minMove: 0.01,
+                precision: 100000,
+                minMove: 0.0000000001
             },
         })
 
@@ -77,8 +98,8 @@
             priceScaleId: 'second',
             priceFormat: {
                 type: 'percent',
-                precision: 100,
-                minMove: 0.01,
+                precision: 100000,
+                minMove: 0.0000000001
             },
             autoscaleInfoProvider: () => {
                 const range = lineSeries.priceScale().getVisibleRange()
@@ -95,17 +116,23 @@
         })
 
         setTimeout(() => {
-            console.log(userStateStore.lineSeriesHistory)
-            lineSeries.setData(userStateStore.lineSeriesHistory)
-            lineSeries2.setData(userStateStore.lineSeriesHistory)
+            lineSeries.setData(userStateStore.linesLongHistory)
+            lineSeries2.setData(userStateStore.linesShortHistory)
             chart.timeScale().fitContent();
         }, 100)
 
         if (userStateStore.botWorking) {
             updateInterval = setInterval(() => {
-                if (chartStore.lastLine) {
-                    lineSeries.update(chartStore.lastLine)
-                    lineSeries2.update(chartStore.lastLine)
+                if (chartStore.lastLongLine && 
+                    chartStore.lastLongLine.time != undefined
+                ) {
+                    lineSeries.update(chartStore.lastLongLine)
+                }
+
+                if (chartStore.lastShortLine && 
+                    chartStore.lastShortLine.time != undefined
+                ) {
+                    lineSeries2.update(chartStore.lastShortLine)
                 }
             }, 0);
         }
@@ -125,8 +152,8 @@
             borderVisible: false,
             borderColor: '#dfdede',
             scaleMargins: {
-                top: 0.5,
-                bottom: 0.02,
+                top: 0.6,
+                bottom: 0.12,
             },
             ticksVisible: false,
         })
@@ -176,12 +203,18 @@
         <div class="toolbar">
             <div class="chart-exchanges">
                 <div>
-                    <span>Gate</span>
-                    <img class="exchange-icon" src="../assets/icons/gate_logo.svg">
+                    <div>
+                        <span class="exchange-name">{{ userStateStore.longExchange }}</span>
+                        <img class="exchange-icon" :src="orderBookStore.longExchangeLogo">
+                    </div>
+                    <span class="longPrice">{{ orderBookStore.longLastPrice }}</span>
                 </div>
                 <div>
-                    <span>Bybit</span>
-                    <img class="exchange-icon" src="../assets/icons/bybit_logo.svg">
+                    <div>
+                        <span class="exchange-name">{{ userStateStore.shortExchange }}</span>
+                        <img class="exchange-icon" :src="orderBookStore.shortExchangeLogo">
+                    </div>
+                    <span class="shortPrice">{{ orderBookStore.shortLastPrice }}</span>
                 </div>
             </div>
         </div>
@@ -189,7 +222,6 @@
             <img class="item" src="../assets/icons/exchange.svg">
         </div>
         <div class="chart" ref="container" id="chart"></div>
-        <!-- <div class="title_bg">Arbitration Bot</div> -->
     </div>
 </template>
 
@@ -220,6 +252,7 @@
         z-index: 1000000000;
         background-color: var(--basic-Bg);
         width: 100%;
+        height: 55px;
         border-bottom: 1px solid var(--color-chart-border-bottom);
         box-sizing: border-box;
         right: 0;
@@ -236,6 +269,10 @@
         margin-right: 10px;
     }
 
+    .exchange-name {
+        text-transform: capitalize;
+    }
+    
     .exchange-icon {
         width: var(--default-icon-size);
         height: var(--default-icon-size);
@@ -245,11 +282,23 @@
         margin-left: 10px;
     }
 
+    .longPrice, .shortPrice {
+        font-weight: 600;
+    }
+
+    .longPrice {
+        color: var(--color-success);
+    }
+
+    .shortPrice {
+        color: var(--color-error);
+    }
+
     .left-menu {
         display: flex;
         justify-content: center;
         height: 85vh;
-        top: 39px;
+        top: 55px;
         z-index: 1000000000;
         position: fixed;
         border-right: 1px solid var(--color-chart-border-bottom);

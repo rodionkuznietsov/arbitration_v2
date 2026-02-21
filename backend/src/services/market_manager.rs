@@ -3,15 +3,15 @@ use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
 use ordered_float::OrderedFloat;
 use sqlx::types::BigDecimal;
-use tokio::sync::{Mutex, broadcast, mpsc};
+use tokio::sync::{broadcast, mpsc};
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::{ExchangeType, SharedSpreads}, line::{Line, TimeFrame}, orderbook::{OrderType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, services::spread::{calculate_spread_for_chart, spawn_local_spread_engine}, storage::candle::{add_new_line, get_user_candles}, transport::ws::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::{ExchangeType, SharedSpreads}, line::{Line, TimeFrame}, orderbook::{MarketType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, services::spread::{calculate_spread_for_chart, spawn_local_spread_engine, spawn_spread_db_wirter}, storage::line_storage::{add_new_line, get_spread_history}, transport::ws::ConnectedClient};
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
     fn ticker_tx(&self) -> async_channel::Sender<(String, String)>;
     async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>);
-    async fn get_spread(self: Arc<Self>, spread_tx: mpsc::Sender<Option<(ExchangeType, Option<f64>, Option<f64>)>>);
+    async fn get_spread(self: Arc<Self>, spread_tx: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>);
 }
 
 pub async fn run_websockets(
@@ -36,20 +36,26 @@ pub async fn run_websockets(
         shared_spreads.clone(),
     );
 
-    let (spread_tx, _) = broadcast::channel::<(String, OrderedFloat<f64>)>(100);
+    let (spread_tx, _) = broadcast::channel::<(String, String, OrderedFloat<f64>)>(100);
     let sender_for_calc = Arc::new(spread_tx.clone());
     calculate_spread_for_chart(
         shared_spreads, sender_for_calc
     );
 
-    let (line_tx, mut line_rx) = mpsc::channel::<Line>(1);
+    let (new_line_tx, mut new_line_rx) = mpsc::channel::<Line>(1);
+    spawn_spread_db_wirter(
+        TimeFrame::One,
+        spread_tx.clone(),
+        new_line_tx.clone(),
+        pool.clone()
+    );
 
     tokio::spawn({
         let pool = pool.clone();
         async move {
-            while let Some(line) = line_rx.recv().await {
-                match add_new_line(&pool, line).await {
-                    Ok(_) => { println!("Новая точка добавлена") },
+            while let Some(line) = new_line_rx.recv().await {
+                match add_new_line(&pool, line.clone()).await {
+                    Ok(_) => { println!("Новая точка добавлена для пары: {}", line.exchange_pair) },
                     Err(e) => { eprintln!("[MarketManager]: {e}") }
                 }
             }
@@ -63,109 +69,165 @@ pub async fn run_websockets(
         let exchange_pair = client.exchange_pair.clone();
         let ticker = client.ticker.clone();
         let client = client.clone();
-        let spread_tx = spread_tx.clone();
-        let line_tx = line_tx.clone();
 
         // Инициализация последних 100 свечей
         tokio::spawn({
-            let pool = pool.clone();
-            let mut client = client.clone();
+            let client = client.clone();
             let token = token.clone();
             let ticker = ticker.clone();
-            
+            let pool = pool.clone();
+            let spread_tx = spread_tx.clone();
+
             async move {
-                if !exchange_pair.is_empty() {
-                    let init_lines = get_user_candles(&pool, &ticker, &exchange_pair).await;
-                    let last_line = Arc::new(Mutex::new(Line::new()));
+                if !exchange_pair.long_pair.is_empty() {
+                    let init_long_lines = get_spread_history(&pool, &ticker, &exchange_pair.long_pair).await;
+                    tokio::spawn({
+                        let ticker = ticker.clone();
+                        let token = token.clone();
+                        let mut client = client.clone();
+                        let mut spread_rx = spread_tx.subscribe();
 
-                    if let Ok(lines) = init_lines {
-                        if lines.len() > 0 {
-                            let index_last_element = lines.len()-1;
-                            if let Some(line) = lines.get(index_last_element) {
-                                let mut lock = last_line.lock().await;
-                                *lock = line.clone();
+                        async move {
+
+                            // let last_timestamp =  
+
+                            if let Ok(ref lines) = init_long_lines {
+                                // if lines.len() > 0 {
+                                //     last_timestamp = lines.get(lines.len()-1).unwrap().timestamp;
+                                // }
+                                
+                                tokio::select! {
+                                    _ = token.cancelled() => {
+                                        return;
+                                    }
+                                    _ = client.send_to_client(
+                                            ServerToClientEvent::LinesHistory(
+                                                ChannelType::LinesHistory,
+                                                lines.clone(),
+                                                ticker.clone(),
+                                                MarketType::Long
+                                            )
+                                        ) => {}
+                                };
                             }
-                            
-                            tokio::select! {
-                                _ = token.cancelled() => return,
-                                _ = client.send_to_client(
-                                        ServerToClientEvent::LinesHistory(
-                                        ChannelType::LinesHistory, 
-                                        lines,
-                                        ticker.clone()
-                                    )
-                                ) => {}
-                            }
-                        }
-                    }
 
-                    let mut spread_rx = spread_tx.subscribe();
-                    let ticker = ticker.clone();
-                    let line_tx = line_tx.clone();
-                    
-                    let last_line_cl = last_line.lock().await.clone();
-                    let last_time = last_line_cl.timestamp;
-                    let last_timestamp = last_time.timestamp();
-                    let mut last_minute = last_timestamp - (last_timestamp % 60);
+                            loop {
+                                let mut last_timestamp = Utc::now();
 
-                    tokio::spawn(async move {
-                        loop {
-                            tokio::select! {
-                                _ = token.cancelled() => break,
-                                result = spread_rx.recv() => {
-                                    match result {
-                                        Ok((pair, spread)) => {
-                                            if pair != exchange_pair {
-                                                continue;
-                                            }
-                                            
-                                            let now = Utc::now();
-                                            let ts = now.timestamp();
-                                            let minute_start = ts - (ts % 60);
+                                let mut last_minute = last_timestamp.timestamp() - (last_timestamp.timestamp() % TimeFrame::One.to_secs_i64());
 
-                                            // println!("Start: {}; End: {}", minute_start, last_minute);
-                                            
-                                            if minute_start == last_minute {
-                                                client.send_to_client(
-                                                    ServerToClientEvent::UpdateLine(
-                                                        ChannelType::LinesHistory,
-                                                        Line {
-                                                            timestamp: Utc.timestamp_opt(last_minute, 0).unwrap(),
-                                                            exchange_pair: pair,
-                                                            symbol: ticker.clone(),
-                                                            timeframe: TimeFrame::Five,
-                                                            value: BigDecimal::from_str(&format!("{}", spread)).unwrap()
-                                                        }, 
-                                                        ticker.clone()
-                                                    )
-                                                ).await;
-                                            } else if minute_start > last_timestamp {
-                                                println!("Добавление данных");
-                                                last_minute = minute_start;
+                                tokio::select! {
+                                    _ = token.cancelled() => {
+                                        break;
+                                    }
 
-                                                let new_line = Line {
-                                                    timestamp: Utc.timestamp_opt(last_minute, 0).unwrap(),
-                                                    exchange_pair: pair,
-                                                    symbol: ticker.clone(),
-                                                    timeframe: TimeFrame::Five,
-                                                    value: BigDecimal::from_str(&format!("{}", spread)).unwrap()
-                                                };
-
-                                                if line_tx.clone().send(new_line.clone()).await.is_err() {
-                                                    continue
+                                    result = spread_rx.recv() => {
+                                        match result {
+                                            Ok((pair, _, spread)) => {
+                                                if pair != exchange_pair.long_pair {
+                                                    continue;
                                                 }
 
-                                                client.send_to_client(
-                                                    ServerToClientEvent::UpdateHistory(
-                                                        ChannelType::UpdateHistory, new_line.clone()
-                                                    )
-                                                ).await;
+                                                let now = Utc::now();
+                                                let ts = now.timestamp();
+                                                let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());
+                                                
+                                                // println!("{}; {}", start_minute, last_minute);
+
+                                                if start_minute == last_minute {
+                                                    client.send_to_client(
+                                                        ServerToClientEvent::UpdateLine(
+                                                            ChannelType::UpdateLine,
+                                                            Line { 
+                                                                timestamp: Utc.timestamp_opt(start_minute, 0).unwrap(), 
+                                                                exchange_pair: pair, 
+                                                                symbol: ticker.clone(), 
+                                                                timeframe: TimeFrame::One, 
+                                                                value: BigDecimal::from_str(&format!("{}", spread)).unwrap() 
+                                                            },
+                                                            MarketType::Long
+                                                        )
+                                                    ).await;
+                                                } 
                                             }
-                                        },
-                                        Err(_) => break 
+                                            Err(_) => {}
+                                        }
                                     }
                                 }
+                            }
+                        }
+                    });
+                }
+
+                if !exchange_pair.short_pair.is_empty() {
+                    let init_short_lines = get_spread_history(&pool, &ticker, &exchange_pair.short_pair).await;
+                    tokio::spawn({
+                        let ticker = ticker.clone();
+                        let token = token.clone();
+                        let mut client = client.clone();
+                        let mut spread_rx = spread_tx.subscribe();
+
+                        if let Ok(ref lines) = init_short_lines {
+                            tokio::select! {
+                                _ = token.cancelled() => {
+                                    return;
+                                }
+                                _ = client.send_to_client(
+                                        ServerToClientEvent::LinesHistory(
+                                            ChannelType::LinesHistory,
+                                            lines.clone(),
+                                            ticker.clone(),
+                                            MarketType::Short
+                                        )
+                                    ) => {}
                             };
+                        }
+                        
+                        async move {
+                            loop {
+                                let mut last_timestamp = Utc::now();
+
+                                let mut last_minute = last_timestamp.timestamp() - (last_timestamp.timestamp() % TimeFrame::One.to_secs_i64());
+
+                                tokio::select! {
+                                    _ = token.cancelled() => {
+                                        break;
+                                    }
+
+                                    result = spread_rx.recv() => {
+                                        match result {
+                                            Ok((pair, _, spread)) => {
+                                                if pair != exchange_pair.short_pair {
+                                                    continue;
+                                                }
+
+                                                let now = Utc::now();
+                                                let ts = now.timestamp();
+                                                let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());
+                                                
+                                                // println!("{}; {}", start_minute, last_minute);
+
+                                                if start_minute == last_minute {
+                                                    client.send_to_client(
+                                                        ServerToClientEvent::UpdateLine(
+                                                            ChannelType::UpdateLine,
+                                                            Line { 
+                                                                timestamp: Utc.timestamp_opt(start_minute, 0).unwrap(), 
+                                                                exchange_pair: pair, 
+                                                                symbol: ticker.clone(), 
+                                                                timeframe: TimeFrame::One, 
+                                                                value: BigDecimal::from_str(&format!("{}", spread)).unwrap() 
+                                                            },
+                                                            MarketType::Short
+                                                        )
+                                                    ).await;
+                                                } 
+                                            }
+                                            Err(_) => {}
+                                        }
+                                    }
+                                }
+                            }
                         }
                     });
                 }
@@ -220,7 +282,7 @@ pub async fn run_websockets(
                             _ = client.send_to_client(
                                     ServerToClientEvent::OrderBook(
                                     ChannelType::OrderBook, 
-                                    OrderType::Long, 
+                                    MarketType::Long, 
                                     snapshot, 
                                     ticker
                                 )
@@ -280,7 +342,7 @@ pub async fn run_websockets(
                             _ = client.send_to_client(
                                     ServerToClientEvent::OrderBook(
                                     ChannelType::OrderBook, 
-                                    OrderType::Short, 
+                                    MarketType::Short, 
                                     snapshot, 
                                     ticker
                                 )

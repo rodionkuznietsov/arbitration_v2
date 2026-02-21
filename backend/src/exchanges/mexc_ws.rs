@@ -420,7 +420,7 @@ impl ExchangeWebsocket for MexcWebsocket {
 
     async fn get_spread(
         self: Arc<Self>, 
-        spread_tx: mpsc::Sender<Option<(ExchangeType, Option<f64>, Option<f64>)>>
+        spread_tx: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
     ) {
         self.sender_data.send(OrderBookComand::GetBestAskAndBidPrice { 
             ticker: "btc".to_string(),

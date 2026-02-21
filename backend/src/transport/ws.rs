@@ -1,12 +1,13 @@
 use std::{collections::HashMap, num::NonZeroUsize, time::Duration};
+use dashmap::DashMap;
 use futures_util::{StreamExt, SinkExt};
 use lru::LruCache;
 use serde_json::Value;
-use tokio::{net::TcpListener, sync::mpsc, time::interval};
+use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::models::{line::Line, exchange::ExchangeType, websocket::{ChannelType, ClientCmd, ServerToClientEvent, Subscription}};
+use crate::models::{exchange::{ExchangePairs, ExchangeType}, line::Line, orderbook::MarketType, websocket::{ChannelType, ClientCmd, ServerToClientEvent, Subscription}};
 
 #[derive(Debug, Clone)]
 pub struct ConnectedClient {
@@ -19,7 +20,7 @@ pub struct ConnectedClient {
     pub token: tokio_util::sync::CancellationToken,
     
     pub candles: LruCache<String, Line>,
-    pub exchange_pair: String
+    pub exchange_pair: ExchangePairs,
 }
 
 impl ConnectedClient {
@@ -36,7 +37,7 @@ impl ConnectedClient {
             receiver: receiver,
             token: tokio_util::sync::CancellationToken::new(),
 
-            candles, exchange_pair: String::new()
+            candles, exchange_pair: ExchangePairs::new(),
         }
     }
 
@@ -118,38 +119,44 @@ async fn handle_connection(
                             }
                             ServerToClientEvent::LinesHistory(
                                 channel, 
-                                candles,
-                                ticker
+                                lines,
+                                ticker,
+                                market_type
                             ) => {
 
-                                let candles_json: Vec<Value> = candles.iter().map(|c| {
-                                    serde_json::json!({
-                                        "timestamp": c.timestamp.to_rfc3339(),
-                                        "exchange_pair": c.exchange_pair,
-                                        "symbol": c.symbol,
-                                        "timeframe": c.timeframe,
-                                        "value": c.value.to_string()
-                                    })
-                                }).collect();
+                                let entry = lines_history
+                                    .entry(channel.clone())
+                                    .or_insert_with(|| {
+                                            serde_json::json!({
+                                                "channel": channel,
+                                                "result": {
+                                                    "lines": {}
+                                                },
+                                                "ticker": ticker,
+                                            })
+                                        }
+                                    );
 
-                                let json = serde_json::json!({
-                                    "channel": channel,
-                                    "result": {
-                                        "lines": candles_json
-                                    },
-                                    "ticker": ticker
-                                });
+                                if let Some(result) = entry.get_mut("result") {
+                                    let lines_obj = result
+                                        .as_object_mut()
+                                        .unwrap()
+                                        .entry("lines")
+                                        .or_insert_with(|| serde_json::json!({}));
 
-                                lines_history.insert(channel, json);
+                                    lines_obj[&market_type.to_string()] = serde_json::json!(
+                                        lines.iter().map(|line| {
+                                            serde_json::json!({
+                                                "time": line.timestamp.to_rfc3339(),
+                                                "value": line.value.to_string()                                        
+                                            })
+                                        }).collect::<Vec<_>>()
+                                    );
+                                }
                             },
-                            ServerToClientEvent::UpdateHistory(channel, line) => {
-                                println!("{:?}, {:?}", channel, line);
-
+                            ServerToClientEvent::UpdateHistory(_channel, line, market_type) => {
                                 let line_json: Value = serde_json::json!({
-                                    "timestamp": line.timestamp.to_rfc3339(),
-                                    "exchange_pair": line.exchange_pair,
-                                    "symbol": line.symbol,
-                                    "timeframe": line.timeframe,
+                                    "time": line.timestamp.to_rfc3339(),
                                     "value": line.value.to_string()
                                 });
 
@@ -161,34 +168,45 @@ async fn handle_connection(
                                             }
                                         } 
                                     });
-
-                                print!("{:?}", lines_history);
                             }
-                            ServerToClientEvent::UpdateLine(channel, line, ticker) => {
-                                let line_json = serde_json::json!({
-                                    "timestamp": line.timestamp.to_rfc3339(),
-                                    "exchange_pair": line.exchange_pair,
-                                    "symbol": line.symbol,
-                                    "timeframe": line.timeframe,
-                                    "value": line.value.to_string()
-                                });
-
-                                let event = serde_json::json!({
-                                    "events": {
-                                        "event": channel,
-                                        "line": line_json
-                                    },
-                                });
-
-                                lines_history.entry(ChannelType::LinesHistory)
-                                    .and_modify(|json| {
-                                        if let Some(result) = json.get_mut("result").and_then(|v| v.as_object_mut()) {
-                                            result.insert("events".to_string(), event["events"].clone());
-                                        }
-                                    })
+                            ServerToClientEvent::UpdateLine(channel, line, market_type) => {
+                                let entry = lines_history
+                                    .entry(ChannelType::LinesHistory)
                                     .or_insert_with(|| {
-                                        serde_json::json!({ "result": event  })
-                                    });
+                                            serde_json::json!({
+                                                "channel": channel,
+                                                "result": {
+                                                    "events": {
+                                                        "update_line": {}
+                                                    }
+                                                },
+                                            })
+                                        }
+                                    );
+
+                                if let Some(result) = entry.get_mut("result") {
+                                    let events = result
+                                        .as_object_mut()
+                                        .unwrap()
+                                        .entry("events")
+                                        .or_insert_with(|| serde_json::json!({}));
+                                        
+                                    let update_line = events
+                                        .as_object_mut()
+                                        .unwrap()
+                                        .entry("update_line")
+                                        .or_insert_with(|| serde_json::json!({}));
+
+                                    if let Some(update_line_obj) = update_line.as_object_mut() {
+                                        update_line_obj.insert(
+                                            market_type.to_string(),
+                                            serde_json::json!({
+                                                "time": line.timestamp.to_rfc3339(),
+                                                "value": line.value.to_string()
+                                            })
+                                        );
+                                    }
+                                }
                             }
                         }
                     }
@@ -201,6 +219,7 @@ async fn handle_connection(
                         }
 
                         for json in lines_history.values() {
+                            // println!("{:#?}", json);
                             if ws_sender.send(Message::Text(json.to_string().into())).await.is_err() {
                                 task_token.cancel();
                             }
@@ -234,8 +253,12 @@ async fn handle_connection(
                                         let long_exchange = subscription.long_exchange.unwrap();
                                         let short_exchange = subscription.short_exchange.unwrap();
 
-                                        let pair = format!("{}/{}", long_exchange, short_exchange);
-                                        client.exchange_pair = pair;
+                                        let long_pair = format!("{}/{}", long_exchange, short_exchange);
+                                        let short_pair = format!("{}/{}", short_exchange, long_exchange);
+                                        client.exchange_pair = ExchangePairs {
+                                            long_pair: long_pair,
+                                            short_pair: short_pair
+                                        };
                                     },
                                     _ => {}
                                 }

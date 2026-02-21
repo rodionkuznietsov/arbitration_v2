@@ -70,7 +70,7 @@ pub enum OrderBookComand {
     },
     GetBestAskAndBidPrice {
         ticker: String,
-        reply: mpsc::Sender<Option<(ExchangeType, Option<f64>, Option<f64>)>>
+        reply: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
     }
 } 
 
@@ -215,7 +215,7 @@ impl OrderBookManager {
                             .max_by_key(|x| x.0)
                             .map(|(price, _)| *price as f64 / tick);
 
-                        match reply.send(Some((exchange_type, best_ask, best_bid))).await {
+                        match reply.send(Some((exchange_type, ticker, best_ask, best_bid))).await {
                             Ok(_) => {}
                             Err(e) => {
                                 warn!("[OrderBookManager]: {}", e)

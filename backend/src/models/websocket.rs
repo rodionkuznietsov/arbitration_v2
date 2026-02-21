@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
 
-use crate::models::{line::Line, exchange::ExchangeType, orderbook::{OrderType, SnapshotUi}};
+use crate::models::{line::Line, exchange::ExchangeType, orderbook::{MarketType, SnapshotUi}};
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Ticker {
@@ -21,18 +22,19 @@ pub enum ClientCmd {
 
 #[derive(Debug, Clone)]
 pub enum ServerToClientEvent {
-    OrderBook(ChannelType, OrderType, SnapshotUi, String),
-    LinesHistory(ChannelType, Vec<Line>, String),
-    UpdateLine(ChannelType, Line, String),
-    UpdateHistory(ChannelType, Line),
+    OrderBook(ChannelType, MarketType, SnapshotUi, String),
+    LinesHistory(ChannelType, Vec<Line>, String, MarketType),
+    UpdateLine(ChannelType, Line, MarketType),
+    UpdateHistory(ChannelType, Line, MarketType),
 }
 
-#[derive(Deserialize, Debug, Clone, Serialize, PartialEq, Eq, Hash)]
+#[derive(Display, Deserialize, Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all="snake_case")]
+#[strum(serialize_all="snake_case")]
 pub enum ChannelType {
     OrderBook,
     LinesHistory,
-    UpdateCandle,
+    UpdateLine,
     UpdateHistory,
 }
 

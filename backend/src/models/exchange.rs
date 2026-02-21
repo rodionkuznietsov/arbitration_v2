@@ -48,8 +48,9 @@ pub struct TickerEvent {
     pub result: Option<TickerEventData>
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Spread {
+    pub ticker: String,
     pub ask: OrderedFloat<f64>,
     pub bid: OrderedFloat<f64>
 }
@@ -63,6 +64,21 @@ impl SharedSpreads {
     pub fn new() -> Self {
         Self { 
             exchange: DashMap::new()
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ExchangePairs {
+    pub long_pair: String,
+    pub short_pair: String
+}
+
+impl ExchangePairs {
+    pub fn new() -> Self {
+        Self { 
+            long_pair: String::new(), 
+            short_pair: String::new() 
         }
     }
 }
