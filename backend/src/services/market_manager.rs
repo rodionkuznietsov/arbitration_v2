@@ -112,9 +112,8 @@ pub async fn run_websockets(
                             }
 
                             loop {
-                                let mut last_timestamp = Utc::now();
-
-                                let mut last_minute = last_timestamp.timestamp() - (last_timestamp.timestamp() % TimeFrame::One.to_secs_i64());
+                                let last_timestamp = Utc::now();
+                                let last_minute = last_timestamp.timestamp() - (last_timestamp.timestamp() % TimeFrame::One.to_secs_i64());
 
                                 tokio::select! {
                                     _ = token.cancelled() => {
@@ -185,9 +184,8 @@ pub async fn run_websockets(
                         
                         async move {
                             loop {
-                                let mut last_timestamp = Utc::now();
-
-                                let mut last_minute = last_timestamp.timestamp() - (last_timestamp.timestamp() % TimeFrame::One.to_secs_i64());
+                                let last_timestamp = Utc::now();
+                                let last_minute = last_timestamp.timestamp() - (last_timestamp.timestamp() % TimeFrame::One.to_secs_i64());
 
                                 tokio::select! {
                                     _ = token.cancelled() => {

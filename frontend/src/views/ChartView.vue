@@ -1,6 +1,6 @@
 <script setup>
     import { useChartStore } from '@/stores/chart';
-import { useOrderBookStore } from '@/stores/orderbook';
+    import { useOrderBookStore } from '@/stores/orderbook';
     import { useUserState } from '@/stores/user_state';
     import { useWebsocketStore } from '@/stores/websocket';
     import { createChart, CrosshairMode, LineSeries } from 'lightweight-charts';
@@ -8,6 +8,7 @@ import { useOrderBookStore } from '@/stores/orderbook';
 
     const userStateStore = useUserState()
     const orderBookStore = useOrderBookStore()
+    const isHovered = false
 
     const ws = useWebsocketStore()
     let unsubscribe
@@ -20,9 +21,7 @@ import { useOrderBookStore } from '@/stores/orderbook';
 
     onActivated(() => {
         unsubscribe = ws.subscribe(userStateStore.ticker, 'lines_history', userStateStore.longExchange, userStateStore.shortExchange, (result) => {
-            console.log(result)
-            
-            const lines = result.lines
+            const lines = result?.lines
             if (lines) {
                 const long = lines.long
                 userStateStore.linesLongHistory = long.map(line => ({
@@ -37,9 +36,9 @@ import { useOrderBookStore } from '@/stores/orderbook';
                 }))
             }
 
-            const events = result.events
+            const events = result?.events
             if (events) {
-                const updateLine = events.update_line
+                const updateLine = events?.update_line
                 if (updateLine) {
                     const long = updateLine.long
                     chartStore.lastLongLine = {
@@ -88,8 +87,8 @@ import { useOrderBookStore } from '@/stores/orderbook';
             color: '#2EBD85',
             priceFormat: {
                 type: 'percent',
-                precision: 100000,
-                minMove: 0.0000000001
+                precision: chartStore.percision,
+                minMove: chartStore.minMove
             },
         })
 
@@ -98,8 +97,8 @@ import { useOrderBookStore } from '@/stores/orderbook';
             priceScaleId: 'second',
             priceFormat: {
                 type: 'percent',
-                precision: 100000,
-                minMove: 0.0000000001
+                precision: chartStore.percision,
+                minMove: chartStore.minMove
             },
             autoscaleInfoProvider: () => {
                 const range = lineSeries.priceScale().getVisibleRange()
@@ -204,22 +203,28 @@ import { useOrderBookStore } from '@/stores/orderbook';
             <div class="chart-exchanges">
                 <div>
                     <div>
-                        <span class="exchange-name">{{ userStateStore.longExchange }}</span>
+                        <img class="market_type long" src="../assets/icons/long.svg">
+                        <span class="exchange-name">{{ userStateStore.longExchange ? userStateStore.longExchange : 'None'}}</span>
                         <img class="exchange-icon" :src="orderBookStore.longExchangeLogo">
                     </div>
                     <span class="longPrice">{{ orderBookStore.longLastPrice }}</span>
                 </div>
                 <div>
                     <div>
-                        <span class="exchange-name">{{ userStateStore.shortExchange }}</span>
+                        <span class="exchange-name">{{ userStateStore.shortExchange ? userStateStore.shortExchange : 'None' }}</span>
                         <img class="exchange-icon" :src="orderBookStore.shortExchangeLogo">
+                        <img class="market_type short" src="../assets/icons/short.svg">
                     </div>
                     <span class="shortPrice">{{ orderBookStore.shortLastPrice }}</span>
                 </div>
             </div>
         </div>
         <div class="left-menu">
-            <img class="item" src="../assets/icons/exchange.svg">
+            <img class="item" :src="
+            isHovered ? '../assets/icons/exchange_true.svg' : '../assets/icons/exchange_false.svg'"
+            @mouseenter="isHovered = true"
+            @mouseleave="isHovered = false"
+            />
         </div>
         <div class="chart" ref="container" id="chart"></div>
     </div>
@@ -269,6 +274,25 @@ import { useOrderBookStore } from '@/stores/orderbook';
         margin-right: 10px;
     }
 
+    .market_type {
+        width: var(--default-icon-size);
+        height: var(--default-icon-size);
+        border-radius: 50px;
+        display: inline;
+        position: sticky;
+        top: 10px;
+    }
+
+    .long {
+        background-color: var(--color-success);
+        margin-right: 5px;
+    }
+
+    .short {
+        background-color: var(--color-error);
+        margin-left: 5px;
+    }
+
     .exchange-name {
         text-transform: capitalize;
     }
@@ -279,7 +303,7 @@ import { useOrderBookStore } from '@/stores/orderbook';
         display: inline;
         position: sticky;
         top: 10px;
-        margin-left: 10px;
+        margin-left: 5px;
     }
 
     .longPrice, .shortPrice {
