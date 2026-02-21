@@ -115,6 +115,19 @@ export const useOrderBookStore = defineStore('orderbook', {
             this.shortArrow = null
             this.shortExchangeLogo = null
             this.shortOrderType = null
+
+            this.longAsks = []
+            this.shortAsks = []
+            this.longBids = []
+            this.shortBids = []
+
+            this.longFirstAskPrice = 0.0
+            this.shortFirstAskPrice = 0.0
+            this.longFirstBidPrice = 0.0
+            this.shortFirstBidPrice = 0.0
+
+            this.longLastPrice = 0.0
+            this.shortLastPrice = 0.0
         }     
     }
 })

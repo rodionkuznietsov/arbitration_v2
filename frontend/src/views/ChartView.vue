@@ -4,11 +4,13 @@
     import { useUserState } from '@/stores/user_state';
     import { useWebsocketStore } from '@/stores/websocket';
     import { createChart, CrosshairMode, LineSeries } from 'lightweight-charts';
-    import { onActivated, onDeactivated, ref } from 'vue';
+    import { computed, onActivated, onDeactivated, ref } from 'vue';
+    import exchangeIconTrue from '../assets/icons/exchange_true.svg'
+    import exchangeIconFalse from '../assets/icons/exchange_false.svg'
 
     const userStateStore = useUserState()
     const orderBookStore = useOrderBookStore()
-    const isHovered = false
+    const isHovered = ref(false)
 
     const ws = useWebsocketStore()
     let unsubscribe
@@ -19,21 +21,42 @@
     const chartStore = useChartStore()
     let updateInterval
 
+    const swapActive = ref(false)
+
+    const lastLongPriceSwapped = computed(() => {
+        return swapActive.value ? orderBookStore.shortLastPrice : orderBookStore.longLastPrice
+    })
+
+    const lastShortPriceSwapped = computed(() => {
+        return swapActive.value ? orderBookStore.longLastPrice : orderBookStore.shortLastPrice
+    })
+
+    let lineSeries1
+    let lineSeries2
+
     onActivated(() => {
-        unsubscribe = ws.subscribe(userStateStore.ticker, 'lines_history', userStateStore.longExchange, userStateStore.shortExchange, (result) => {
+        chartStore.longExchange = userStateStore.longExchange
+        chartStore.shortExchange = userStateStore.shortExchange
+        chartStore.longExchangeLogo = orderBookStore.longExchangeLogo
+        chartStore.shortExchangeLogo = orderBookStore.shortExchangeLogo
+
+        unsubscribe = ws.subscribe(userStateStore.ticker, 'lines_history', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                        
             const lines = result?.lines
             if (lines) {
                 const long = lines.long
-                userStateStore.linesLongHistory = long.map(line => ({
+
+                const tempLongHistory = long.map(line => ({
                     time: Math.floor(new Date(line.time).getTime() / 1000),
                     value: parseFloat(line.value)
                 }))
 
                 const short = lines.short
-                userStateStore.linesShortHistory = short.map(line => ({
+                const tempShortHistory = short.map(line => ({
                     time: Math.floor(new Date(line.time).getTime() / 1000),
                     value: parseFloat(line.value)
                 }))
+                chartStore.linesLongHistory = tempLongHistory
+                chartStore.linesShortHistory = tempShortHistory 
             }
 
             const events = result?.events
@@ -83,80 +106,7 @@
         
         chart = createChart(container.value, chartOptions);
         
-        const lineSeries = chart.addSeries(LineSeries, {
-            color: '#2EBD85',
-            priceFormat: {
-                type: 'percent',
-                precision: chartStore.percision,
-                minMove: chartStore.minMove
-            },
-        })
-
-        const lineSeries2 = chart.addSeries(LineSeries, {
-            color: '#F6465D',
-            priceScaleId: 'second',
-            priceFormat: {
-                type: 'percent',
-                precision: chartStore.percision,
-                minMove: chartStore.minMove
-            },
-            autoscaleInfoProvider: () => {
-                const range = lineSeries.priceScale().getVisibleRange()
-                if (range) {
-                    return {
-                        priceRange: {
-                            minValue: range.from,
-                            maxValue: range.to
-                        }
-                    }
-                }
-                return null
-            }
-        })
-
-        setTimeout(() => {
-            lineSeries.setData(userStateStore.linesLongHistory)
-            lineSeries2.setData(userStateStore.linesShortHistory)
-            chart.timeScale().fitContent();
-        }, 100)
-
-        if (userStateStore.botWorking) {
-            updateInterval = setInterval(() => {
-                if (chartStore.lastLongLine && 
-                    chartStore.lastLongLine.time != undefined
-                ) {
-                    lineSeries.update(chartStore.lastLongLine)
-                }
-
-                if (chartStore.lastShortLine && 
-                    chartStore.lastShortLine.time != undefined
-                ) {
-                    lineSeries2.update(chartStore.lastShortLine)
-                }
-            }, 0);
-        }
-
-        chart.priceScale('right').applyOptions({
-            autoScale: true,
-            borderVisible: true,
-            borderColor: '#dfdede',
-            scaleMargins: {
-                top: 0.12,
-                bottom: 0.6,
-            },
-        })
-
-        chart.priceScale('second').applyOptions({
-            autoScale: true,
-            borderVisible: false,
-            borderColor: '#dfdede',
-            scaleMargins: {
-                top: 0.6,
-                bottom: 0.12,
-            },
-            ticksVisible: false,
-        })
-
+        createSeries()
 
         chart.timeScale().applyOptions({
             lockVisibleTimeRangeOnResize: false,
@@ -195,35 +145,189 @@
             chart = null;
         }
     })
+
+    function createSeries() {
+        if (lineSeries1) chart.removeSeries(lineSeries1)
+        if (lineSeries2) chart.removeSeries(lineSeries2)
+
+        if (!swapActive.value) {
+            lineSeries1 = chart.addSeries(LineSeries, {
+                color: '#2EBD85',
+                priceFormat: {
+                    type: 'percent',
+                    precision: chartStore.percision,
+                    minMove: chartStore.minMove
+                },
+            })
+
+            lineSeries2 = chart.addSeries(LineSeries, {
+                color: '#F6465D',
+                priceScaleId: 'second',
+                priceFormat: {
+                    type: 'percent',
+                    precision: chartStore.percision,
+                    minMove: chartStore.minMove
+                },
+                autoscaleInfoProvider: () => {
+                    const range = lineSeries1.priceScale().getVisibleRange()
+                    if (range) {
+                        return {
+                            priceRange: {
+                                minValue: range.from,
+                                maxValue: range.to
+                            }
+                        }
+                    }
+                    return null
+                }
+            })
+
+            chart.priceScale('right').applyOptions({
+                autoScale: true,
+                borderVisible: true,
+                borderColor: '#dfdede',
+                scaleMargins: {
+                    top: 0.3,
+                    bottom: 0.6,
+                },
+            })
+
+            chart.priceScale('second').applyOptions({
+                autoScale: true,
+                borderVisible: false,
+                borderColor: '#dfdede',
+                scaleMargins: {
+                    top: 0.8,
+                    bottom: 0.1
+                },
+                ticksVisible: false,
+            })
+
+        } else {
+            lineSeries2 = chart.addSeries(LineSeries, {
+                color: '#2EBD85',
+                priceFormat: {
+                    type: 'percent',
+                    precision: chartStore.percision,
+                    minMove: chartStore.minMove
+                },
+            })
+
+            lineSeries1 = chart.addSeries(LineSeries, {
+                color: '#F6465D',
+                priceScaleId: 'second',
+                priceFormat: {
+                    type: 'percent',
+                    precision: chartStore.percision,
+                    minMove: chartStore.minMove
+                },
+                autoscaleInfoProvider: () => {
+                    const range = lineSeries2.priceScale().getVisibleRange()
+                    if (range) {
+                        return {
+                            priceRange: {
+                                minValue: range.from,
+                                maxValue: range.to
+                            }
+                        }
+                    }
+                    return null
+                }
+            })
+
+            chart.priceScale('second').applyOptions({
+                autoScale: true,
+                borderVisible: false,
+                scaleMargins: {
+                    top: 0.8,
+                    bottom: 0.1,
+                },
+            })
+
+            chart.priceScale('right').applyOptions({
+                autoScale: true,
+                borderVisible: true,
+                borderColor: '#dfdede',
+                scaleMargins: {
+                    top: 0.3,
+                    bottom: 0.6,
+                },
+                ticksVisible: false,
+            })
+
+        }
+
+        setTimeout(() => {
+            lineSeries1.setData(chartStore.linesLongHistory)
+            lineSeries2.setData(chartStore.linesShortHistory)
+            chart.timeScale().fitContent();
+        }, 100)
+
+        if (userStateStore.botWorking) {
+            updateInterval = setInterval(() => {
+                if (chartStore.lastLongLine && 
+                    chartStore.lastLongLine.time != undefined
+                ) {
+                    lineSeries1.update(chartStore.lastLongLine)
+                }
+
+                if (chartStore.lastShortLine && 
+                    chartStore.lastShortLine.time != undefined
+                ) {
+                    lineSeries2.update(chartStore.lastShortLine)
+                }
+            }, 0);
+        }
+    }
+
+    function swapExchange() {
+        const tempLong = chartStore.longExchange
+        const tempShort = chartStore.shortExchange
+        const tempLongLogo = chartStore.longExchangeLogo
+        const tempShortLogo = chartStore.shortExchangeLogo
+
+        chartStore.longExchange = tempShort
+        chartStore.shortExchange = tempLong
+        chartStore.longExchangeLogo = tempShortLogo
+        chartStore.shortExchangeLogo = tempLongLogo
+
+        swapActive.value = !swapActive.value
+        createSeries()
+    }
 </script>
 
 <template>
     <div class="chart-container">
         <div class="toolbar">
             <div class="chart-exchanges">
-                <div>
+                <div class="long-ex">
                     <div>
-                        <img class="market_type long" src="../assets/icons/long.svg">
-                        <span class="exchange-name">{{ userStateStore.longExchange ? userStateStore.longExchange : 'None'}}</span>
-                        <img class="exchange-icon" :src="orderBookStore.longExchangeLogo">
+                        <span class="exchange-name">{{ chartStore.longExchange }}</span>
+                        <img class="exchange-icon" :src="chartStore.longExchangeLogo ? chartStore.longExchangeLogo : ''">
                     </div>
-                    <span class="longPrice">{{ orderBookStore.longLastPrice }}</span>
+                    <div class="price-type-icon">
+                        <img class="market_type long" src="../assets/icons/long.svg">
+                        <span class="longPrice">{{ lastLongPriceSwapped }}</span>
+                    </div>
                 </div>
-                <div>
+                <div class="short-ex">
                     <div>
-                        <span class="exchange-name">{{ userStateStore.shortExchange ? userStateStore.shortExchange : 'None' }}</span>
-                        <img class="exchange-icon" :src="orderBookStore.shortExchangeLogo">
+                        <span class="exchange-name">{{ chartStore.shortExchange }}</span>
+                        <img class="exchange-icon" :src="chartStore.shortExchangeLogo ? chartStore.shortExchangeLogo : ''">
+                    </div>
+                    <div class="price-type-icon">
+                        <span class="shortPrice">{{ lastShortPriceSwapped }}</span>
                         <img class="market_type short" src="../assets/icons/short.svg">
                     </div>
-                    <span class="shortPrice">{{ orderBookStore.shortLastPrice }}</span>
                 </div>
             </div>
         </div>
         <div class="left-menu">
-            <img class="item" :src="
-            isHovered ? '../assets/icons/exchange_true.svg' : '../assets/icons/exchange_false.svg'"
+            <img @click="swapExchange()" class="item" :src="
+            isHovered ? exchangeIconTrue : exchangeIconFalse"
             @mouseenter="isHovered = true"
             @mouseleave="isHovered = false"
+            title="Поменять направления"
             />
         </div>
         <div class="chart" ref="container" id="chart"></div>
@@ -274,6 +378,10 @@
         margin-right: 10px;
     }
 
+    .item:hover {
+        cursor: pointer;
+    }
+
     .market_type {
         width: var(--default-icon-size);
         height: var(--default-icon-size);
@@ -291,6 +399,11 @@
     .short {
         background-color: var(--color-error);
         margin-left: 5px;
+    }
+
+    .price-type-icon {
+        display: flex;
+        align-items: center;
     }
 
     .exchange-name {
@@ -314,8 +427,20 @@
         color: var(--color-success);
     }
 
+    .long-ex {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
     .shortPrice {
         color: var(--color-error);
+    }
+
+    .short-ex {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
     }
 
     .left-menu {

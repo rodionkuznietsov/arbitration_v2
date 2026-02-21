@@ -83,7 +83,7 @@ pub fn calculate_spread_for_chart(
                         continue;
                     }
 
-                    // println!("{} -> {}", format!("{}/{}", exchange_a, exchange_b), spread_1);
+                    println!("{} -> {}", format!("{}/{}", exchange_a, exchange_b), spread_1);
 
                     let spread_2 = (spread_b.ask - spread_a.bid) / spread_a.bid * 100.0;
                     if spread_tx.send((
@@ -94,7 +94,7 @@ pub fn calculate_spread_for_chart(
                         continue;
                     }
 
-                    // println!("{} -> {}", format!("{}/{}", exchange_b, exchange_a), spread_2);
+                    println!("{} -> {}", format!("{}/{}", exchange_b, exchange_a), spread_2);
                 }
             }
             tokio::time::sleep(Duration::from_millis(50)).await;

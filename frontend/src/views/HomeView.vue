@@ -6,6 +6,7 @@
     import { useWebsocketStore } from '@/stores/websocket';
     import { useUserState } from '@/stores/user_state';
     import { useChartStore } from '@/stores/chart';
+    import { useOrderBookStore } from '@/stores/orderbook';
 
     const ws = useWebsocketStore()
     const userState = useUserState()
@@ -14,6 +15,7 @@
     const market_types = ["Спот", "Фьючерс"]
 
     const orderBook = ref(null)
+    const orderBookStore = useOrderBookStore()
 
     // Данные с полей
     const longExchange = ref("Binance")
@@ -63,6 +65,8 @@
       userState.botWorking = false
       chartStore.finished = true
       orderBook.value.stop() 
+      orderBookStore.clearValues()
+      chartStore.clearValues()
     }
 </script>
 
