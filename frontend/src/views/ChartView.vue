@@ -339,6 +339,7 @@
         text-transform: uppercase;
         font-weight: 600;
         pointer-events: none;
+        user-select: none;
     }
 
     .toolbar {
