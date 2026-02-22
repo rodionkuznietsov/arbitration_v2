@@ -71,33 +71,36 @@ pub fn calculate_spread_for_chart(
 
             for i in 0..exchanges.len() {
                 for j in (i+1)..exchanges.len() {
-                    let (exchange_a, spread_a) = &exchanges[i];
-                    let (exchange_b, spread_b) = &exchanges[j];
+                    let (long_exchange, long_spread) = &exchanges[i];
+                    let (short_exchange, short_spread) = &exchanges[j];
 
-                    let spread_1 = (spread_a.ask - spread_b.bid) / spread_b.bid * 100.0;
+                    let mid_price  = (short_spread.bid + short_spread.ask) / 2.0;
+                    let spread_in_percent = (short_spread.bid - long_spread.ask) / mid_price * 100.0;
                     if spread_tx.send((
-                        format!("{}/{}", exchange_a, exchange_b), 
-                        spread_a.ticker.clone(),
-                        spread_1,
+                        format!("{}/{}", long_exchange, short_exchange), 
+                        long_spread.ticker.clone(),
+                        spread_in_percent,
                     )).is_err() {
                         continue;
                     }
 
-                    println!("{} -> {}", format!("{}/{}", exchange_a, exchange_b), spread_1);
+                    println!("Out: {} -> {:.2}", format!("{}/{}", long_exchange, short_exchange), spread_in_percent);
 
-                    let spread_2 = (spread_b.ask - spread_a.bid) / spread_a.bid * 100.0;
+                    let mid_out_price = (long_spread.bid + short_spread.ask) / 2.0;
+                    let spread_out_percent = (long_spread.bid - short_spread.ask) / mid_out_price * 100.0;
                     if spread_tx.send((
-                        format!("{}/{}", exchange_b, exchange_a), 
-                        spread_b.ticker.clone(),
-                        spread_2
+                        format!("{}/{}", short_exchange, long_exchange), 
+                        short_spread.ticker.clone(),
+                        spread_out_percent
                     )).is_err() {
                         continue;
                     }
 
-                    println!("{} -> {}", format!("{}/{}", exchange_b, exchange_a), spread_2);
+                    println!("In: {} -> {:.2}", format!("{}/{}", short_exchange, long_exchange), spread_out_percent);
+
                 }
             }
-            tokio::time::sleep(Duration::from_millis(50)).await;
+            tokio::time::sleep(Duration::from_millis(20)).await;
         }
     });
 }

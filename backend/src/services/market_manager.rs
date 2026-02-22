@@ -19,7 +19,7 @@ pub async fn run_websockets(
     pool: sqlx::PgPool
 ) {
 
-    let kucoin_websocket = KuCoinWebsocket::new(true);
+    let kucoin_websocket = KuCoinWebsocket::new(false);
     let bybit_websocket = BybitWebsocket::new(true);
     let binx_websocket = BinXWebsocket::new(false);
     let mexc_websocket = MexcWebsocket::new(false);
@@ -36,13 +36,13 @@ pub async fn run_websockets(
         shared_spreads.clone(),
     );
 
-    let (spread_tx, _) = broadcast::channel::<(String, String, OrderedFloat<f64>)>(100);
+    let (spread_tx, _) = broadcast::channel::<(String, String, OrderedFloat<f64>)>(1000);
     let sender_for_calc = Arc::new(spread_tx.clone());
     calculate_spread_for_chart(
         shared_spreads, sender_for_calc
     );
 
-    let (new_line_tx, mut new_line_rx) = mpsc::channel::<Line>(1);
+    let (new_line_tx, mut new_line_rx) = mpsc::channel::<Line>(10);
     spawn_spread_db_wirter(
         TimeFrame::One,
         spread_tx.clone(),
@@ -127,6 +127,8 @@ pub async fn run_websockets(
                                                     continue;
                                                 }
 
+                                                println!("{} -> {:.2}%", pair, spread);
+
                                                 let now = Utc::now();
                                                 let ts = now.timestamp();
                                                 let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());
@@ -199,6 +201,8 @@ pub async fn run_websockets(
                                                     continue;
                                                 }
 
+                                                println!("{} -> {:.2}%", pair, spread);
+                                                
                                                 let now = Utc::now();
                                                 let ts = now.timestamp();
                                                 let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());

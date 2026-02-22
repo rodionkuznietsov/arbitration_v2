@@ -52,7 +52,14 @@
       chartStore.finished = false
 
       orderBook.value.start()
+      setTimeout(() => {
+        chartStore.longExchangeLogo = orderBookStore.longExchangeLogo
+        chartStore.shortExchangeLogo = orderBookStore.shortExchangeLogo
+      }, 50)
+
       userState.changeStatus('online')
+      chartStore.longExchange = userState.longExchange
+      chartStore.shortExchange = userState.shortExchange
     }    
     
     async function stop() {

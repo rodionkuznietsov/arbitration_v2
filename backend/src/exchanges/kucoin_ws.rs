@@ -380,7 +380,7 @@ impl ExchangeWebsocket for KuCoinWebsocket {
         spread_tx: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
     ) {
         self.sender_data.send(OrderBookComand::GetBestAskAndBidPrice { 
-            ticker: "btc".to_string(),
+            ticker: "moca".to_string(),
             reply: spread_tx
         }).await.unwrap();
     }

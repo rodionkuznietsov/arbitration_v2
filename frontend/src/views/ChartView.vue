@@ -22,6 +22,7 @@
     let updateInterval
 
     const swapActive = ref(false)
+    let legend = null
 
     const lastLongPriceSwapped = computed(() => {
         return swapActive.value ? orderBookStore.shortLastPrice : orderBookStore.longLastPrice
@@ -31,30 +32,35 @@
         return swapActive.value ? orderBookStore.longLastPrice : orderBookStore.shortLastPrice
     })
 
-    let lineSeries1
-    let lineSeries2
+    const lastLongValue = computed(() => {
+        return swapActive.value ? chartStore.lastShortLine : chartStore.lastLongLine
+    })
+
+    const lastShortValue = computed(() => {
+        return swapActive.value ? chartStore.lastLongLine : chartStore.lastShortLine
+    })
+
+    let inSpreadSeries
+    let outSpreadSeries
+    let inPriceLine
+    let outPriceLine
 
     onActivated(() => {
-        chartStore.longExchange = userStateStore.longExchange
-        chartStore.shortExchange = userStateStore.shortExchange
-        chartStore.longExchangeLogo = orderBookStore.longExchangeLogo
-        chartStore.shortExchangeLogo = orderBookStore.shortExchangeLogo
-
         unsubscribe = ws.subscribe(userStateStore.ticker, 'lines_history', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                        
             const lines = result?.lines
             if (lines) {
                 const long = lines.long
 
-                const tempLongHistory = long.map(line => ({
+                const tempLongHistory = long ? long.map(line => ({
                     time: Math.floor(new Date(line.time).getTime() / 1000),
                     value: parseFloat(line.value)
-                }))
+                })) : {}
 
                 const short = lines.short
-                const tempShortHistory = short.map(line => ({
+                const tempShortHistory = short ? short.map(line => ({
                     time: Math.floor(new Date(line.time).getTime() / 1000),
                     value: parseFloat(line.value)
-                }))
+                })) : {}
                 chartStore.linesLongHistory = tempLongHistory
                 chartStore.linesShortHistory = tempShortHistory 
             }
@@ -64,18 +70,25 @@
                 const updateLine = events?.update_line
                 if (updateLine) {
                     const long = updateLine.long
-                    chartStore.lastLongLine = {
-                        time: Math.floor(new Date(long.time).getTime() / 1000),
-                        value: parseFloat(long.value)
+                    const long_time = long?.time
+                    const short = updateLine.short
+                    const short_time = short?.time
+
+                    if (long_time) {
+                        chartStore.lastLongLine = {
+                            time: Math.floor(new Date(long.time).getTime() / 1000),
+                            value: parseFloat(long.value)
+                        }
                     }
 
-                    const short = updateLine.short
-                    chartStore.lastShortLine = {
-                        time: Math.floor(new Date(short.time).getTime() / 1000),
-                        value: parseFloat(short.value)
+                    if (short_time) {
+                        chartStore.lastShortLine = {
+                            time: Math.floor(new Date(short.time).getTime() / 1000),
+                            value: parseFloat(short.value)
+                        }
+                    }
                 }
             }
-        }
         })
 
         const chartOptions = {
@@ -106,7 +119,15 @@
         
         chart = createChart(container.value, chartOptions);
         
-        createSeries()
+        legend = document.createElement('div')
+        legend.style = `position: absolute; left: 10px; top: 100px; z-index: 10000; font-size: 14px;`
+        legend.style.color = '#1f1f1f'
+        legend.style.userSelect = 'none'
+        legend.style.pointerEvents = 'none'
+        container.value.appendChild(legend)
+
+        legend.innerHTML = `<div><span>Оборот за 24 часа:</span><div style="text-transform: capitalize;">` + chartStore.longExchange + `: 0.0K</div><div style="text-transform: capitalize;">`+ chartStore.shortExchange +`: 0.0K</div></div>`
+        createSeries(chart)
 
         chart.timeScale().applyOptions({
             lockVisibleTimeRangeOnResize: false,
@@ -119,11 +140,13 @@
         })
 
         window.addEventListener('resize', () => {
-            chart.resize(
-                window.innerWidth - 75,
-                window.innerHeight - 17
-            )
-            chart.timeScale().fitContent()
+            if (chart) {
+                chart.resize(
+                    window.innerWidth - 75,
+                    window.innerHeight - 17
+                )
+                chart.timeScale().fitContent()
+            }
         })
     })
 
@@ -143,140 +166,67 @@
         if (chart) {
             chart.remove();
             chart = null;
+            inSpreadSeries = null
+            outSpreadSeries = null
         }
+
+        if (legend) {
+            legend.remove()
+            legend = null
+        }
+
+        window.removeEventListener('resize', () => {
+
+        })
     })
 
-    function createSeries() {
-        if (lineSeries1) chart.removeSeries(lineSeries1)
-        if (lineSeries2) chart.removeSeries(lineSeries2)
-
-        if (!swapActive.value) {
-            lineSeries1 = chart.addSeries(LineSeries, {
-                color: '#2EBD85',
-                priceFormat: {
-                    type: 'percent',
-                    precision: chartStore.percision,
-                    minMove: chartStore.minMove
-                },
-            })
-
-            lineSeries2 = chart.addSeries(LineSeries, {
-                color: '#F6465D',
-                priceScaleId: 'second',
-                priceFormat: {
-                    type: 'percent',
-                    precision: chartStore.percision,
-                    minMove: chartStore.minMove
-                },
-                autoscaleInfoProvider: () => {
-                    const range = lineSeries1.priceScale().getVisibleRange()
-                    if (range) {
-                        return {
-                            priceRange: {
-                                minValue: range.from,
-                                maxValue: range.to
-                            }
-                        }
-                    }
-                    return null
-                }
-            })
-
-            chart.priceScale('right').applyOptions({
-                autoScale: true,
-                borderVisible: true,
-                borderColor: '#dfdede',
-                scaleMargins: {
-                    top: 0.3,
-                    bottom: 0.6,
-                },
-            })
-
-            chart.priceScale('second').applyOptions({
-                autoScale: true,
-                borderVisible: false,
-                borderColor: '#dfdede',
-                scaleMargins: {
-                    top: 0.8,
-                    bottom: 0.1
-                },
-                ticksVisible: false,
-            })
-
-        } else {
-            lineSeries2 = chart.addSeries(LineSeries, {
-                color: '#2EBD85',
-                priceFormat: {
-                    type: 'percent',
-                    precision: chartStore.percision,
-                    minMove: chartStore.minMove
-                },
-            })
-
-            lineSeries1 = chart.addSeries(LineSeries, {
-                color: '#F6465D',
-                priceScaleId: 'second',
-                priceFormat: {
-                    type: 'percent',
-                    precision: chartStore.percision,
-                    minMove: chartStore.minMove
-                },
-                autoscaleInfoProvider: () => {
-                    const range = lineSeries2.priceScale().getVisibleRange()
-                    if (range) {
-                        return {
-                            priceRange: {
-                                minValue: range.from,
-                                maxValue: range.to
-                            }
-                        }
-                    }
-                    return null
-                }
-            })
-
-            chart.priceScale('second').applyOptions({
-                autoScale: true,
-                borderVisible: false,
-                scaleMargins: {
-                    top: 0.8,
-                    bottom: 0.1,
-                },
-            })
-
-            chart.priceScale('right').applyOptions({
-                autoScale: true,
-                borderVisible: true,
-                borderColor: '#dfdede',
-                scaleMargins: {
-                    top: 0.3,
-                    bottom: 0.6,
-                },
-                ticksVisible: false,
-            })
-
+    function createSeries(chart) {
+        if (!chart) return
+        if (inSpreadSeries) {
+            chart.removeSeries(inSpreadSeries)
+            inSpreadSeries = null
         }
 
-        setTimeout(() => {
-            lineSeries1.setData(chartStore.linesLongHistory)
-            lineSeries2.setData(chartStore.linesShortHistory)
-            chart.timeScale().fitContent();
-        }, 100)
+        if (outSpreadSeries) {
+            chart.removeSeries(outSpreadSeries)
+            outSpreadSeries = null
+        }
 
-        if (userStateStore.botWorking) {
-            updateInterval = setInterval(() => {
-                if (chartStore.lastLongLine && 
-                    chartStore.lastLongLine.time != undefined
-                ) {
-                    lineSeries1.update(chartStore.lastLongLine)
-                }
+        inSpreadSeries = chart.addSeries(LineSeries, chartStore.inSeriesOptions)
+        outSpreadSeries = chart.addSeries(LineSeries, chartStore.outSeriesOptions)
 
-                if (chartStore.lastShortLine && 
-                    chartStore.lastShortLine.time != undefined
-                ) {
-                    lineSeries2.update(chartStore.lastShortLine)
+        inPriceLine = inSpreadSeries.createPriceLine(chartStore.inPriceLine)
+        outPriceLine = outSpreadSeries.createPriceLine(chartStore.outPriceLine)
+
+        updateInterval = setInterval(() => {
+            if (chartStore.lastLongLine) {
+                inSpreadSeries.update(chartStore.lastLongLine)
+                inPriceLine.applyOptions({
+                    price: lastLongValue.value.value,
+                })
+                chart.timeScale().scrollToRealTime()
+            }
+
+            if (chartStore.lastShortLine) {
+                outSpreadSeries.update(chartStore.lastShortLine)
+                outPriceLine.applyOptions({
+                    price: lastShortValue.value.value,
+                    color: '#F6465D'
+                })
+                chart.timeScale().scrollToRealTime()
+            }
+        }, 0)
+
+        if (!swapActive.value) {
+            setTimeout(() => {
+                if (chartStore.linesLongHistory) {
+                    inSpreadSeries.setData(chartStore.linesLongHistory)
                 }
-            }, 0);
+                if (chartStore.linesShortHistory) {
+                    outSpreadSeries.setData(chartStore.linesShortHistory)
+                }
+                chart.timeScale().fitContent()
+            }, 50)
         }
     }
 
@@ -292,7 +242,25 @@
         chartStore.shortExchangeLogo = tempLongLogo
 
         swapActive.value = !swapActive.value
+        legend.innerHTML = `<div><span>Оборот за 24 часа:</span><div style="text-transform: capitalize;">` + chartStore.longExchange + `: 0.0K</div><div style="text-transform: capitalize;">`+ chartStore.shortExchange +`: 0.0K</div></div>`
+
         createSeries()
+
+        changeLineSeriesColor()
+    }
+
+    function changeLineSeriesColor() {
+        swapActive.value ? inSpreadSeries.applyOptions({
+            color: '#F6465D'
+        }) : inSpreadSeries.applyOptions({
+            color: '#2EBD85'
+        })
+
+        !swapActive.value ? outSpreadSeries.applyOptions({
+            color: '#F6465D'
+        }) : outSpreadSeries.applyOptions({
+            color: '#2EBD85'
+        })
     }
 </script>
 
@@ -314,6 +282,7 @@
                     <div>
                         <span class="exchange-name">{{ chartStore.shortExchange }}</span>
                         <img class="exchange-icon" :src="chartStore.shortExchangeLogo ? chartStore.shortExchangeLogo : ''">
+                        <!-- <span>Оборот за 24 часа: $675,95K</span> -->
                     </div>
                     <div class="price-type-icon">
                         <span class="shortPrice">{{ lastShortPriceSwapped }}</span>
@@ -330,7 +299,9 @@
             title="Поменять направления"
             />
         </div>
-        <div class="chart" ref="container" id="chart"></div>
+        <div class="chart" ref="container" id="chart">
+            <div class="ticker">{{ userStateStore.ticker }}</div>
+        </div>
     </div>
 </template>
 
@@ -351,6 +322,23 @@
         position: absolute;
         height: 100vh;
         overflow: hidden;
+    }
+
+    .ticker {
+        display: flex;
+        z-index: 100000000;
+        position: fixed;
+        color: var(--default-chart-ticker-color);
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+        width: 100%;
+        height: 100%;
+        left: 0;
+        top: 0;
+        text-transform: uppercase;
+        font-weight: 600;
+        pointer-events: none;
     }
 
     .toolbar {

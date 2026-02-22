@@ -71,6 +71,10 @@ export const useWebsocketStore = defineStore('websocket', {
             return () => {                
                 const set = this.channels.get(key)
 
+                if (!set) {
+                    return
+                }
+
                 set.delete(callback)
 
                 if (set.size === 0) {

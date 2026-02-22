@@ -38,6 +38,7 @@
     --default-icon-size: 16px;
     --default-border-radius: 8px;
     --default-input-color: #DFDFDF80;
+    --default-chart-ticker-color: #DFDFDF80;
     --default-font: "Noto Sans", sans-serif;
     --default-input-bg: #DFDFDF80;
     --default-orderbook-bg: #DFDFDF80;
