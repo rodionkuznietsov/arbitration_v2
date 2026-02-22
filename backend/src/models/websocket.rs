@@ -24,8 +24,7 @@ pub enum ClientCmd {
 pub enum ServerToClientEvent {
     OrderBook(ChannelType, MarketType, SnapshotUi, String),
     LinesHistory(ChannelType, Vec<Line>, String, MarketType),
-    UpdateLine(ChannelType, Line, MarketType),
-    UpdateHistory(ChannelType, Line, MarketType),
+    UpdateLine(ChannelType, Line, MarketType)
 }
 
 #[derive(Display, Deserialize, Debug, Clone, Serialize, PartialEq, Eq, Hash)]
@@ -33,9 +32,8 @@ pub enum ServerToClientEvent {
 #[strum(serialize_all="snake_case")]
 pub enum ChannelType {
     OrderBook,
-    LinesHistory,
-    UpdateLine,
-    UpdateHistory,
+    Chart,
+    UpdateLine
 }
 
 #[derive(Debug, PartialEq)]

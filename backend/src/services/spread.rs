@@ -84,7 +84,7 @@ pub fn calculate_spread_for_chart(
                         continue;
                     }
 
-                    println!("Out: {} -> {:.2}", format!("{}/{}", long_exchange, short_exchange), spread_in_percent);
+                    // println!("Out: {} -> {:.2}", format!("{}/{}", long_exchange, short_exchange), spread_in_percent);
 
                     let mid_out_price = (long_spread.bid + short_spread.ask) / 2.0;
                     let spread_out_percent = (long_spread.bid - short_spread.ask) / mid_out_price * 100.0;
@@ -96,7 +96,7 @@ pub fn calculate_spread_for_chart(
                         continue;
                     }
 
-                    println!("In: {} -> {:.2}", format!("{}/{}", short_exchange, long_exchange), spread_out_percent);
+                    // println!("In: {} -> {:.2}", format!("{}/{}", short_exchange, long_exchange), spread_out_percent);
 
                 }
             }

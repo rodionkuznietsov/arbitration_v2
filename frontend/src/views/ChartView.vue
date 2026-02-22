@@ -46,7 +46,7 @@
     let outPriceLine
 
     onActivated(() => {
-        unsubscribe = ws.subscribe(userStateStore.ticker, 'lines_history', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                        
+        unsubscribe = ws.subscribe(userStateStore.ticker, 'chart', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                        
             const lines = result?.lines
             if (lines) {
                 const long = lines.long

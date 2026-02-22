@@ -88,21 +88,14 @@ pub async fn run_websockets(
                         let mut spread_rx = spread_tx.subscribe();
 
                         async move {
-
-                            // let last_timestamp =  
-
                             if let Ok(ref lines) = init_long_lines {
-                                // if lines.len() > 0 {
-                                //     last_timestamp = lines.get(lines.len()-1).unwrap().timestamp;
-                                // }
-                                
                                 tokio::select! {
                                     _ = token.cancelled() => {
                                         return;
                                     }
                                     _ = client.send_to_client(
                                             ServerToClientEvent::LinesHistory(
-                                                ChannelType::LinesHistory,
+                                                ChannelType::Chart,
                                                 lines.clone(),
                                                 ticker.clone(),
                                                 MarketType::Long
@@ -127,14 +120,12 @@ pub async fn run_websockets(
                                                     continue;
                                                 }
 
-                                                println!("{} -> {:.2}%", pair, spread);
+                                                // println!("{} -> {:.2}%", pair, spread);
 
                                                 let now = Utc::now();
                                                 let ts = now.timestamp();
                                                 let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());
                                                 
-                                                // println!("{}; {}", start_minute, last_minute);
-
                                                 if start_minute == last_minute {
                                                     client.send_to_client(
                                                         ServerToClientEvent::UpdateLine(
@@ -175,7 +166,7 @@ pub async fn run_websockets(
                                 }
                                 _ = client.send_to_client(
                                         ServerToClientEvent::LinesHistory(
-                                            ChannelType::LinesHistory,
+                                            ChannelType::Chart,
                                             lines.clone(),
                                             ticker.clone(),
                                             MarketType::Short
@@ -201,14 +192,12 @@ pub async fn run_websockets(
                                                     continue;
                                                 }
 
-                                                println!("{} -> {:.2}%", pair, spread);
+                                                // println!("{} -> {:.2}%", pair, spread);
                                                 
                                                 let now = Utc::now();
                                                 let ts = now.timestamp();
                                                 let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());
                                                 
-                                                // println!("{}; {}", start_minute, last_minute);
-
                                                 if start_minute == last_minute {
                                                     client.send_to_client(
                                                         ServerToClientEvent::UpdateLine(

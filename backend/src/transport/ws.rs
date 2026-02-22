@@ -1,13 +1,11 @@
-use std::{collections::HashMap, num::NonZeroUsize, time::Duration};
-use dashmap::DashMap;
+use std::{collections::HashMap, time::Duration};
 use futures_util::{StreamExt, SinkExt};
-use lru::LruCache;
 use serde_json::Value;
 use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::models::{exchange::{ExchangePairs, ExchangeType}, line::Line, orderbook::MarketType, websocket::{ChannelType, ClientCmd, ServerToClientEvent, Subscription}};
+use crate::models::{exchange::{ExchangePairs, ExchangeType}, websocket::{ChannelType, ClientCmd, ServerToClientEvent, Subscription}};
 
 #[derive(Debug, Clone)]
 pub struct ConnectedClient {
@@ -18,15 +16,12 @@ pub struct ConnectedClient {
     pub sender: async_channel::Sender<ServerToClientEvent>,
     pub receiver: async_channel::Receiver<ServerToClientEvent>,
     pub token: tokio_util::sync::CancellationToken,
-    
-    pub candles: LruCache<String, Line>,
     pub exchange_pair: ExchangePairs,
 }
 
 impl ConnectedClient {
     pub fn new() -> Self {
         let (sender, receiver) = async_channel::bounded::<ServerToClientEvent>(5);
-        let candles = LruCache::new(NonZeroUsize::new(100).unwrap());
 
         Self { 
             uuid: Uuid::new_v4(),
@@ -36,8 +31,7 @@ impl ConnectedClient {
             sender: sender,
             receiver: receiver,
             token: tokio_util::sync::CancellationToken::new(),
-
-            candles, exchange_pair: ExchangePairs::new(),
+            exchange_pair: ExchangePairs::new(),
         }
     }
 
@@ -88,6 +82,7 @@ async fn handle_connection(
     tokio::spawn({
         async move {
             let mut books = HashMap::new();
+            // let mut chart = HashMap::new();
             let mut orderbooks = HashMap::new();
             let mut lines_history = HashMap::new();
             let mut interval = interval(Duration::from_millis(50));   
@@ -154,24 +149,9 @@ async fn handle_connection(
                                     );
                                 }
                             },
-                            ServerToClientEvent::UpdateHistory(_channel, line, market_type) => {
-                                let line_json: Value = serde_json::json!({
-                                    "time": line.timestamp.to_rfc3339(),
-                                    "value": line.value.to_string()
-                                });
-
-                                lines_history.entry(ChannelType::LinesHistory)
-                                    .and_modify(|json| {
-                                        if let Some(result) = json.get_mut("result").and_then(|v| v.as_object_mut()) {
-                                            if let Some(lines) = result.get_mut("lines").and_then(|v| v.as_array_mut()) {
-                                                lines.push(line_json);
-                                            }
-                                        } 
-                                    });
-                            }
                             ServerToClientEvent::UpdateLine(channel, line, market_type) => {
                                 let entry = lines_history
-                                    .entry(ChannelType::LinesHistory)
+                                    .entry(ChannelType::Chart)
                                     .or_insert_with(|| {
                                             serde_json::json!({
                                                 "channel": channel,
@@ -249,7 +229,7 @@ async fn handle_connection(
 
                                         client.update(&ticker, long_exchange, short_exchange);
                                     },
-                                    ChannelType::LinesHistory => {
+                                    ChannelType::Chart => {
                                         let long_exchange = subscription.long_exchange.unwrap();
                                         let short_exchange = subscription.short_exchange.unwrap();
 
