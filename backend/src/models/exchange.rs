@@ -34,15 +34,17 @@ impl Display for ExchangeType {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TickerEventData {
     #[serde(rename="symbol", alias="currency_pair")]
     pub symbol: Option<String>,
     #[serde(rename="lastPrice", alias="last")]
-    pub last_price: Option<String>
+    pub last_price: Option<String>,
+    #[serde(rename="turnover24h", alias="quote_volume")]
+    pub volume: Option<String>
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TickerEvent {
     #[serde(rename="result", alias="data")]
     pub result: Option<TickerEventData>

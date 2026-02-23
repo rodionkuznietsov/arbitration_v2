@@ -1,4 +1,4 @@
-use std::{str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc, time::Duration};
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
 use ordered_float::OrderedFloat;
@@ -26,6 +26,21 @@ pub async fn run_websockets(
     let binance_websocket = BinanceWebsocket::new(false);
     let gate_websocket = GateWebsocket::new(true);
     let lbank_websocket = LBankWebsocket::new(false);
+
+    let (volume_tx, _) = broadcast::channel::<(ExchangeType, String, f64)>(1000);
+    tokio::spawn({
+        let volume_tx = volume_tx.clone();
+        let bybit = bybit_websocket.clone();
+        let gate = gate_websocket.clone();
+        
+        async move {
+            loop {
+                bybit.clone().get_volume24hr(volume_tx.clone()).await;
+                gate.clone().get_volume24hr(volume_tx.clone()).await;
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        }
+    });
 
     let shared_spreads = Arc::new(SharedSpreads::new());
 
@@ -69,6 +84,51 @@ pub async fn run_websockets(
         let exchange_pair = client.exchange_pair.clone();
         let ticker = client.ticker.clone();
         let client = client.clone();
+
+        let volume_tx = volume_tx.clone();
+
+        // Volume24hr
+        tokio::spawn({
+            let mut volume_rx = volume_tx.subscribe();
+            let mut client = client.clone();
+            async move {
+                loop {
+                    match volume_rx.recv().await {
+                        Ok((exchange_type, ticker, volume24hr)) => {
+                            // println!("{} -> {} -> {}", exchange_type, ticker, volume24hr);
+                            
+                            if long_exchange == exchange_type {
+                                client.send_to_client(
+                                    ServerToClientEvent::Volume24hr(
+                                        ticker.clone(),
+                                        volume24hr, 
+                                        MarketType::Long
+                                    )
+                                ).await
+                            }
+
+                            if short_exchange == exchange_type {
+                                client.send_to_client(
+                                    ServerToClientEvent::Volume24hr(
+                                        ticker.clone(),
+                                        volume24hr, 
+                                        MarketType::Short
+                                    )
+                                ).await
+                            }
+                        },
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                            println!("Пропущено {} сообщений", n);
+                            // просто продолжаем чтение
+                            continue;
+                        },
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                            break;
+                        }
+                    }
+                }
+            }
+        });
 
         // Инициализация последних 100 свечей
         tokio::spawn({

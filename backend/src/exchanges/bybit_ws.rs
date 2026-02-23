@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Notify, mpsc};
+use tokio::sync::{Notify, broadcast, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 use tokio_util::sync::CancellationToken;
@@ -58,6 +58,27 @@ impl BybitWebsocket {
         let this_cl = Arc::clone(&this);
         this_cl.connect();
         this
+    }
+
+    async fn handle_volume24hr(self: Arc<Self>, json: TickerEvent) -> Option<OrderBookComand> {
+        let Some(result) = json.result else { return None };
+        let Some(ticker) = result.symbol else { return None };
+        let Some(volume24hr) = result.volume else { return None };
+        let volume = match volume24hr.parse::<f64>() {
+            Ok(v) => v,
+            Err(_) => 0.0
+        };
+        
+        Some(OrderBookComand::Event(BookEvent::Volume24hr { ticker: ticker.to_lowercase(), volume }))
+    }
+
+    pub async fn get_volume24hr(
+        self: Arc<Self>,
+        volume_tx: broadcast::Sender<(ExchangeType, String, f64)>
+    ) {
+        if self.sender_data.send(OrderBookComand::GetVolume24hr { ticker: "moca".to_string(), reply: volume_tx }).await.is_err() {
+            return ;
+        }
     }
 }
 
@@ -200,8 +221,19 @@ impl Websocket for BybitWebsocket {
 
                         if channel.contains("tickers.") {
                             let json: TickerEvent = serde_json::from_str(&channel).unwrap();
-                            let result = this.clone().handle_price(json).await;
-                            if let Some(event) = result {
+                            let price_result = this.clone().handle_price(json.clone()).await;
+                            if let Some(event) = price_result {
+                                match this.sender_data.send(event).await {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        tracing::error!("{}: {}", this.title, e);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            let volume_result = this.clone().handle_volume24hr(json).await;
+                            if let Some(event) = volume_result {
                                 match this.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {

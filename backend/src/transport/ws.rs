@@ -1,6 +1,5 @@
 use std::{collections::HashMap, time::Duration};
 use futures_util::{StreamExt, SinkExt};
-use serde_json::Value;
 use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
@@ -82,9 +81,8 @@ async fn handle_connection(
     tokio::spawn({
         async move {
             let mut books = HashMap::new();
-            // let mut chart = HashMap::new();
             let mut orderbooks = HashMap::new();
-            let mut lines_history = HashMap::new();
+            let mut chart = HashMap::new();
             let mut interval = interval(Duration::from_millis(50));   
 
             loop {
@@ -119,7 +117,7 @@ async fn handle_connection(
                                 market_type
                             ) => {
 
-                                let entry = lines_history
+                                let entry = chart
                                     .entry(channel.clone())
                                     .or_insert_with(|| {
                                             serde_json::json!({
@@ -150,7 +148,7 @@ async fn handle_connection(
                                 }
                             },
                             ServerToClientEvent::UpdateLine(channel, line, market_type) => {
-                                let entry = lines_history
+                                let entry = chart
                                     .entry(ChannelType::Chart)
                                     .or_insert_with(|| {
                                             serde_json::json!({
@@ -187,6 +185,45 @@ async fn handle_connection(
                                         );
                                     }
                                 }
+                            },
+                            ServerToClientEvent::Volume24hr(ticker, turnover_volume, market_type) => {
+                                // println!("{} -> {}", ticker, turnover_volume);
+                                
+                                let entry = chart
+                                    .entry(ChannelType::Chart)
+                                    .or_insert_with(|| {
+                                            serde_json::json!({
+                                                "channel": ChannelType::Chart,
+                                                "result": {
+                                                    "events": {
+                                                        "volume24hr": {}
+                                                    }
+                                                },
+                                                "ticker": ticker,
+                                            })
+                                        }
+                                    );
+                                
+                                if let Some(result) = entry.get_mut("result") {
+                                    
+                                    let events = result
+                                        .as_object_mut()
+                                        .unwrap()
+                                        .entry("events")
+                                        .or_insert_with(|| {
+                                            serde_json::json!({})
+                                        });
+
+                                    let volume = events
+                                        .as_object_mut()
+                                        .unwrap()
+                                        .entry("volume24hr")
+                                        .or_insert_with(|| serde_json::json!({}));
+
+                                    volume[&market_type.to_string()] = serde_json::json!({
+                                        "volume": turnover_volume
+                                    });
+                                }
                             }
                         }
                     }
@@ -198,7 +235,7 @@ async fn handle_connection(
                             }
                         }
 
-                        for json in lines_history.values() {
+                        for json in chart.values() {
                             // println!("{:#?}", json);
                             if ws_sender.send(Message::Text(json.to_string().into())).await.is_err() {
                                 task_token.cancel();

@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use futures_util::{SinkExt, StreamExt};
-use tokio::sync::{Notify, mpsc};
+use tokio::sync::{Notify, broadcast, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
@@ -46,6 +46,29 @@ impl GateWebsocket {
         this_cl.connect();
 
         this
+    }
+
+    async fn handle_volume24hr(self: Arc<Self>, json: TickerEvent) -> Option<OrderBookComand> {
+        let Some(result) = json.result else { return None };
+        let Some(ticker) = result.symbol else { return None };
+        let Some(volume24hr) = result.volume else { return None };
+        let volume = match volume24hr.parse::<f64>() {
+            Ok(v) => v,
+            Err(_) => 0.0
+        };
+
+        let ticker = ticker.replace("_", "");
+        
+        Some(OrderBookComand::Event(BookEvent::Volume24hr { ticker: ticker.to_lowercase(), volume }))
+    }
+
+    pub async fn get_volume24hr(
+        self: Arc<Self>,
+        volume_tx: broadcast::Sender<(ExchangeType, String, f64)>
+    ) {
+        if self.sender_data.send(OrderBookComand::GetVolume24hr { ticker: "moca".to_string(), reply: volume_tx }).await.is_err() {
+            return ;
+        }
     }
 }
 
@@ -125,7 +148,6 @@ impl Websocket for GateWebsocket {
         while let Some(cmd) = cmd_rx.recv().await {
             match cmd {
                 WsCmd::Subscribe(ticker) => {
-                    // println!("{}", ticker);
                     write.send(Message::Text(
                         serde_json::json!({
                             "channel": "spot.order_book",
@@ -171,11 +193,19 @@ impl Websocket for GateWebsocket {
                             }
                         } else if channel.contains("spot.tickers") {
                             let data: TickerEvent = serde_json::from_str(&channel).unwrap();
-                            let this_cl = this.clone();
-                            let result = this.clone().handle_price(data).await;
-                            if let Some(event) = result {
-                                if let Some(err) = this_cl.sender_data.send(event).await.err() {
-                                    error!("{} {}", this_cl.title, err);
+
+                            let price_result = this.clone().handle_price(data.clone()).await;
+                            if let Some(event) = price_result {
+                                if let Some(err) = this.clone().sender_data.send(event).await.err() {
+                                    error!("{} {}", this.title, err);
+                                    break;
+                                }
+                            }
+                            
+                            let volume24hr_result = this.clone().handle_volume24hr(data).await;
+                            if let Some(event) = volume24hr_result {
+                                if let Some(err) = this.sender_data.send(event).await.err() {
+                                    error!("{} {}", this.title, err);
                                     break;
                                 }
                             }

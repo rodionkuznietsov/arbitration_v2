@@ -65,5 +65,9 @@ pub enum BookEvent {
     Price { 
         ticker: String, 
         last_price: f64 
+    },
+    Volume24hr {
+        ticker: String, 
+        volume: f64 
     }
 }

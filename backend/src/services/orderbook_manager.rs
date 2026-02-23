@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use lru::LruCache;
-use tokio::sync::mpsc;
+use tokio::sync::{broadcast, mpsc};
 use tracing::{warn};
 
 use crate::models::{exchange::ExchangeType, orderbook::{BookEvent, Snapshot, SnapshotUi}};
@@ -71,12 +71,17 @@ pub enum OrderBookComand {
     GetBestAskAndBidPrice {
         ticker: String,
         reply: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
+    },
+    GetVolume24hr {
+        ticker: String,
+        reply: broadcast::Sender<(ExchangeType, String, f64)>
     }
 } 
 
 pub struct OrderBookManager {
     pub id: ExchangeType,
     pub books: LruCache<String, Snapshot>,
+    pub volumes24hr: LruCache<String, f64>,
     pub rx: mpsc::Receiver<OrderBookComand>
 }
 
@@ -90,6 +95,7 @@ impl OrderBookManager {
         Self {
             id,
             books: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
+            volumes24hr: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
             rx: rx
         }
     }
@@ -186,6 +192,9 @@ impl OrderBookManager {
                                 t.last_price = last_price;
                             }
                         },
+                        BookEvent::Volume24hr { ticker, volume } => {
+                            self.volumes24hr.put(ticker.clone(), volume);
+                        },
                     }
                 }
                 OrderBookComand::GetBook { ticker, reply } => {
@@ -223,6 +232,13 @@ impl OrderBookManager {
                         }   
 
                         drop(reply)
+                    }
+                },
+                OrderBookComand::GetVolume24hr { ticker, reply } => {
+                    if let Some(volume) = self.volumes24hr.get(&format!("{}usdt", ticker)) {
+                        if reply.send((self.id, ticker, *volume)).is_err() {
+                            continue;
+                        }
                     }
                 }
             }

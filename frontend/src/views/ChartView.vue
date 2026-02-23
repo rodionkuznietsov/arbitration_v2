@@ -4,7 +4,7 @@
     import { useUserState } from '@/stores/user_state';
     import { useWebsocketStore } from '@/stores/websocket';
     import { createChart, CrosshairMode, LineSeries } from 'lightweight-charts';
-    import { computed, onActivated, onDeactivated, ref } from 'vue';
+    import { computed, effectScope, onActivated, onDeactivated, ref, watch } from 'vue';
     import exchangeIconTrue from '../assets/icons/exchange_true.svg'
     import exchangeIconFalse from '../assets/icons/exchange_false.svg'
 
@@ -19,7 +19,6 @@
     const container = ref(null)
 
     const chartStore = useChartStore()
-    let updateInterval
 
     const swapActive = ref(false)
     let legend = null
@@ -40,13 +39,24 @@
         return swapActive.value ? chartStore.lastLongLine : chartStore.lastShortLine
     })
 
-    let inSpreadSeries
-    let outSpreadSeries
-    let inPriceLine
-    let outPriceLine
+    const longVolume = computed(() => {
+        return swapActive.value ? chartStore.shortVolume24hr : chartStore.longVolume24hr
+    })
+
+    const shortVolume = computed(() => {
+        return swapActive.value ? chartStore.longVolume24hr : chartStore.shortVolume24hr
+    })
+
+    let stopVolumeWatch
+    let inSpreadSeries = null
+    let outSpreadSeries = null
+    let inPriceLine = null
+    let outPriceLine = null
+    let scope
 
     onActivated(() => {
-        unsubscribe = ws.subscribe(userStateStore.ticker, 'chart', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                        
+        unsubscribe = ws.subscribe(userStateStore.ticker, 'chart', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                                    
+                        
             const lines = result?.lines
             if (lines) {
                 const long = lines.long
@@ -67,6 +77,20 @@
 
             const events = result?.events
             if (events) {
+                const volume24hr = events?.volume24hr
+                if (volume24hr) {
+                    const long = volume24hr.long
+                    if (long) {
+                        let vol = chartStore.volume24hrFormat(long.volume)
+                        chartStore.longVolume24hr = vol 
+                    }
+                    const short = volume24hr.short
+                    if (short) {
+                        let vol = chartStore.volume24hrFormat(short.volume)
+                        chartStore.shortVolume24hr = vol
+                    }
+                }
+                
                 const updateLine = events?.update_line
                 if (updateLine) {
                     const long = updateLine.long
@@ -126,7 +150,12 @@
         legend.style.pointerEvents = 'none'
         container.value.appendChild(legend)
 
-        legend.innerHTML = `<div><span>Оборот за 24 часа:</span><div style="text-transform: capitalize;">` + chartStore.longExchange + `: 0.0K</div><div style="text-transform: capitalize;">`+ chartStore.shortExchange +`: 0.0K</div></div>`
+        stopVolumeWatch = watch(
+            () => [chartStore.longVolume24hr, chartStore.shortVolume24hr],
+            () => {
+                legend.innerHTML = `<div><span>Оборот за 24 часа:</span><div style="text-transform: capitalize;">` + chartStore.longExchange + `: `+ longVolume.value +`</div><div style="text-transform: capitalize;">`+ chartStore.shortExchange +`: `+ shortVolume.value +`</div></div>`
+            }
+        )
         createSeries(chart)
 
         chart.timeScale().applyOptions({
@@ -151,9 +180,12 @@
     })
 
     onDeactivated(() => {
-        if (updateInterval) {
-            clearInterval(updateInterval)
-            updateInterval = undefined
+        if (scope) {
+            scope.stop()
+        }
+
+        if (stopVolumeWatch) {
+            stopVolumeWatch()
         }
 
         if (chartStore.finished) {
@@ -181,13 +213,16 @@
     })
 
     function createSeries(chart) {
+        LineSeries
+        lastLongValue
+        lastShortValue
         if (!chart) return
-        if (inSpreadSeries) {
+        if (inSpreadSeries != null) {
             chart.removeSeries(inSpreadSeries)
             inSpreadSeries = null
         }
 
-        if (outSpreadSeries) {
+        if (outSpreadSeries != null) {
             chart.removeSeries(outSpreadSeries)
             outSpreadSeries = null
         }
@@ -198,36 +233,36 @@
         inPriceLine = inSpreadSeries.createPriceLine(chartStore.inPriceLine)
         outPriceLine = outSpreadSeries.createPriceLine(chartStore.outPriceLine)
 
-        updateInterval = setInterval(() => {
-            if (chartStore.lastLongLine) {
-                inSpreadSeries.update(chartStore.lastLongLine)
-                inPriceLine.applyOptions({
-                    price: lastLongValue.value.value,
-                })
-                chart.timeScale().scrollToRealTime()
-            }
+        scope = effectScope()
+        scope.run(() => {
+            watch(
+                () => [chartStore.lastLongLine.time, chartStore.lastShortLine.time],
+                () => {
+                    inSpreadSeries.update(chartStore.lastLongLine)
+                    inPriceLine.applyOptions({
+                        price: lastLongValue.value.value,
+                    })
 
-            if (chartStore.lastShortLine) {
-                outSpreadSeries.update(chartStore.lastShortLine)
-                outPriceLine.applyOptions({
-                    price: lastShortValue.value.value,
-                    color: '#F6465D'
-                })
-                chart.timeScale().scrollToRealTime()
-            }
-        }, 0)
+                    outSpreadSeries.update(chartStore.lastShortLine)
+                    outPriceLine.applyOptions({
+                        price: lastShortValue.value.value,
+                        color: '#F6465D'
+                    })
 
-        if (!swapActive.value) {
-            setTimeout(() => {
-                if (chartStore.linesLongHistory) {
-                    inSpreadSeries.setData(chartStore.linesLongHistory)
+                    chart.timeScale().scrollToRealTime()
                 }
-                if (chartStore.linesShortHistory) {
-                    outSpreadSeries.setData(chartStore.linesShortHistory)
+            )
+
+            watch(
+                () => [chartStore.linesLongHistory.length, chartStore.linesShortHistory.length],
+                ([longLen, shortLen]) => {
+                    if (longLen > 0 && shortLen > 0) {
+                        inSpreadSeries.setData(chartStore.linesLongHistory)
+                        outSpreadSeries.setData(chartStore.linesShortHistory)
+                    }
                 }
-                chart.timeScale().fitContent()
-            }, 50)
-        }
+            )
+        })
     }
 
     function swapExchange() {
@@ -242,8 +277,7 @@
         chartStore.shortExchangeLogo = tempLongLogo
 
         swapActive.value = !swapActive.value
-        legend.innerHTML = `<div><span>Оборот за 24 часа:</span><div style="text-transform: capitalize;">` + chartStore.longExchange + `: 0.0K</div><div style="text-transform: capitalize;">`+ chartStore.shortExchange +`: 0.0K</div></div>`
-
+        legend.innerHTML = `<div><span>Оборот за 24 часа:</span><div style="text-transform: capitalize;">` + chartStore.longExchange + `: `+ longVolume.value +`</div><div style="text-transform: capitalize;">`+ chartStore.shortExchange +`: `+ shortVolume.value +`</div></div>`
         createSeries()
 
         changeLineSeriesColor()
@@ -282,7 +316,6 @@
                     <div>
                         <span class="exchange-name">{{ chartStore.shortExchange }}</span>
                         <img class="exchange-icon" :src="chartStore.shortExchangeLogo ? chartStore.shortExchangeLogo : ''">
-                        <!-- <span>Оборот за 24 часа: $675,95K</span> -->
                     </div>
                     <div class="price-type-icon">
                         <span class="shortPrice">{{ lastShortPriceSwapped }}</span>

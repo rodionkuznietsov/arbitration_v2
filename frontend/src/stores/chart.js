@@ -6,9 +6,11 @@ export const useChartStore = defineStore('chart', {
         longExchange: null,
         linesLongHistory: [],
         longExchangeLogo: null,
+        longVolume24hr: 0.0,
 
         shortExchangeLogo: null,
         shortExchange: null,
+        shortVolume24hr: 0.0,
         linesShortHistory: [],
 
         lastLongPrice: 0.0,
@@ -42,6 +44,24 @@ export const useChartStore = defineStore('chart', {
         },
     }),
     actions: {
+        volume24hrFormat(value) {
+            if (value >= 1_000_000_000) {
+                return (value / 1_000_000_000).toFixed(2) + 'B';
+            }
+
+            if (value >= 1_000_000) {
+                return (value / 1_000_000).toFixed(2) + 'M';
+            }
+
+            if (value >= 1_000) {
+                return (value / 1_000).toFixed(2) + 'K'
+            }
+
+            if (value >= 0) {
+                return value.toFixed(2) + '$'
+            }
+        },
+
         clearValues() {
             this.longExchange = null
             this.shortExchange = null
