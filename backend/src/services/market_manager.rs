@@ -1,11 +1,11 @@
-use std::{str::FromStr, sync::Arc, time::Duration};
+use std::{str::FromStr, sync::Arc};
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
 use ordered_float::OrderedFloat;
 use sqlx::types::BigDecimal;
 use tokio::sync::{broadcast, mpsc};
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::{ExchangeType, SharedSpreads}, line::{Line, TimeFrame}, orderbook::{MarketType, SnapshotUi}, websocket::{ChannelType, ServerToClientEvent}}, services::spread::{calculate_spread_for_chart, spawn_local_spread_engine, spawn_spread_db_wirter}, storage::line_storage::{add_new_line, get_spread_history}, transport::ws::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::{ExchangeType, SharedSpreads}, line::{Line, TimeFrame}, orderbook::{MarketType, SnapshotUi}, websocket::{ChannelType, ChartEvent, ServerToClientEvent}}, services::{spread::{calculate_spread_for_chart, spawn_local_spread_engine, spawn_spread_db_wirter}, volume24hr::ExchangeVolume}, storage::line_storage::{add_new_line, get_spread_history}, transport::ws::ConnectedClient};
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
@@ -27,20 +27,11 @@ pub async fn run_websockets(
     let gate_websocket = GateWebsocket::new(true);
     let lbank_websocket = LBankWebsocket::new(false);
 
-    let (volume_tx, _) = broadcast::channel::<(ExchangeType, String, f64)>(1000);
-    tokio::spawn({
-        let volume_tx = volume_tx.clone();
-        let bybit = bybit_websocket.clone();
-        let gate = gate_websocket.clone();
-        
-        async move {
-            loop {
-                bybit.clone().get_volume24hr(volume_tx.clone()).await;
-                gate.clone().get_volume24hr(volume_tx.clone()).await;
-                tokio::time::sleep(Duration::from_millis(20)).await;
-            }
-        }
-    });
+    let volume = ExchangeVolume::new(
+        bybit_websocket.clone(),
+        gate_websocket.clone(),
+    );
+    volume.spawn_volume_engine();
 
     let shared_spreads = Arc::new(SharedSpreads::new());
 
@@ -85,12 +76,14 @@ pub async fn run_websockets(
         let ticker = client.ticker.clone();
         let client = client.clone();
 
-        let volume_tx = volume_tx.clone();
+        let volume_tx = volume.volume_tx.clone();
 
         // Volume24hr
         tokio::spawn({
             let mut volume_rx = volume_tx.subscribe();
             let mut client = client.clone();
+            let token = token.clone();
+            
             async move {
                 loop {
                     match volume_rx.recv().await {
@@ -100,6 +93,7 @@ pub async fn run_websockets(
                             if long_exchange == exchange_type {
                                 client.send_to_client(
                                     ServerToClientEvent::Volume24hr(
+                                        ChartEvent::Volume24hr,
                                         ticker.clone(),
                                         volume24hr, 
                                         MarketType::Long
@@ -110,6 +104,7 @@ pub async fn run_websockets(
                             if short_exchange == exchange_type {
                                 client.send_to_client(
                                     ServerToClientEvent::Volume24hr(
+                                        ChartEvent::Volume24hr,
                                         ticker.clone(),
                                         volume24hr, 
                                         MarketType::Short
@@ -117,12 +112,11 @@ pub async fn run_websockets(
                                 ).await
                             }
                         },
-                        Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
-                            println!("Пропущено {} сообщений", n);
-                            // просто продолжаем чтение
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(_n)) => {
                             continue;
                         },
                         Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                            token.cancel();
                             break;
                         }
                     }
@@ -189,7 +183,7 @@ pub async fn run_websockets(
                                                 if start_minute == last_minute {
                                                     client.send_to_client(
                                                         ServerToClientEvent::UpdateLine(
-                                                            ChannelType::UpdateLine,
+                                                            ChartEvent::UpdateLine,
                                                             Line { 
                                                                 timestamp: Utc.timestamp_opt(start_minute, 0).unwrap(), 
                                                                 exchange_pair: pair, 
@@ -261,7 +255,7 @@ pub async fn run_websockets(
                                                 if start_minute == last_minute {
                                                     client.send_to_client(
                                                         ServerToClientEvent::UpdateLine(
-                                                            ChannelType::UpdateLine,
+                                                            ChartEvent::UpdateLine,
                                                             Line { 
                                                                 timestamp: Utc.timestamp_opt(start_minute, 0).unwrap(), 
                                                                 exchange_pair: pair, 

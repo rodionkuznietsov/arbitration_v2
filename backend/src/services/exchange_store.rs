@@ -62,7 +62,7 @@ pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
 }
 
 #[derive(Debug)]
-pub enum OrderBookComand {
+pub enum ExchangeStoreCMD {
     Event(BookEvent),
     GetBook { 
         ticker: String,
@@ -78,15 +78,15 @@ pub enum OrderBookComand {
     }
 } 
 
-pub struct OrderBookManager {
+pub struct ExchangeStore {
     pub id: ExchangeType,
     pub books: LruCache<String, Snapshot>,
     pub volumes24hr: LruCache<String, f64>,
-    pub rx: mpsc::Receiver<OrderBookComand>
+    pub rx: mpsc::Receiver<ExchangeStoreCMD>
 }
 
-impl OrderBookManager {
-    pub fn new(rx: mpsc::Receiver<OrderBookComand>, id: ExchangeType) -> Self {
+impl ExchangeStore {
+    pub fn new(rx: mpsc::Receiver<ExchangeStoreCMD>, id: ExchangeType) -> Self {
         let cache_capacity = std::env::var("ORDERBOOK_CACHE_CAPACITY")
             .unwrap_or_else(|_| "1000".into())
             .parse::<usize>()
@@ -105,7 +105,7 @@ impl OrderBookManager {
         while let Some(cmd) = self.rx.recv().await {
 
             match cmd {
-                OrderBookComand::Event(event) => {
+                ExchangeStoreCMD::Event(event) => {
                     match event {
                         BookEvent::Snapshot { ticker, snapshot  } => {
                             match self.books.get_mut(&ticker) {
@@ -197,18 +197,18 @@ impl OrderBookManager {
                         },
                     }
                 }
-                OrderBookComand::GetBook { ticker, reply } => {
+                ExchangeStoreCMD::GetBook { ticker, reply } => {
                     if let Some(snapshot) = self.books.get(&format!("{}usdt", ticker)) {
                         let snapshot_ui = snapshot.to_ui(6).await;
                         match reply.send(Some(snapshot_ui)).await {
                             Ok(_) => {}
                             Err(e) => {
-                                warn!("[OrderBookManager]: {}", e)
+                                warn!("[ExchangeStore]: {}", e)
                             }
                         }   
                     }
                 }
-                OrderBookComand::GetBestAskAndBidPrice { 
+                ExchangeStoreCMD::GetBestAskAndBidPrice { 
                     ticker , 
                     reply
                 } => {
@@ -227,14 +227,14 @@ impl OrderBookManager {
                         match reply.send(Some((exchange_type, ticker, best_ask, best_bid))).await {
                             Ok(_) => {}
                             Err(e) => {
-                                warn!("[OrderBookManager]: {}", e)
+                                warn!("[ExchangeStore]: {}", e)
                             }
                         }   
 
                         drop(reply)
                     }
                 },
-                OrderBookComand::GetVolume24hr { ticker, reply } => {
+                ExchangeStoreCMD::GetVolume24hr { ticker, reply } => {
                     if let Some(volume) = self.volumes24hr.get(&format!("{}usdt", ticker)) {
                         if reply.send((self.id, ticker, *volume)).is_err() {
                             continue;

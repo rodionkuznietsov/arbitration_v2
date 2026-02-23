@@ -147,16 +147,14 @@ async fn handle_connection(
                                     );
                                 }
                             },
-                            ServerToClientEvent::UpdateLine(channel, line, market_type) => {
+                            ServerToClientEvent::UpdateLine(event, line, market_type) => {
                                 let entry = chart
                                     .entry(ChannelType::Chart)
                                     .or_insert_with(|| {
                                             serde_json::json!({
-                                                "channel": channel,
+                                                "channel": ChannelType::Chart,
                                                 "result": {
-                                                    "events": {
-                                                        "update_line": {}
-                                                    }
+                                                    "events": {}
                                                 },
                                             })
                                         }
@@ -172,7 +170,7 @@ async fn handle_connection(
                                     let update_line = events
                                         .as_object_mut()
                                         .unwrap()
-                                        .entry("update_line")
+                                        .entry(&event.to_string())
                                         .or_insert_with(|| serde_json::json!({}));
 
                                     if let Some(update_line_obj) = update_line.as_object_mut() {
@@ -186,7 +184,7 @@ async fn handle_connection(
                                     }
                                 }
                             },
-                            ServerToClientEvent::Volume24hr(ticker, turnover_volume, market_type) => {
+                            ServerToClientEvent::Volume24hr(event, ticker, turnover_volume, market_type) => {
                                 // println!("{} -> {}", ticker, turnover_volume);
                                 
                                 let entry = chart
@@ -195,9 +193,7 @@ async fn handle_connection(
                                             serde_json::json!({
                                                 "channel": ChannelType::Chart,
                                                 "result": {
-                                                    "events": {
-                                                        "volume24hr": {}
-                                                    }
+                                                    "events": {}
                                                 },
                                                 "ticker": ticker,
                                             })
@@ -217,7 +213,7 @@ async fn handle_connection(
                                     let volume = events
                                         .as_object_mut()
                                         .unwrap()
-                                        .entry("volume24hr")
+                                        .entry(&event.to_string())
                                         .or_insert_with(|| serde_json::json!({}));
 
                                     volume[&market_type.to_string()] = serde_json::json!({

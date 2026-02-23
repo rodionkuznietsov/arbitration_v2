@@ -9,8 +9,8 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
 
-use crate::{models::{self, exchange::ExchangeType, orderbook::{BookEvent, Delta, Snapshot, SnapshotUi}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
-use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
+use crate::{models::{self, exchange::ExchangeType, orderbook::{BookEvent, Delta, Snapshot, SnapshotUi}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, exchange_store::ExchangeStoreCMD}};
+use crate::services::{websocket::Websocket, exchange_store::{parse_levels__, ExchangeStore}};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OrderBookEvent {
@@ -52,7 +52,7 @@ pub struct BinanceWebsocket {
     client: reqwest::Client,
     pub ticker_tx: async_channel::Sender<(String, String)>,
     ticker_rx: async_channel::Receiver<(String, String)>,
-    sender_data: mpsc::Sender<OrderBookComand>
+    sender_data: mpsc::Sender<ExchangeStoreCMD>
 }
 
 impl BinanceWebsocket {
@@ -61,12 +61,12 @@ impl BinanceWebsocket {
         let channel_type = String::from("spot");
         let client = reqwest::Client::new();
         let (ticker_tx, ticker_rx) = async_channel::bounded::<(String, String)>(1);
-        let (sender_data, rx_data) = mpsc::channel::<OrderBookComand>(1);
+        let (sender_data, rx_data) = mpsc::channel::<ExchangeStoreCMD>(1);
 
-        let book_manager = OrderBookManager::new(rx_data, ExchangeType::Binance);
+        let store = ExchangeStore::new(rx_data, ExchangeType::Binance);
 
         tokio::spawn(async move {
-            book_manager.set_data().await;
+            store.set_data().await;
         });
 
         let this = Arc::new(Self {
@@ -322,7 +322,7 @@ impl Websocket for BinanceWebsocket {
             loop {
                 let ticker = ticker.clone();
 
-                match this.sender_data.send(OrderBookComand::GetBook { ticker, reply: tx.clone() }).await {
+                match this.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
                         tracing::error!("{}: {}", this.title, e)
@@ -358,14 +358,14 @@ impl Websocket for BinanceWebsocket {
         Some(usdt_tickers)
     }
 
-    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<OrderBookComand> {
+    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<ExchangeStoreCMD> {
         let Some(ticker) = json.symbol else { return None };
         let ticker = ticker.to_lowercase();
         let asks = parse_levels__(json.asks).await;
         let bids = parse_levels__(json.bids).await;
         let last_update_id = json.last_update_id;
 
-        Some(OrderBookComand::Event(
+        Some(ExchangeStoreCMD::Event(
             BookEvent::Snapshot {
                     ticker,
                     snapshot: Snapshot {
@@ -378,14 +378,14 @@ impl Websocket for BinanceWebsocket {
         ))
     }
 
-    async fn handle_delta(self: Arc<Self>, json: Self::Delta) -> Option<OrderBookComand> {
+    async fn handle_delta(self: Arc<Self>, json: Self::Delta) -> Option<ExchangeStoreCMD> {
         let ticker = json.symbol.to_lowercase();
         let asks = parse_levels__(json.asks).await;
         let bids = parse_levels__(json.bids).await;
         let from_version = json.from_version;
         let to_version = json.to_version;
 
-        Some(OrderBookComand::Event(
+        Some(ExchangeStoreCMD::Event(
             BookEvent::Delta { 
                 ticker, 
                 delta: Delta {
@@ -398,14 +398,14 @@ impl Websocket for BinanceWebsocket {
         ))
     }
 
-    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<OrderBookComand> {
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<ExchangeStoreCMD> {
         let ticker = json.symbol.to_lowercase();
         let last_price = match json.last_price.parse::<f64>() {
             Ok(p) => p,
             Err(_) => 0.0
         };
         
-        Some(OrderBookComand::Event(
+        Some(ExchangeStoreCMD::Event(
             BookEvent::Price { 
                 ticker, 
                 last_price 
@@ -428,7 +428,7 @@ impl ExchangeWebsocket for BinanceWebsocket {
         self: Arc<Self>, 
         spread_tx: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
     ) {
-        self.sender_data.send(OrderBookComand::GetBestAskAndBidPrice { 
+        self.sender_data.send(ExchangeStoreCMD::GetBestAskAndBidPrice { 
             ticker: "btc".to_string(),
             reply: spread_tx
         }).await.unwrap();

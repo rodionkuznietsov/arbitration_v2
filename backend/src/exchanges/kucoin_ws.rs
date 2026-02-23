@@ -8,9 +8,9 @@ use futures_util::{SinkExt, StreamExt};
 use anyhow::{Result};
 use tokio_util::sync::CancellationToken;
 
-use crate::{models::{exchange::ExchangeType, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
+use crate::{models::{exchange::ExchangeType, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, exchange_store::ExchangeStoreCMD}};
 use crate::models::orderbook::{BookEvent, Snapshot};
-use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
+use crate::services::{websocket::Websocket, exchange_store::{parse_levels__, ExchangeStore}};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct ApiKeyResponse {
@@ -69,7 +69,7 @@ pub struct KuCoinWebsocket {
     enabled: bool,
     client: reqwest::Client,
     channel_type: String,
-    sender_data: mpsc::Sender<OrderBookComand>,
+    sender_data: mpsc::Sender<ExchangeStoreCMD>,
     pub ticker_tx: async_channel::Sender<(String, String)>,
     ticker_rx: async_channel::Receiver<(String, String)>,
 }
@@ -82,10 +82,10 @@ impl KuCoinWebsocket {
         let (sender_data, rx_data) = mpsc::channel(1);
         let (ticker_tx, ticker_rx) = async_channel::bounded::<(String, String)>(1);
 
-        let book_manager = OrderBookManager::new(rx_data, ExchangeType::KuCoin);
+        let store = ExchangeStore::new(rx_data, ExchangeType::KuCoin);
 
         tokio::spawn(async move {
-            book_manager.set_data().await;
+            store.set_data().await;
         });
 
         let this = Arc::new(Self { 
@@ -267,7 +267,7 @@ impl Websocket for KuCoinWebsocket {
             loop {
                 let ticker = ticker.clone();
                 
-                match this.sender_data.send(OrderBookComand::GetBook { ticker, reply: tx.clone() }).await {
+                match this.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
                         println!("{}: {{sender_data_event_get_book}} {e}", this.title)
@@ -306,14 +306,14 @@ impl Websocket for KuCoinWebsocket {
         Some(usdt_tickers)
     }
     
-    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<OrderBookComand> {
+    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<ExchangeStoreCMD> {
         let Some(data) = json.data else { return None};
         let ticker = self.ticker_formatted(json.topic).await;
         let Some(ticker) = ticker else { return None };
         let asks = parse_levels__(data.asks).await;
         let bids = parse_levels__(data.bids).await;
 
-        Some(OrderBookComand::Event(
+        Some(ExchangeStoreCMD::Event(
             BookEvent::Snapshot { 
                 ticker, 
                 snapshot: Snapshot { 
@@ -326,11 +326,11 @@ impl Websocket for KuCoinWebsocket {
         ))
     }
     
-    async fn handle_delta(self: Arc<Self>, _json: Self::Snapshot) -> Option<OrderBookComand> {
+    async fn handle_delta(self: Arc<Self>, _json: Self::Snapshot) -> Option<ExchangeStoreCMD> {
         todo!()
     }
     
-    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<OrderBookComand> {
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<ExchangeStoreCMD> {
         let Some(data) = json.data else { return None};
         let ticker = self.ticker_formatted(json.topic).await;
         let Some(ticker) = ticker else { return None };
@@ -339,7 +339,7 @@ impl Websocket for KuCoinWebsocket {
             Err(_) => 0.0
         };
 
-        Some(OrderBookComand::Event(
+        Some(ExchangeStoreCMD::Event(
             BookEvent::Price { 
                 ticker, 
                 last_price 
@@ -379,7 +379,7 @@ impl ExchangeWebsocket for KuCoinWebsocket {
         self: Arc<Self>, 
         spread_tx: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
     ) {
-        self.sender_data.send(OrderBookComand::GetBestAskAndBidPrice { 
+        self.sender_data.send(ExchangeStoreCMD::GetBestAskAndBidPrice { 
             ticker: "moca".to_string(),
             reply: spread_tx
         }).await.unwrap();

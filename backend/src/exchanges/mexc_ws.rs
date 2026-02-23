@@ -9,8 +9,8 @@ use tokio_util::sync::CancellationToken;
 use tracing::warn;
 use url::Url;
 
-use crate::{mexc_orderbook::{Event, OrderBookEvent, TickerEvent}, models::{self, exchange::ExchangeType, orderbook::{BookEvent, Delta, Snapshot, SnapshotUi}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
-use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
+use crate::{mexc_orderbook::{Event, OrderBookEvent, TickerEvent}, models::{self, exchange::ExchangeType, orderbook::{BookEvent, Delta, Snapshot, SnapshotUi}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, exchange_store::ExchangeStoreCMD}};
+use crate::services::{websocket::Websocket, exchange_store::{parse_levels__, ExchangeStore}};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SnapshotResponse {
@@ -32,7 +32,7 @@ pub struct MexcWebsocket {
     enabled: bool,
     channel_type: String,
     client: reqwest::Client,
-    sender_data: mpsc::Sender<OrderBookComand>,
+    sender_data: mpsc::Sender<ExchangeStoreCMD>,
     ticker_rx: async_channel::Receiver<(String, String)>,
     pub ticker_tx: async_channel::Sender<(String, String)>,
 }
@@ -45,10 +45,10 @@ impl MexcWebsocket {
         let channel_type = String::from("spot");
         let client = reqwest::Client::new();
 
-        let book_manager = OrderBookManager::new(rx_data, ExchangeType::Mexc);
+        let store = ExchangeStore::new(rx_data, ExchangeType::Mexc);
 
         tokio::spawn(async move {
-            book_manager.set_data().await;
+            store.set_data().await;
         });
 
         let this = Arc::new(Self {
@@ -303,7 +303,7 @@ impl Websocket for MexcWebsocket {
             loop {
                 let ticker = ticker.clone();
 
-                match this.sender_data.send(OrderBookComand::GetBook { ticker, reply: tx.clone() }).await {
+                match this.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
                         tracing::error!("{}: {}", this.title, e)
@@ -339,13 +339,13 @@ impl Websocket for MexcWebsocket {
         Some(usdt_tickers)
     }
 
-    async fn handle_snapshot(self: std::sync::Arc<Self>, json: Self::Snapshot) -> Option<OrderBookComand> {
+    async fn handle_snapshot(self: std::sync::Arc<Self>, json: Self::Snapshot) -> Option<ExchangeStoreCMD> {
         let Some(ticker) = json.symbol else { return None };
         let asks = parse_levels__(json.asks).await;
         let bids = parse_levels__(json.bids).await;
         let last_update_id = json.last_update_id;
         
-        Some(OrderBookComand::Event(
+        Some(ExchangeStoreCMD::Event(
             BookEvent::Snapshot { 
                 ticker: ticker.to_lowercase(),  
                 snapshot: Snapshot { 
@@ -358,7 +358,7 @@ impl Websocket for MexcWebsocket {
         ))
     }
 
-    async fn handle_delta(self: std::sync::Arc<Self>, json: Self::Delta) -> Option<OrderBookComand> {
+    async fn handle_delta(self: std::sync::Arc<Self>, json: Self::Delta) -> Option<ExchangeStoreCMD> {
         let Some(depths) = json.public_increase_depths else { return None };
         let asks_vec: Vec<Vec<String>> = depths.asks
             .into_iter()
@@ -377,7 +377,7 @@ impl Websocket for MexcWebsocket {
         let from_version = depths.from_version.parse::<u64>().unwrap();
         let to_version = depths.to_version.parse::<u64>().unwrap();
 
-        Some(OrderBookComand::Event(
+        Some(ExchangeStoreCMD::Event(
             BookEvent::Delta { 
                 ticker: ticker.to_lowercase(), 
                 delta: Delta { 
@@ -390,7 +390,7 @@ impl Websocket for MexcWebsocket {
         ))
     }
 
-    async fn handle_price(self: std::sync::Arc<Self>, json: Self::Price) -> Option<OrderBookComand> {
+    async fn handle_price(self: std::sync::Arc<Self>, json: Self::Price) -> Option<ExchangeStoreCMD> {
         let Some(deals) = json.data.public_deals else { return None };
         let Some(ticker) = json.symbol else { return None };
         let ticker = ticker.to_lowercase();
@@ -399,7 +399,7 @@ impl Websocket for MexcWebsocket {
             Err(_) => 0.0
         };
 
-        Some(OrderBookComand::Event(
+        Some(ExchangeStoreCMD::Event(
             BookEvent::Price { 
                 ticker, 
                 last_price 
@@ -422,7 +422,7 @@ impl ExchangeWebsocket for MexcWebsocket {
         self: Arc<Self>, 
         spread_tx: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
     ) {
-        self.sender_data.send(OrderBookComand::GetBestAskAndBidPrice { 
+        self.sender_data.send(ExchangeStoreCMD::GetBestAskAndBidPrice { 
             ticker: "btc".to_string(),
             reply: spread_tx
         }).await.unwrap();

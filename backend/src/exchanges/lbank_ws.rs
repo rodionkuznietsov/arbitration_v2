@@ -9,9 +9,9 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
 
-use crate::{models::{self, exchange::ExchangeType, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, orderbook_manager::OrderBookComand}};
+use crate::{models::{self, exchange::ExchangeType, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, exchange_store::ExchangeStoreCMD}};
 use crate::models::orderbook::{BookEvent, Snapshot};
-use crate::services::{websocket::Websocket, orderbook_manager::{parse_levels__, OrderBookManager}};
+use crate::services::{websocket::Websocket, exchange_store::{parse_levels__, ExchangeStore}};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OrderBookEvent {
@@ -54,7 +54,7 @@ pub struct LBankWebsocket {
     ticker_rx: async_channel::Receiver<(String, String)>,
     channel_type: String,
     client: reqwest::Client,
-    sender_data: mpsc::Sender<OrderBookComand>,
+    sender_data: mpsc::Sender<ExchangeStoreCMD>,
 }
 
 impl LBankWebsocket {
@@ -63,12 +63,12 @@ impl LBankWebsocket {
         let (ticker_tx, ticker_rx) = async_channel::bounded(1);
         let channel_type = String::from("spot");
         let client = reqwest::Client::new();
-        let (sender_data, rx_data) = mpsc::channel::<OrderBookComand>(1);
+        let (sender_data, rx_data) = mpsc::channel::<ExchangeStoreCMD>(1);
 
-        let book_manager = OrderBookManager::new(rx_data, ExchangeType::LBank);
+        let store = ExchangeStore::new(rx_data, ExchangeType::LBank);
 
         tokio::spawn(async move {
-            book_manager.set_data().await;
+            store.set_data().await;
         });
 
         let this = Arc::new(Self {
@@ -224,7 +224,7 @@ impl Websocket for LBankWebsocket {
             loop {
                 let ticker = ticker.clone();
 
-                match this.sender_data.send(OrderBookComand::GetBook { ticker, reply: tx.clone() }).await {
+                match this.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
                         tracing::error!("{}: {}", this.title, e)
@@ -260,7 +260,7 @@ impl Websocket for LBankWebsocket {
         Some(usdt_tickers)
     }
 
-    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<OrderBookComand> {
+    async fn handle_snapshot(self: Arc<Self>, json: Self::Snapshot) -> Option<ExchangeStoreCMD> {
         let Some(ticker) = json.symbol else { return None };
         let ticker = ticker.replace("_", "").to_lowercase();
 
@@ -270,7 +270,7 @@ impl Websocket for LBankWebsocket {
         let asks = parse_levels__(asks).await;
         let bids = parse_levels__(bids).await;
 
-        Some(OrderBookComand::Event(
+        Some(ExchangeStoreCMD::Event(
             BookEvent::Snapshot { 
                 ticker: ticker, 
                 snapshot: Snapshot {
@@ -283,15 +283,15 @@ impl Websocket for LBankWebsocket {
         ))
     }
 
-    async fn handle_delta(self: Arc<Self>, _json: Self::Delta) -> Option<OrderBookComand> {
+    async fn handle_delta(self: Arc<Self>, _json: Self::Delta) -> Option<ExchangeStoreCMD> {
         todo!()
     }
 
-    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<OrderBookComand> {
+    async fn handle_price(self: Arc<Self>, json: Self::Price) -> Option<ExchangeStoreCMD> {
         let Some(ticker) = json.symbol else { return None };
         let ticker = ticker.replace("_", "").to_lowercase();
         
-        Some(OrderBookComand::Event(
+        Some(ExchangeStoreCMD::Event(
             BookEvent::Price { 
                 ticker, 
                 last_price: json.tick.last_price 
@@ -314,7 +314,7 @@ impl ExchangeWebsocket for LBankWebsocket {
         self: Arc<Self>, 
         spread_tx: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
     ) {
-        self.sender_data.send(OrderBookComand::GetBestAskAndBidPrice { 
+        self.sender_data.send(ExchangeStoreCMD::GetBestAskAndBidPrice { 
             ticker: "btc".to_string(),
             reply: spread_tx
         }).await.unwrap();
