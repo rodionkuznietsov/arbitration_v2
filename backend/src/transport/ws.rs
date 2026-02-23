@@ -272,8 +272,7 @@ async fn handle_connection(
                                             long_pair: long_pair,
                                             short_pair: short_pair
                                         };
-                                    },
-                                    _ => {}
+                                    }
                                 }
                             }
                             ClientCmd::UnSubscribe => {

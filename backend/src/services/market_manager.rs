@@ -1,11 +1,10 @@
 use std::{str::FromStr, sync::Arc};
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
-use ordered_float::OrderedFloat;
 use sqlx::types::BigDecimal;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::{mpsc};
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::{ExchangeType, SharedSpreads}, line::{Line, TimeFrame}, orderbook::{MarketType, SnapshotUi}, websocket::{ChannelType, ChartEvent, ServerToClientEvent}}, services::{spread::{calculate_spread_for_chart, spawn_local_spread_engine, spawn_spread_db_wirter}, volume24hr::ExchangeVolume}, storage::line_storage::{add_new_line, get_spread_history}, transport::ws::ConnectedClient};
+use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, models::{exchange::ExchangeType, line::{Line, TimeFrame}, orderbook::{MarketType, SnapshotUi}, websocket::{ChannelType, ChartEvent, ServerToClientEvent}}, services::{spread::ExchangeSpread, volume24hr::ExchangeVolume}, storage::line_storage::get_spread_history, transport::ws::ConnectedClient};
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
@@ -33,40 +32,14 @@ pub async fn run_websockets(
     );
     volume.spawn_volume_engine();
 
-    let shared_spreads = Arc::new(SharedSpreads::new());
-
-    spawn_local_spread_engine(
-        bybit_websocket.clone(),
+    let spread = ExchangeSpread::new(
+        bybit_websocket.clone(), 
         gate_websocket.clone(),
-        kucoin_websocket.clone(),
-        shared_spreads.clone(),
-    );
-
-    let (spread_tx, _) = broadcast::channel::<(String, String, OrderedFloat<f64>)>(1000);
-    let sender_for_calc = Arc::new(spread_tx.clone());
-    calculate_spread_for_chart(
-        shared_spreads, sender_for_calc
-    );
-
-    let (new_line_tx, mut new_line_rx) = mpsc::channel::<Line>(10);
-    spawn_spread_db_wirter(
-        TimeFrame::One,
-        spread_tx.clone(),
-        new_line_tx.clone(),
         pool.clone()
     );
-
-    tokio::spawn({
-        let pool = pool.clone();
-        async move {
-            while let Some(line) = new_line_rx.recv().await {
-                match add_new_line(&pool, line.clone()).await {
-                    Ok(_) => { println!("Новая точка добавлена для пары: {}", line.exchange_pair) },
-                    Err(e) => { eprintln!("[MarketManager]: {e}") }
-                }
-            }
-        }
-    });
+    spread.spawn_local_spread_engine();
+    spread.calculate_spread_for_chart();
+    spread.spawn_spread_db_wirter(TimeFrame::One);
 
     while let Ok(client) = receiver.recv().await {  
         let token = client.token.clone();
@@ -83,7 +56,7 @@ pub async fn run_websockets(
             let mut volume_rx = volume_tx.subscribe();
             let mut client = client.clone();
             let token = token.clone();
-            
+
             async move {
                 loop {
                     match volume_rx.recv().await {
@@ -130,7 +103,7 @@ pub async fn run_websockets(
             let token = token.clone();
             let ticker = ticker.clone();
             let pool = pool.clone();
-            let spread_tx = spread_tx.clone();
+            let spread_tx = spread.spread_tx.clone();
 
             async move {
                 if !exchange_pair.long_pair.is_empty() {
@@ -162,42 +135,38 @@ pub async fn run_websockets(
                                 let last_timestamp = Utc::now();
                                 let last_minute = last_timestamp.timestamp() - (last_timestamp.timestamp() % TimeFrame::One.to_secs_i64());
 
-                                tokio::select! {
-                                    _ = token.cancelled() => {
-                                        break;
-                                    }
-
-                                    result = spread_rx.recv() => {
-                                        match result {
-                                            Ok((pair, _, spread)) => {
-                                                if pair != exchange_pair.long_pair {
-                                                    continue;
-                                                }
-
-                                                // println!("{} -> {:.2}%", pair, spread);
-
-                                                let now = Utc::now();
-                                                let ts = now.timestamp();
-                                                let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());
-                                                
-                                                if start_minute == last_minute {
-                                                    client.send_to_client(
-                                                        ServerToClientEvent::UpdateLine(
-                                                            ChartEvent::UpdateLine,
-                                                            Line { 
-                                                                timestamp: Utc.timestamp_opt(start_minute, 0).unwrap(), 
-                                                                exchange_pair: pair, 
-                                                                symbol: ticker.clone(), 
-                                                                timeframe: TimeFrame::One, 
-                                                                value: BigDecimal::from_str(&format!("{}", spread)).unwrap() 
-                                                            },
-                                                            MarketType::Long
-                                                        )
-                                                    ).await;
-                                                } 
-                                            }
-                                            Err(_) => {}
+                                match spread_rx.recv().await {
+                                    Ok((pair, _, spread)) => {
+                                        if pair != exchange_pair.long_pair {
+                                            continue;
                                         }
+
+                                        let now = Utc::now();
+                                        let ts = now.timestamp();
+                                        let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());
+                                        
+                                        if start_minute == last_minute {
+                                            client.send_to_client(
+                                                ServerToClientEvent::UpdateLine(
+                                                    ChartEvent::UpdateLine,
+                                                    Line { 
+                                                        timestamp: Utc.timestamp_opt(start_minute, 0).unwrap(), 
+                                                        exchange_pair: pair, 
+                                                        symbol: ticker.clone(), 
+                                                        timeframe: TimeFrame::One, 
+                                                        value: BigDecimal::from_str(&format!("{}", spread)).unwrap() 
+                                                    },
+                                                    MarketType::Long
+                                                )
+                                            ).await;
+                                        }                                         
+                                    }
+                                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+                                        continue;
+                                    }
+                                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                                        token.cancel();
+                                        break;
                                     }
                                 }
                             }
@@ -234,42 +203,38 @@ pub async fn run_websockets(
                                 let last_timestamp = Utc::now();
                                 let last_minute = last_timestamp.timestamp() - (last_timestamp.timestamp() % TimeFrame::One.to_secs_i64());
 
-                                tokio::select! {
-                                    _ = token.cancelled() => {
-                                        break;
-                                    }
-
-                                    result = spread_rx.recv() => {
-                                        match result {
-                                            Ok((pair, _, spread)) => {
-                                                if pair != exchange_pair.short_pair {
-                                                    continue;
-                                                }
-
-                                                // println!("{} -> {:.2}%", pair, spread);
-                                                
-                                                let now = Utc::now();
-                                                let ts = now.timestamp();
-                                                let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());
-                                                
-                                                if start_minute == last_minute {
-                                                    client.send_to_client(
-                                                        ServerToClientEvent::UpdateLine(
-                                                            ChartEvent::UpdateLine,
-                                                            Line { 
-                                                                timestamp: Utc.timestamp_opt(start_minute, 0).unwrap(), 
-                                                                exchange_pair: pair, 
-                                                                symbol: ticker.clone(), 
-                                                                timeframe: TimeFrame::One, 
-                                                                value: BigDecimal::from_str(&format!("{}", spread)).unwrap() 
-                                                            },
-                                                            MarketType::Short
-                                                        )
-                                                    ).await;
-                                                } 
-                                            }
-                                            Err(_) => {}
+                                match spread_rx.recv().await {
+                                    Ok((pair, _, spread)) => {
+                                        if pair != exchange_pair.short_pair {
+                                            continue;
                                         }
+
+                                        let now = Utc::now();
+                                        let ts = now.timestamp();
+                                        let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());
+                                        
+                                        if start_minute == last_minute {
+                                            client.send_to_client(
+                                                ServerToClientEvent::UpdateLine(
+                                                    ChartEvent::UpdateLine,
+                                                    Line { 
+                                                        timestamp: Utc.timestamp_opt(start_minute, 0).unwrap(), 
+                                                        exchange_pair: pair, 
+                                                        symbol: ticker.clone(), 
+                                                        timeframe: TimeFrame::One, 
+                                                        value: BigDecimal::from_str(&format!("{}", spread)).unwrap() 
+                                                    },
+                                                    MarketType::Short
+                                                )
+                                            ).await;
+                                        }                                         
+                                    }
+                                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+                                        continue;
+                                    }
+                                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                                        token.cancel();
+                                        break;
                                     }
                                 }
                             }
