@@ -4,12 +4,13 @@ use flate2::read::MultiGzDecoder;
 use futures_util::{SinkExt, StreamExt};
 
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Notify, mpsc};
+use tokio::sync::{Notify, broadcast, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
+use tracing::warn;
 
-use crate::{models::{self, exchange::ExchangeType, orderbook::{BookEvent, Snapshot, SnapshotUi}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, exchange_store::ExchangeStoreCMD}};
-use crate::services::{websocket::Websocket, exchange_store::{parse_levels__, ExchangeStore}};
+use crate::{exchanges::exchange_setup::ExchangeSetup, models::{self, exchange::ExchangeType, orderbook::{BookEvent, Snapshot, SnapshotUi}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{exchange_store::ExchangeStoreCMD, market_manager::ExchangeWebsocket}};
+use crate::services::{websocket::Websocket, exchange_store::{parse_levels__}};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct TickerResponse {
@@ -45,36 +46,21 @@ struct TickerEventData {
 }
 
 pub struct BinXWebsocket {
-    title: String,
-    enabled: bool,
-    channel_type: String,
-    client: reqwest::Client,
-    sender_data: mpsc::Sender<ExchangeStoreCMD>,
-    ticker_rx: async_channel::Receiver<(String, String)>,
-    pub ticker_tx: async_channel::Sender<(String, String)>
+    setup: Arc<ExchangeSetup>
 }
 
 impl BinXWebsocket {
     pub fn new(enabled: bool) -> Arc<Self> {
-        let title = String::from("[BinXWebsocket]");
-        let channel_type = String::from("spot");
-        let (sender_data, rx_data) = mpsc::channel(10);
-        let client = reqwest::Client::new();
-        let (ticker_tx, ticker_rx) = async_channel::bounded::<(String, String)>(1);
+        let setup = ExchangeSetup::new(ExchangeType::BinX, enabled);
+        let this = Arc::new(
+            Self { 
+                setup 
+            }
+        );
 
-        let store = ExchangeStore::new(rx_data, ExchangeType::BinX);
+        this.clone().connect();
+        this.clone().spawn_quote_updater();
 
-        tokio::spawn(async move {
-            store.set_data().await;
-        });
-
-        let this = Arc::new(Self {
-            title, channel_type, sender_data,
-            enabled, client, ticker_rx, ticker_tx
-        });
-
-        let this_cl = Arc::clone(&this);
-        this_cl.connect();
         this
     }
 }
@@ -87,12 +73,12 @@ impl Websocket for BinXWebsocket {
     fn connect(self: Arc<Self>) {
         let this = Arc::clone(&self);
         tokio::spawn(async move {
-            if !self.enabled {
-                println!("{} enabled: false", this.title);
+            if !self.setup.enabled {
+                println!("{} enabled: false", this.setup.title);
                 return;
             } 
 
-            let tickers = this.get_tickers(&this.channel_type).await;
+            let tickers = this.get_tickers(&this.setup.channel_type).await;
 
             if let Some(tickers) = tickers {
                 this.reconnect(&tickers).await;
@@ -106,7 +92,7 @@ impl Websocket for BinXWebsocket {
         notify.notify_one();
         loop {
             notify.notified().await;
-            println!("{}: Reconnecting...", self.title);
+            println!("{}: Reconnecting...", self.setup.title);
 
             let token = CancellationToken::new();
 
@@ -137,7 +123,7 @@ impl Websocket for BinXWebsocket {
                     match cmd_tx.send(WsCmd::Subscribe(symbol)).await {
                         Ok(_) => {}
                         Err(e) => {
-                            println!("{}: {e}", self.title)
+                            println!("{}: {e}", self.setup.title)
                         }
                     }
                 }
@@ -147,7 +133,7 @@ impl Websocket for BinXWebsocket {
 
     async fn run_websocket(self: Arc<Self>, cmd_rx: &mut mpsc::Receiver<WsCmd>) -> WebSocketStatus {        
         let url = url::Url::parse("wss://open-api-ws.bingx.com/market").unwrap();
-        let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.title));
+        let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.setup.title));
         let (mut write, mut read) = ws_stream.split();
 
         println!("🌐 [BinX-Websocket] is running");
@@ -180,7 +166,7 @@ impl Websocket for BinXWebsocket {
             let msg_type = match msg {
                 Ok(m) => Some(m),
                 Err(e) => {
-                    println!("{}: {e}", self.title);
+                    println!("{}: {e}", self.setup.title);
                     None
                 }
             };
@@ -196,10 +182,10 @@ impl Websocket for BinXWebsocket {
                             let json: OrderBookEvent = serde_json::from_str(&channel).unwrap();
                             let result = self.clone().handle_snapshot(json).await;
                             if let Some(event) = result {
-                                match self.sender_data.send(event).await {
+                                match self.setup.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("{}", format!("{}: {}", self.title, e))
+                                        println!("{}", format!("{}: {}", self.setup.title, e))
                                     }
                                 }    
                             }
@@ -210,10 +196,10 @@ impl Websocket for BinXWebsocket {
                             let result = self.clone().handle_price(json).await;
 
                             if let Some(event) = result {
-                                match self.sender_data.send(event).await {
+                                match self.setup.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        println!("{}", format!("{}: {}", self.title, e))
+                                        println!("{}", format!("{}: {}", self.setup.title, e))
                                     }
                                 }    
                             }
@@ -228,11 +214,11 @@ impl Websocket for BinXWebsocket {
     }
 
     async fn get_last_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::Sender<SnapshotUi>) {
-        if !self.enabled {
+        if !self.setup.enabled {
             return;
         }
 
-        while let Ok((_uuid, ticker)) = self.ticker_rx.recv().await {
+        while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
             let (tx, mut rx) = mpsc::channel(100);
             let this = self.clone();
 
@@ -245,10 +231,10 @@ impl Websocket for BinXWebsocket {
             loop {
                 let ticker = ticker.clone();
                 
-                match this.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
+                match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
-                        println!("{}: {}", this.title, e)
+                        println!("{}: {}", this.setup.title, e)
                     },
                 };
 
@@ -272,7 +258,7 @@ impl Websocket for BinXWebsocket {
 
     async fn get_tickers(&self, channel_type: &str) -> Option<Vec<models::websocket::Ticker>> {
         let url = format!("https://open-api.bingx.com/openApi/{channel_type}/v1/ticker/bookTicker");
-        let response = self.client.get(url).send().await;
+        let response = self.setup.client.get(url).send().await;
         
         let Ok(response) = response else { return None };
         let Ok(json) = response.json::<TickerResponse>().await else { return None };
@@ -325,20 +311,36 @@ impl Websocket for BinXWebsocket {
 #[async_trait]
 impl ExchangeWebsocket for BinXWebsocket {
     fn ticker_tx(&self) -> async_channel::Sender<(String, String)> {
-        self.ticker_tx.clone()
+        self.setup.ticker_tx.clone()
     }
 
     async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
         self.get_last_snapshot(snapshot_tx).await
     }
 
-    async fn get_spread(
-        self: Arc<Self>, 
-        spread_tx: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
+    fn spawn_quote_updater(
+        self: Arc<Self>
     ) {
-        self.sender_data.send(ExchangeStoreCMD::GetBestAskAndBidPrice { 
-            ticker: "btc".to_string(),
-            reply: spread_tx
-        }).await.unwrap();
+        let mut rx = self.setup.books_updates.subscribe();
+        let title = self.setup.title.clone();
+        
+        tokio::spawn(async move {
+            loop {
+                match rx.recv().await {
+                    Ok(ticker) => {
+                        // if self.setup.sender_data.send(ExchangeStoreCMD::Quote { ticker }).await.is_err() {
+                        //     continue;
+                        // }
+                    },
+                    Err(broadcast::error::RecvError::Lagged(_)) => {
+                        continue;
+                    },
+                    Err(broadcast::error::RecvError::Closed) => {
+                        warn!("{} Канал спреда закрыт", title);
+                        break;
+                    }
+                }
+            }
+        });
     }
 }

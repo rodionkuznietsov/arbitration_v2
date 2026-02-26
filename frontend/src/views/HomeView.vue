@@ -70,9 +70,9 @@
         resolve()
       })
       userState.botWorking = false
-      chartStore.finished = true
       orderBook.value.stop() 
       orderBookStore.clearValues()
+      chartStore.finished = true
       chartStore.clearValues()
     }
 </script>

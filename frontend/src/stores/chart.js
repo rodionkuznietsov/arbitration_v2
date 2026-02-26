@@ -18,7 +18,7 @@ export const useChartStore = defineStore('chart', {
         lastShortLine: {},
         lastLongLine: {},
 
-        percision: 100,
+        percision: 1000,
         minMove: 0.0000000000001,
         inSeriesOptions: {
             color: '#2EBD85',

@@ -1,16 +1,16 @@
-use std::{sync::Arc, time::Duration};
+use std::{sync::{Arc}, time::Duration};
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Notify, broadcast, mpsc};
+use tokio::sync::{Notify, broadcast, mpsc, oneshot};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, warn};
 
-use crate::{models::{exchange::{ExchangeType, TickerEvent}, orderbook::OrderBookEvent, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, exchange_store::ExchangeStoreCMD}};
+use crate::{exchanges::exchange_setup::ExchangeSetup, models::{exchange::{ExchangeType, TickerEvent}, orderbook::OrderBookEvent, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{aggregator::AggregatorCommand, exchange_store::ExchangeStoreCMD, market_manager::ExchangeWebsocket}};
 use crate::models::orderbook::{BookEvent, Delta, Snapshot, SnapshotUi};
-use crate::services::{websocket::Websocket, exchange_store::{parse_levels__, ExchangeStore}};
+use crate::services::{websocket::Websocket, exchange_store::{parse_levels__}};
 
 #[derive(Deserialize, Debug, Serialize)]
 struct TickerResponse {
@@ -26,37 +26,26 @@ struct TickerResult {
 
 #[derive(Clone)]
 pub struct BybitWebsocket {
-    title: String,
-    pub enabled: bool,
-    client: reqwest::Client,
-    channel_type: String,
-    sender_data: mpsc::Sender<ExchangeStoreCMD>,
-    pub ticker_tx: async_channel::Sender<(String, String)>,
-    ticker_rx: async_channel::Receiver<(String, String)>
+    setup: Arc<ExchangeSetup>,
+    aggregator_tx: mpsc::Sender<AggregatorCommand>
 }
 
 impl BybitWebsocket {
-    pub fn new(enabled: bool) -> Arc<Self> {
-        let title = "[Bybit-Websocket]".to_string();
-        let client = reqwest::Client::new();
-        let channel_type = String::from("spot");
-        let (sender_data, rx_data) = mpsc::channel(10);
-        let (ticker_tx, ticker_rx) = async_channel::bounded::<(String, String)>(1);
+    pub fn new(
+        enabled: bool,
+        aggregator_tx: mpsc::Sender<AggregatorCommand>
+    ) -> Arc<Self> {
+        let setup = ExchangeSetup::new(ExchangeType::Bybit, enabled);
+        let this = Arc::new(
+            Self { 
+                setup,
+                aggregator_tx
+            }
+        );
 
-        let store = ExchangeStore::new(rx_data, ExchangeType::Bybit);
+        this.clone().connect();
+        this.clone().spawn_quote_updater();
 
-        tokio::spawn(async move {
-            store.set_data().await;
-        });
-
-        let this = Arc::new(Self { 
-            enabled, channel_type, title, 
-            client, sender_data, ticker_tx, 
-            ticker_rx
-        });
-
-        let this_cl = Arc::clone(&this);
-        this_cl.connect();
         this
     }
 
@@ -74,10 +63,20 @@ impl BybitWebsocket {
 
     pub async fn get_volume24hr(
         self: Arc<Self>,
-        volume_tx: broadcast::Sender<(ExchangeType, String, f64)>
+        _volume_tx: broadcast::Sender<(ExchangeType, String, f64)>
     ) {
-        if self.sender_data.send(ExchangeStoreCMD::GetVolume24hr { ticker: "moca".to_string(), reply: volume_tx }).await.is_err() {
-            return ;
+        let mut rx = self.setup.books_updates.subscribe();
+        
+        while let Ok(ticker) = rx.recv().await {
+            let (tx, _) = broadcast::channel(1000);
+            if self.setup.sender_data.send(ExchangeStoreCMD::GetVolume24hr { ticker, reply: tx.clone() }).await.is_err() {
+                continue;
+            }   
+
+            let mut rx = tx.subscribe();
+            if let Ok(result) = rx.recv().await {
+                println!("{:?}", result);
+            }
         }
     }
 }
@@ -91,12 +90,12 @@ impl Websocket for BybitWebsocket {
         let this = Arc::clone(&self);
         tokio::spawn({
             async move {
-                if !self.enabled {
-                    warn!("{} is disabled", self.title);
+                if !self.setup.enabled {
+                    warn!("{} is disabled", self.setup.title);
                     return;
                 } 
 
-                let tickers = this.get_tickers(&this.channel_type).await;
+                let tickers = this.get_tickers(&this.setup.channel_type).await;
 
                 if let Some(tickers) = tickers {
                     this.reconnect(&tickers).await;
@@ -112,7 +111,7 @@ impl Websocket for BybitWebsocket {
         notify.notify_one(); 
         loop {
             notify.notified().await;
-            tracing::info!("{}", format!("{} Reconnection...", self.title));
+            tracing::info!("{}", format!("{} Reconnection...", self.setup.title));
 
             let token = CancellationToken::new();
             let (cmd_tx, mut cmd_rx) = mpsc::channel::<WsCmd>(10);
@@ -135,7 +134,7 @@ impl Websocket for BybitWebsocket {
                     match cmd_tx.send(WsCmd::Subscribe(symbol)).await {
                         Ok(_) => {}
                         Err(e) => {
-                            tracing::info!("{}", format!("{} Failed to send subscribe command: {}", self.title, e));
+                            tracing::info!("{}", format!("{} Failed to send subscribe command: {}", self.setup.title, e));
                             break;
                         }
                     }
@@ -146,10 +145,10 @@ impl Websocket for BybitWebsocket {
 
     async fn run_websocket(self: Arc<Self>, cmd_rx: &mut mpsc::Receiver<WsCmd>) -> WebSocketStatus {
         let url = url::Url::parse("wss://stream.bybit.com/v5/public/spot").unwrap();
-        let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.title));
+        let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.setup.title));
         let (mut write, mut read) = ws_stream.split();
 
-        tracing::info!("{}", format!("{} is now live", self.title));
+        tracing::info!("{}", format!("{} is now live", self.setup.title));
 
         while let Some(cmd) = cmd_rx.recv().await {
             match cmd {
@@ -161,7 +160,7 @@ impl Websocket for BybitWebsocket {
                     write.send(Message::Text(
                         serde_json::json!({
                             "op": "subscribe",
-                            "channel_type": self.channel_type,
+                            "channel_type": self.setup.channel_type,
                             "args": [
                                 orderbook_str,
                                 price_str
@@ -177,7 +176,7 @@ impl Websocket for BybitWebsocket {
             let msg_type = match msg {
                 Ok(m) => Some(m),
                 Err(e) => {
-                    error!("{} {}", self.title, e);
+                    error!("{} {}", self.setup.title, e);
                     None 
                 }
             };
@@ -193,10 +192,10 @@ impl Websocket for BybitWebsocket {
                                     let result = this.clone().handle_snapshot(json).await;
                                     
                                     if let Some(cmd) = result {
-                                        match this.sender_data.send(cmd).await {
+                                        match this.setup.sender_data.send(cmd).await {
                                             Ok(_) => {}
                                             Err(e) => {
-                                                tracing::error!("{}: {}", this.title, e);
+                                                tracing::error!("{}: {}", this.setup.title, e);
                                                 break;
                                             }
                                         }
@@ -206,10 +205,10 @@ impl Websocket for BybitWebsocket {
                                     let result = this.clone().handle_delta(json).await;
 
                                     if let Some(event) = result {
-                                        match this.sender_data.send(event).await {
+                                        match this.setup.sender_data.send(event).await {
                                             Ok(_) => {}
                                             Err(e) => {
-                                                tracing::error!("{}: {}", this.title, e);
+                                                tracing::error!("{}: {}", this.setup.title, e);
                                                 break;
                                             }
                                         }
@@ -223,10 +222,10 @@ impl Websocket for BybitWebsocket {
                             let json: TickerEvent = serde_json::from_str(&channel).unwrap();
                             let price_result = this.clone().handle_price(json.clone()).await;
                             if let Some(event) = price_result {
-                                match this.sender_data.send(event).await {
+                                match this.setup.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        tracing::error!("{}: {}", this.title, e);
+                                        tracing::error!("{}: {}", this.setup.title, e);
                                         break;
                                     }
                                 }
@@ -234,10 +233,10 @@ impl Websocket for BybitWebsocket {
 
                             let volume_result = this.clone().handle_volume24hr(json).await;
                             if let Some(event) = volume_result {
-                                match this.sender_data.send(event).await {
+                                match this.setup.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        tracing::error!("{}: {}", this.title, e);
+                                        tracing::error!("{}: {}", this.setup.title, e);
                                         break;
                                     }
                                 }
@@ -253,21 +252,21 @@ impl Websocket for BybitWebsocket {
     }
 
     async fn get_last_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
-        if !self.enabled {
+        if !self.setup.enabled {
             return ;
         }
 
-        while let Ok((_uuid, ticker)) = self.ticker_rx.recv().await {
+        while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
             let (tx, mut rx) = mpsc::channel(50);
             let this = self.clone();
 
             loop {
                 let ticker = ticker.clone();
 
-                match this.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
+                match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
-                        tracing::error!("{}: {}", this.title, e);
+                        tracing::error!("{}: {}", this.setup.title, e);
                         break;
                     },
                 };
@@ -292,7 +291,7 @@ impl Websocket for BybitWebsocket {
 
     async fn get_tickers(&self, channel_type: &str) -> Option<Vec<Ticker>> {
         let url = format!("https://api.bybit.com/v5/market/tickers?category={channel_type}");
-        let response = self.client.get(url).send().await;
+        let response = self.setup.client.get(url).send().await;
 
         let Ok(response) = response else { return None };
         let Ok(json) = response.json::<TickerResponse>().await else { return None };
@@ -373,20 +372,50 @@ impl Websocket for BybitWebsocket {
 #[async_trait]
 impl ExchangeWebsocket for BybitWebsocket {
     fn ticker_tx(&self) -> async_channel::Sender<(String, String)> {
-        self.ticker_tx.clone()
+        self.setup.ticker_tx.clone()
     }
 
     async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
         self.get_last_snapshot(snapshot_tx).await
     }
 
-    async fn get_spread(
-        self: Arc<Self>, 
-        spread_tx: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
+    fn spawn_quote_updater(
+        self: Arc<Self>
     ) {
-        self.sender_data.send(ExchangeStoreCMD::GetBestAskAndBidPrice { 
-            ticker: "moca".to_string(),
-            reply: spread_tx
-        }).await.unwrap();
+        let mut rx = self.setup.books_updates.subscribe();
+        let title = self.setup.title.clone();
+        
+        tokio::spawn(async move {
+            loop {
+                match rx.recv().await {
+                    Ok(ticker) => {
+                        let (reply, rx) = oneshot::channel::<(f64, f64)>();
+                        if self.setup.sender_data.send(ExchangeStoreCMD::Quote { ticker: ticker.clone(), reply: reply }).await.is_err() {
+                            continue;
+                        }
+
+                        if let Ok((ask, bid)) = rx.await {
+                            if self.aggregator_tx.clone().send(
+                                AggregatorCommand::UpdateQuotes { 
+                                    exchange_type: ExchangeType::Bybit,
+                                    ticker: ticker.clone(),
+                                    ask,
+                                    bid
+                                }
+                            ).await.is_err() {
+                                continue;
+                            }
+                        }
+                    },
+                    Err(broadcast::error::RecvError::Lagged(_)) => {
+                        continue;
+                    },
+                    Err(broadcast::error::RecvError::Closed) => {
+                        warn!("{} Канал спреда закрыт", title);
+                        break;
+                    }
+                }
+            }
+        });
     }
 }

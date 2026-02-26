@@ -56,7 +56,7 @@
 
     onActivated(() => {
         unsubscribe = ws.subscribe(userStateStore.ticker, 'chart', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                                    
-                        
+                    
             const lines = result?.lines
             if (lines) {
                 const long = lines.long
@@ -148,8 +148,9 @@
         legend.style.color = '#1f1f1f'
         legend.style.userSelect = 'none'
         legend.style.pointerEvents = 'none'
+        legend.innerHTML = `<div><span>Оборот за 24 часа:</span><div style="text-transform: capitalize;">` + chartStore.longExchange + `: `+ longVolume.value +`</div><div style="text-transform: capitalize;">`+ chartStore.shortExchange +`: `+ shortVolume.value +`</div></div>`
         container.value.appendChild(legend)
-
+        
         stopVolumeWatch = watch(
             () => [chartStore.longVolume24hr, chartStore.shortVolume24hr],
             () => {
@@ -213,18 +214,19 @@
     })
 
     function createSeries(chart) {
-        LineSeries
-        lastLongValue
-        lastShortValue
         if (!chart) return
-        if (inSpreadSeries != null) {
+
+        if (inSpreadSeries != null && inPriceLine != null) {
             chart.removeSeries(inSpreadSeries)
+            inSpreadSeries.removePriceLine(inPriceLine)
             inSpreadSeries = null
+            inPriceLine = null
         }
 
-        if (outSpreadSeries != null) {
+        if (outSpreadSeries != null && outPriceLine != null) {
             chart.removeSeries(outSpreadSeries)
-            outSpreadSeries = null
+            outSpreadSeries.removePriceLine(outPriceLine)
+            outPriceLine = null
         }
 
         inSpreadSeries = chart.addSeries(LineSeries, chartStore.inSeriesOptions)
@@ -236,18 +238,23 @@
         scope = effectScope()
         scope.run(() => {
             watch(
-                () => [chartStore.lastLongLine.time, chartStore.lastShortLine.time],
+                (lastLongValue, lastShortValue), 
                 () => {
-                    inSpreadSeries.update(chartStore.lastLongLine)
-                    inPriceLine.applyOptions({
-                        price: lastLongValue.value.value,
-                    })
 
-                    outSpreadSeries.update(chartStore.lastShortLine)
-                    outPriceLine.applyOptions({
-                        price: lastShortValue.value.value,
-                        color: '#F6465D'
-                    })
+                    // if ('time' in lastLongValue.value) {
+                        inSpreadSeries.update(chartStore.lastLongLine)
+                        inPriceLine.applyOptions({
+                            price: lastLongValue.value.value,
+                        })   
+                    // }
+
+                    // if ('time' in lastShortValue.value) {
+                        outSpreadSeries.update(chartStore.lastShortLine)
+                        outPriceLine.applyOptions({
+                            price: lastShortValue.value.value,
+                            color: '#F6465D'
+                        })
+                    // }
 
                     chart.timeScale().scrollToRealTime()
                 }

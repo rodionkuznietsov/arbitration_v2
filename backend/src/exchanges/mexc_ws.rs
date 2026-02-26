@@ -2,15 +2,15 @@ use std::{sync::Arc, time::{Duration}};
 use async_trait::async_trait;
 use prost::Message;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Notify, Semaphore, mpsc};
+use tokio::sync::{Notify, Semaphore, broadcast, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::Message as TungsteniteMessage};
 use futures_util::{SinkExt, StreamExt};
 use tokio_util::sync::CancellationToken;
 use tracing::warn;
 use url::Url;
 
-use crate::{mexc_orderbook::{Event, OrderBookEvent, TickerEvent}, models::{self, exchange::ExchangeType, orderbook::{BookEvent, Delta, Snapshot, SnapshotUi}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{market_manager::ExchangeWebsocket, exchange_store::ExchangeStoreCMD}};
-use crate::services::{websocket::Websocket, exchange_store::{parse_levels__, ExchangeStore}};
+use crate::{exchanges::exchange_setup::ExchangeSetup, mexc_orderbook::{Event, OrderBookEvent, TickerEvent}, models::{self, exchange::ExchangeType, orderbook::{BookEvent, Delta, Snapshot, SnapshotUi}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{exchange_store::ExchangeStoreCMD, market_manager::ExchangeWebsocket}};
+use crate::services::{websocket::Websocket, exchange_store::{parse_levels__}};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SnapshotResponse {
@@ -28,39 +28,23 @@ pub struct TickerEventWithSymbol {
 }
 
 pub struct MexcWebsocket {
-    title: String,
-    enabled: bool,
-    channel_type: String,
-    client: reqwest::Client,
-    sender_data: mpsc::Sender<ExchangeStoreCMD>,
-    ticker_rx: async_channel::Receiver<(String, String)>,
-    pub ticker_tx: async_channel::Sender<(String, String)>,
+    setup: Arc<ExchangeSetup>
 }
 
 impl MexcWebsocket {
     pub fn new(enabled: bool) -> Arc<Self> {
-        let title = String::from("[MexcWebsocket]");
-        let (sender_data, rx_data) = mpsc::channel(1);
-        let (ticker_tx, ticker_rx) = async_channel::bounded::<(String, String)>(1);
-        let channel_type = String::from("spot");
-        let client = reqwest::Client::new();
+        let setup = ExchangeSetup::new(ExchangeType::Mexc, enabled);
+        let this = Arc::new(
+            Self { 
+                setup 
+            }
+        );
 
-        let store = ExchangeStore::new(rx_data, ExchangeType::Mexc);
-
-        tokio::spawn(async move {
-            store.set_data().await;
-        });
-
-        let this = Arc::new(Self {
-            title, enabled, sender_data, client,
-            ticker_tx, ticker_rx, channel_type
-        });
-
-        let this_cl = this.clone();
-        this_cl.connect();
+        this.clone().connect();
+        this.clone().spawn_quote_updater();
 
         this
-    }   
+    }
 
     async fn get_ticker_snapshot_with_retry(self: Arc<Self>, ticker: &str) -> Option<SnapshotResponse> {
         let this = self.clone();
@@ -79,7 +63,7 @@ impl MexcWebsocket {
             if let Some((status, snap)) = result {
                 if status == 429 {
                     delay = std::cmp::min(delay * 2, max_delay);
-                    println!("{}: Reconnecting to ticker: {} in {} secs", this.title, ticker, delay.as_secs_f64());
+                    println!("{}: Reconnecting to ticker: {} in {} secs", this.setup.title, ticker, delay.as_secs_f64());
                     tokio::time::sleep(delay).await;
                     notify.notify_one();
                 } else {
@@ -94,7 +78,7 @@ impl MexcWebsocket {
 
     async fn get_ticker_snapshot(self: Arc<Self>, ticker: &str) -> Option<(u16, SnapshotResponse)> {
         let url = format!("https://api.mexc.com//api/v3/depth?symbol={ticker}&limit=1000");
-        let response = self.client.get(url).send().await;        
+        let response = self.setup.client.get(url).send().await;        
         let Ok(response) = response else { return None };
         let status = response.status().as_u16();
         let Ok(mut json) = response.json::<SnapshotResponse>().await else { return None };
@@ -110,11 +94,11 @@ impl Websocket for MexcWebsocket {
 
     fn connect(self: std::sync::Arc<Self>) {
         tokio::spawn(async move {
-            if !self.enabled {
-                warn!("{} is disabled", self.title)
+            if !self.setup.enabled {
+                warn!("{} is disabled", self.setup.title)
             }
 
-            let tickers = self.get_tickers(&self.channel_type).await;
+            let tickers = self.get_tickers(&self.setup.channel_type).await;
             
             if let Some(tickers) = tickers {
                 self.reconnect(&tickers).await;
@@ -123,7 +107,7 @@ impl Websocket for MexcWebsocket {
     }
 
     async fn reconnect(self: Arc<Self>, tickers: &Vec<models::websocket::Ticker>) {
-        if !self.enabled {
+        if !self.setup.enabled {
             return;
         }
 
@@ -149,7 +133,7 @@ impl Websocket for MexcWebsocket {
 
         loop {
             notify.notified().await;
-            println!("{}: Reconnecting...", self.title);
+            println!("{}: Reconnecting...", self.setup.title);
 
             let token = CancellationToken::new();
             let this = self.clone();
@@ -165,7 +149,7 @@ impl Websocket for MexcWebsocket {
                     match cmd_tx.send(WsCmd::Subscribe(symbol.clone())).await {
                         Ok(_) => {},
                         Err(e) => {
-                            tracing::error!("{}: {}", this.title, e)
+                            tracing::error!("{}: {}", this.setup.title, e)
                         }
                     };
 
@@ -182,10 +166,10 @@ impl Websocket for MexcWebsocket {
                         if let Some(json) = data {
                             let result = this.clone().handle_snapshot(json).await;
                             if let Some(event) = result {
-                                match this.sender_data.send(event).await {
+                                match this.setup.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        tracing::error!("{}: {}", this.title, e)
+                                        tracing::error!("{}: {}", this.setup.title, e)
                                     }
                                 }
                             }
@@ -212,10 +196,10 @@ impl Websocket for MexcWebsocket {
 
     async fn run_websocket(self: Arc<Self>, cmd_rx: &mut mpsc::Receiver<models::websocket::WsCmd>) -> models::websocket::WebSocketStatus {
         let url = Url::parse("wss://wbs-api.mexc.com/ws").unwrap();
-        let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.title));
+        let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.setup.title));
         let (mut write, mut read) = ws_stream.split();
 
-        println!("🌐 {} is running", self.title);
+        println!("🌐 {} is running", self.setup.title);
 
         while let Some(cmd) = cmd_rx.recv().await {
             match cmd {
@@ -240,7 +224,7 @@ impl Websocket for MexcWebsocket {
             let msg_type = match msg {
                 Ok(m) => Some(m),
                 Err(e) => {
-                    tracing::error!("{}: {}", self.title, e);
+                    tracing::error!("{}: {}", self.setup.title, e);
                     None
                 }
             };
@@ -255,10 +239,10 @@ impl Websocket for MexcWebsocket {
                             let result = self.clone().handle_delta(json).await;
 
                             if let Some(event) = result {
-                                match self.sender_data.send(event).await {
+                                match self.setup.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        tracing::error!("{}: {}", self.title, e)
+                                        tracing::error!("{}: {}", self.setup.title, e)
                                     }
                                 }
                             }
@@ -274,10 +258,10 @@ impl Websocket for MexcWebsocket {
                             let result = self.clone().handle_price(json).await;
 
                             if let Some(event) = result {
-                                match self.sender_data.send(event).await {
+                                match self.setup.sender_data.send(event).await {
                                     Ok(_) => {}
                                     Err(e) => {
-                                        tracing::error!("{}: {}", self.title, e)
+                                        tracing::error!("{}: {}", self.setup.title, e)
                                     }
                                 }
                             }
@@ -292,21 +276,21 @@ impl Websocket for MexcWebsocket {
     }
 
     async fn get_last_snapshot(self: std::sync::Arc<Self>, snapshot_tx: tokio::sync::mpsc::Sender<SnapshotUi>) {
-        if !self.enabled {
+        if !self.setup.enabled {
             return;
         }
 
-        while let Ok((_uuid, ticker)) = self.ticker_rx.recv().await {
+        while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
             let (tx, mut rx) = mpsc::channel(10);
             let this = Arc::clone(&self);
 
             loop {
                 let ticker = ticker.clone();
 
-                match this.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
+                match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
                     Ok(_) => {},
                     Err(e) => {
-                        tracing::error!("{}: {}", this.title, e)
+                        tracing::error!("{}: {}", this.setup.title, e)
                     }
                 }
 
@@ -328,7 +312,7 @@ impl Websocket for MexcWebsocket {
 
     async fn get_tickers(&self, _channel_type: &str) -> Option<Vec<models::websocket::Ticker>> {
         let url = "https://api.mexc.com/api/v3/ticker/bookTicker";
-        let response = self.client.get(url).send().await;
+        let response = self.setup.client.get(url).send().await;
         let Ok(response) = response else { return None };
         let Ok(tickers) = response.json::<Vec<Ticker>>().await else { return None };
         let usdt_tickers: Vec<Ticker> = tickers
@@ -411,20 +395,36 @@ impl Websocket for MexcWebsocket {
 #[async_trait]
 impl ExchangeWebsocket for MexcWebsocket {
     fn ticker_tx(&self) -> async_channel::Sender<(String, String)> {
-        self.ticker_tx.clone()
+        self.setup.ticker_tx.clone()
     }
 
     async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
         self.get_last_snapshot(snapshot_tx).await
     }
 
-    async fn get_spread(
-        self: Arc<Self>, 
-        spread_tx: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
+    fn spawn_quote_updater(
+        self: Arc<Self>
     ) {
-        self.sender_data.send(ExchangeStoreCMD::GetBestAskAndBidPrice { 
-            ticker: "btc".to_string(),
-            reply: spread_tx
-        }).await.unwrap();
+        let mut rx = self.setup.books_updates.subscribe();
+        let title = self.setup.title.clone();
+        
+        tokio::spawn(async move {
+            loop {
+                match rx.recv().await {
+                    Ok(ticker) => {
+                        // if self.setup.sender_data.send(ExchangeStoreCMD::Quote { ticker }).await.is_err() {
+                        //     continue;
+                        // }
+                    },
+                    Err(broadcast::error::RecvError::Lagged(_)) => {
+                        continue;
+                    },
+                    Err(broadcast::error::RecvError::Closed) => {
+                        warn!("{} Канал спреда закрыт", title);
+                        break;
+                    }
+                }
+            }
+        });
     }
 }

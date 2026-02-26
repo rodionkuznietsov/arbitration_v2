@@ -1,6 +1,4 @@
 use std::{fmt::{self, Display}};
-
-use dashmap::DashMap;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
@@ -53,21 +51,8 @@ pub struct TickerEvent {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Spread {
     pub ticker: String,
-    pub ask: OrderedFloat<f64>,
-    pub bid: OrderedFloat<f64>
-}
-
-#[derive(Debug, Clone)]
-pub struct SharedSpreads {
-    pub exchange: DashMap<ExchangeType, Spread>
-}
-
-impl SharedSpreads {
-    pub fn new() -> Self {
-        Self { 
-            exchange: DashMap::new()
-        }
-    }
+    pub pair: String,
+    pub spread: OrderedFloat<f64>
 }
 
 #[derive(Debug, Clone)]

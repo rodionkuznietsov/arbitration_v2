@@ -1,10 +1,10 @@
-use std::{collections::HashMap, time::Duration};
+use std::{collections::{HashMap, HashSet}, time::Duration};
 use futures_util::{StreamExt, SinkExt};
 use tokio::{net::TcpListener, time::interval};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::models::{exchange::{ExchangePairs, ExchangeType}, websocket::{ChannelType, ClientCmd, ServerToClientEvent, Subscription}};
+use crate::models::{exchange::{ExchangePairs, ExchangeType}, websocket::{ChannelType, ChartEvent, ClientCmd, ServerToClientEvent, Subscription}};
 
 #[derive(Debug, Clone)]
 pub struct ConnectedClient {
@@ -16,11 +16,13 @@ pub struct ConnectedClient {
     pub receiver: async_channel::Receiver<ServerToClientEvent>,
     pub token: tokio_util::sync::CancellationToken,
     pub exchange_pair: ExchangePairs,
+    pub chart_events: HashSet<ChartEvent>
 }
 
 impl ConnectedClient {
     pub fn new() -> Self {
         let (sender, receiver) = async_channel::bounded::<ServerToClientEvent>(5);
+        let chart_events = HashSet::new();
 
         Self { 
             uuid: Uuid::new_v4(),
@@ -31,6 +33,7 @@ impl ConnectedClient {
             receiver: receiver,
             token: tokio_util::sync::CancellationToken::new(),
             exchange_pair: ExchangePairs::new(),
+            chart_events
         }
     }
 
@@ -272,11 +275,14 @@ async fn handle_connection(
                                             long_pair: long_pair,
                                             short_pair: short_pair
                                         };
+
+                                        client.chart_events.insert(ChartEvent::UpdateLine);
+                                        client.chart_events.insert(ChartEvent::Volume24hr);
                                     }
                                 }
                             }
                             ClientCmd::UnSubscribe => {
-                                println!("{:?}", subscription);
+                                client.chart_events.clear();
                                 task_token.cancel();
                                 break;
                             }

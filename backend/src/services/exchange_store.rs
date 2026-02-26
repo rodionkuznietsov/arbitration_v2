@@ -1,10 +1,10 @@
 use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use lru::LruCache;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::{broadcast, mpsc, oneshot};
 use tracing::{warn};
 
-use crate::models::{exchange::ExchangeType, orderbook::{BookEvent, Snapshot, SnapshotUi}};
+use crate::{models::{exchange::ExchangeType, orderbook::{BookEvent, Snapshot, SnapshotUi}}};
 
 impl Snapshot {
     pub async fn to_ui(&self, depth: usize) -> SnapshotUi {
@@ -68,21 +68,22 @@ pub enum ExchangeStoreCMD {
         ticker: String,
         reply: mpsc::Sender<Option<SnapshotUi>> 
     },
-    GetBestAskAndBidPrice {
+    Quote {
         ticker: String,
-        reply: mpsc::Sender<Option<(ExchangeType, String, Option<f64>, Option<f64>)>>
+        reply: oneshot::Sender<(f64, f64)>
     },
     GetVolume24hr {
         ticker: String,
         reply: broadcast::Sender<(ExchangeType, String, f64)>
-    }
+    },
 } 
 
 pub struct ExchangeStore {
     pub id: ExchangeType,
     pub books: LruCache<String, Snapshot>,
     pub volumes24hr: LruCache<String, f64>,
-    pub rx: mpsc::Receiver<ExchangeStoreCMD>
+    pub rx: mpsc::Receiver<ExchangeStoreCMD>,
+    pub book_updates: broadcast::Sender<String>,
 }
 
 impl ExchangeStore {
@@ -91,12 +92,15 @@ impl ExchangeStore {
             .unwrap_or_else(|_| "1000".into())
             .parse::<usize>()
             .expect("ORDERBOOK_CACHE_CAPACITY must be a number");
-        
+
+        let (book_updates, _) = broadcast::channel(1);
+
         Self {
             id,
             books: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
             volumes24hr: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
-            rx: rx
+            rx: rx,
+            book_updates, 
         }
     }
 
@@ -117,6 +121,7 @@ impl ExchangeStore {
                                     self.books.put(ticker.clone(), snapshot);
                                 }
                             }
+                            let _ = self.book_updates.send(ticker);
                         }
                         BookEvent::Delta { ticker, delta } => {
                             if let Some(snapshot) = self.books.get_mut(&ticker) {
@@ -155,7 +160,7 @@ impl ExchangeStore {
 
                                         if from_version != last_version_id {
                                             println!("[OrderBookManager]: Packet loss detected");
-                                            return;
+                                            continue;
                                         }
                                         last_version_id = to_version + 1;  
                                     }
@@ -185,12 +190,14 @@ impl ExchangeStore {
                                         }
                                     }
                                 } 
+                                let _ = self.book_updates.send(ticker);
                             }
                         }
                         BookEvent::Price { ticker, last_price } => {
                             if let Some(t) = self.books.get_mut(&ticker) {
                                 t.last_price = last_price;
                             }
+                            let _ = self.book_updates.send(ticker);
                         },
                         BookEvent::Volume24hr { ticker, volume } => {
                             self.volumes24hr.put(ticker.clone(), volume);
@@ -208,14 +215,13 @@ impl ExchangeStore {
                         }   
                     }
                 }
-                ExchangeStoreCMD::GetBestAskAndBidPrice { 
-                    ticker , 
+                ExchangeStoreCMD::Quote { 
+                    ticker ,
                     reply
                 } => {
                     let tick = 900000000.0; 
-                    let exchange_type = self.id;
 
-                    if let Some(snapshot) = self.books.get(&format!("{}usdt", ticker)) {
+                    if let Some(snapshot) = self.books.get(&ticker) {
                         let best_ask = snapshot.a.iter()
                             .min_by_key(|x| x.0)
                             .map(|(price, _)| *price as f64 / tick);
@@ -224,14 +230,19 @@ impl ExchangeStore {
                             .max_by_key(|x| x.0)
                             .map(|(price, _)| *price as f64 / tick);
 
-                        match reply.send(Some((exchange_type, ticker, best_ask, best_bid))).await {
-                            Ok(_) => {}
-                            Err(e) => {
-                                warn!("[ExchangeStore]: {}", e)
-                            }
-                        }   
+                        let best_ask = match best_ask {
+                            Some(v) => v,
+                            None => 0.0
+                        };
 
-                        drop(reply)
+                        let best_bid = match best_bid {
+                            Some(v) => v,
+                            None => 0.0
+                        };
+
+                        if reply.send((best_ask, best_bid)).is_err() {
+                            continue;
+                        }
                     }
                 },
                 ExchangeStoreCMD::GetVolume24hr { ticker, reply } => {
@@ -240,7 +251,7 @@ impl ExchangeStore {
                             continue;
                         }
                     }
-                }
+                },
             }
         }
     }

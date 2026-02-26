@@ -10,29 +10,12 @@ pub async fn get_spread_history(pool: &sqlx::PgPool, symbol: &str, exchange_pair
         LIMIT 100
         "#
     )
-    .bind(symbol)
+    .bind(format!("{}usdt", symbol))
     .bind(exchange_pair)
     .fetch_all(pool)
     .await?;
 
     Ok(candles.into_iter().rev().collect())
-}
-
-/// Возращает последний спред каждой пары
-pub async fn get_last_spread_of_all_exhchange_pairs(
-    pool: &sqlx::PgPool
-) -> Result<Vec<Line>, sqlx::Error> {
-    let lines: Vec<Line> = sqlx::query_as::<_, Line>(
-        r#"
-        SELECT DISTINCT ON (exchange_pair) *
-        FROM storage.lines
-        ORDER BY exchange_pair, timestamp DESC
-        "#
-    )
-    .fetch_all(pool)
-    .await?;
-
-    Ok(lines)
 }
 
 pub async fn add_new_line(pool: &sqlx::PgPool, line: Line) -> Result<(), sqlx::Error> {

@@ -24,4 +24,10 @@ impl TimeFrame {
             Self::One => 60
         }
     }
+
+    pub fn to_secs_u64(&self) -> u64 {
+        match self {
+            Self::One => 60
+        }
+    }
 }
