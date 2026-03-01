@@ -1,7 +1,7 @@
-use crate::models::line::Line;
+use crate::{models::line::Line};
 
-pub async fn get_spread_history(pool: &sqlx::PgPool, symbol: &str, exchange_pair: &str) -> Result<Vec<Line>, sqlx::Error> {
-    let candles: Vec<Line> = sqlx::query_as::<_, Line>(
+pub async fn get_spread_history(pool: &sqlx::PgPool, symbol: &str, exchange_pair: &str) -> Result<Vec<Line>, sqlx::Error> {    
+    let lines: Vec<Line> = sqlx::query_as::<_, Line>(
         r#"
         SELECT timestamp, exchange_pair, symbol, timeframe, value
         FROM storage.lines
@@ -10,12 +10,33 @@ pub async fn get_spread_history(pool: &sqlx::PgPool, symbol: &str, exchange_pair
         LIMIT 100
         "#
     )
-    .bind(format!("{}usdt", symbol))
+    .bind(symbol)
     .bind(exchange_pair)
     .fetch_all(pool)
     .await?;
 
-    Ok(candles.into_iter().rev().collect())
+    Ok(lines.into_iter().rev().collect())
+}
+
+pub async fn get_last_timestamp(
+    pool: &sqlx::PgPool,
+    ticker: String,
+    exchange_pair: &str,
+) -> Result<Line, sqlx::Error> {
+
+    let line = sqlx::query_as::<_, Line>(
+        r#"
+        SELECT timestamp, exchange_pair, symbol, timeframe, value 
+        FROM storage.lines WHERE symbol=$1 AND exchange_pair=$2
+        ORDER BY timestamp DESC LIMIT 1 
+        "#
+    )
+    .bind(ticker)
+    .bind(exchange_pair)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(line)
 }
 
 pub async fn add_new_line(pool: &sqlx::PgPool, line: Line) -> Result<(), sqlx::Error> {

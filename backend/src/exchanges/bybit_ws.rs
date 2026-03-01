@@ -1,6 +1,4 @@
 use std::{sync::{Arc}, time::Duration};
-
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Notify, broadcast, mpsc, oneshot};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
@@ -39,14 +37,42 @@ impl BybitWebsocket {
         let this = Arc::new(
             Self { 
                 setup,
-                aggregator_tx
+                aggregator_tx: aggregator_tx.clone()
             }
         );
 
         this.clone().connect();
-        this.clone().spawn_quote_updater();
+        this.setup.clone().spawn_quote_updater(aggregator_tx);
+        this.clone().spawn_oderbooks_updater();
 
         this
+    }
+
+    fn spawn_oderbooks_updater(self: Arc<Self>) {
+        let mut rx = self.setup.books_updates.subscribe();
+        
+        tokio::spawn(async move {
+            loop {
+                match rx.recv().await {
+                    Ok(ticker) => {
+                        let (reply, rx) = oneshot::channel::<SnapshotUi>();
+                        self.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker: ticker.clone(), reply }).await.ok();
+
+                        if let Ok(snapshot) = rx.await {
+                            self.aggregator_tx.send(AggregatorCommand::UpdateOrderbooks { 
+                                exchange_type: ExchangeType::Bybit,
+                                snapshot_ui: snapshot,
+                                ticker
+                            }).await.ok();
+                        }   
+                    }
+                    Err(broadcast::error::RecvError::Closed) => {
+                        break;
+                    }
+                    _ => continue
+                }
+            }
+        });
     }
 
     async fn handle_volume24hr(self: Arc<Self>, json: TickerEvent) -> Option<ExchangeStoreCMD> {
@@ -59,25 +85,6 @@ impl BybitWebsocket {
         };
         
         Some(ExchangeStoreCMD::Event(BookEvent::Volume24hr { ticker: ticker.to_lowercase(), volume }))
-    }
-
-    pub async fn get_volume24hr(
-        self: Arc<Self>,
-        _volume_tx: broadcast::Sender<(ExchangeType, String, f64)>
-    ) {
-        let mut rx = self.setup.books_updates.subscribe();
-        
-        while let Ok(ticker) = rx.recv().await {
-            let (tx, _) = broadcast::channel(1000);
-            if self.setup.sender_data.send(ExchangeStoreCMD::GetVolume24hr { ticker, reply: tx.clone() }).await.is_err() {
-                continue;
-            }   
-
-            let mut rx = tx.subscribe();
-            if let Ok(result) = rx.recv().await {
-                println!("{:?}", result);
-            }
-        }
     }
 }
 
@@ -257,13 +264,13 @@ impl Websocket for BybitWebsocket {
         }
 
         while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
-            let (tx, mut rx) = mpsc::channel(50);
             let this = self.clone();
 
             loop {
+                let (tx, rx) = oneshot::channel();
                 let ticker = ticker.clone();
 
-                match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
+                match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx }).await {
                     Ok(_) => {},
                     Err(e) => {
                         tracing::error!("{}: {}", this.setup.title, e);
@@ -272,13 +279,11 @@ impl Websocket for BybitWebsocket {
                 };
 
                 tokio::select! {
-                    data = rx.recv() => {
-                        if let Some(snapshot_ui) = data {
-                            if let Some(snapshot) = snapshot_ui {
-                                match snapshot_tx.send(snapshot).await {
-                                    Ok(_) => {}
-                                    Err(_) => {}
-                                }
+                    data = rx => {
+                        if let Ok(snapshot) = data {
+                            match snapshot_tx.send(snapshot).await {
+                                Ok(_) => {}
+                                Err(_) => {}
                             }
                         }
                     }
@@ -366,56 +371,5 @@ impl Websocket for BybitWebsocket {
                 last_price 
             }
         ))
-    }
-}
-
-#[async_trait]
-impl ExchangeWebsocket for BybitWebsocket {
-    fn ticker_tx(&self) -> async_channel::Sender<(String, String)> {
-        self.setup.ticker_tx.clone()
-    }
-
-    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
-        self.get_last_snapshot(snapshot_tx).await
-    }
-
-    fn spawn_quote_updater(
-        self: Arc<Self>
-    ) {
-        let mut rx = self.setup.books_updates.subscribe();
-        let title = self.setup.title.clone();
-        
-        tokio::spawn(async move {
-            loop {
-                match rx.recv().await {
-                    Ok(ticker) => {
-                        let (reply, rx) = oneshot::channel::<(f64, f64)>();
-                        if self.setup.sender_data.send(ExchangeStoreCMD::Quote { ticker: ticker.clone(), reply: reply }).await.is_err() {
-                            continue;
-                        }
-
-                        if let Ok((ask, bid)) = rx.await {
-                            if self.aggregator_tx.clone().send(
-                                AggregatorCommand::UpdateQuotes { 
-                                    exchange_type: ExchangeType::Bybit,
-                                    ticker: ticker.clone(),
-                                    ask,
-                                    bid
-                                }
-                            ).await.is_err() {
-                                continue;
-                            }
-                        }
-                    },
-                    Err(broadcast::error::RecvError::Lagged(_)) => {
-                        continue;
-                    },
-                    Err(broadcast::error::RecvError::Closed) => {
-                        warn!("{} Канал спреда закрыт", title);
-                        break;
-                    }
-                }
-            }
-        });
     }
 }

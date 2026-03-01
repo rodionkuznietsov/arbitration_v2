@@ -2,7 +2,9 @@ use std::{fmt::{self, Display}};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Copy, Eq, Hash)]
+use crate::models::orderbook::MarketType;
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Copy, Eq, Hash)]
 #[serde(rename_all="snake_case")]
 pub enum ExchangeType {
     Binance, 
@@ -55,7 +57,7 @@ pub struct Spread {
     pub spread: OrderedFloat<f64>
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Eq, Serialize)]
 pub struct ExchangePairs {
     pub long_pair: String,
     pub short_pair: String
@@ -67,5 +69,13 @@ impl ExchangePairs {
             long_pair: String::new(), 
             short_pair: String::new() 
         }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (MarketType, &str)> {
+        [
+            (MarketType::Long, self.long_pair.as_str()),
+            (MarketType::Short, self.short_pair.as_str())
+        ]
+        .into_iter()
     }
 }

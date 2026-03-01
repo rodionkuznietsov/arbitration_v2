@@ -53,7 +53,7 @@ export const useWebsocketStore = defineStore('websocket', {
         },
 
         subscribe(ticker, channel, longExchange, shortExchange, callback) {
-            const key = `${channel}:${ticker}`
+            const key = `${channel}:${ticker}usdt`
 
             if (!this.channels.has(key)) {
                 this.channels.set(key, new Set())

@@ -59,7 +59,6 @@ impl BinXWebsocket {
         );
 
         this.clone().connect();
-        this.clone().spawn_quote_updater();
 
         this
     }
@@ -218,42 +217,42 @@ impl Websocket for BinXWebsocket {
             return;
         }
 
-        while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
-            let (tx, mut rx) = mpsc::channel(100);
-            let this = self.clone();
+        // while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
+        //     let (tx, mut rx) = mpsc::channel(100);
+        //     let this = self.clone();
 
-            let ticker = if ticker.eq_ignore_ascii_case("ton") {
-                "toncoin".to_string()
-            } else {
-                ticker
-            };
+        //     let ticker = if ticker.eq_ignore_ascii_case("ton") {
+        //         "toncoin".to_string()
+        //     } else {
+        //         ticker
+        //     };
 
-            loop {
-                let ticker = ticker.clone();
+        //     loop {
+        //         let ticker = ticker.clone();
                 
-                match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
-                    Ok(_) => {},
-                    Err(e) => {
-                        println!("{}: {}", this.setup.title, e)
-                    },
-                };
+        //         match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
+        //             Ok(_) => {},
+        //             Err(e) => {
+        //                 println!("{}: {}", this.setup.title, e)
+        //             },
+        //         };
 
-                tokio::select! {
-                    data = rx.recv() => {
-                        if let Some(snapshot_ui) = data {
-                            if let Some(snapshot) = snapshot_ui {
-                                match snapshot_tx.send(snapshot).await {
-                                    Ok(_) => {}
-                                    Err(_) => {}
-                                }
-                            }
-                        }
-                    }
+        //         tokio::select! {
+        //             data = rx.recv() => {
+        //                 if let Some(snapshot_ui) = data {
+        //                     if let Some(snapshot) = snapshot_ui {
+        //                         match snapshot_tx.send(snapshot).await {
+        //                             Ok(_) => {}
+        //                             Err(_) => {}
+        //                         }
+        //                     }
+        //                 }
+        //             }
 
-                    _ = tokio::time::sleep(Duration::from_millis(750)) => {}
-                }
-            }
-        }
+        //             _ = tokio::time::sleep(Duration::from_millis(750)) => {}
+        //         }
+        //     }
+        // }
     }
 
     async fn get_tickers(&self, channel_type: &str) -> Option<Vec<models::websocket::Ticker>> {
@@ -305,42 +304,5 @@ impl Websocket for BinXWebsocket {
                 last_price 
             }
         ))
-    }
-}
-
-#[async_trait]
-impl ExchangeWebsocket for BinXWebsocket {
-    fn ticker_tx(&self) -> async_channel::Sender<(String, String)> {
-        self.setup.ticker_tx.clone()
-    }
-
-    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
-        self.get_last_snapshot(snapshot_tx).await
-    }
-
-    fn spawn_quote_updater(
-        self: Arc<Self>
-    ) {
-        let mut rx = self.setup.books_updates.subscribe();
-        let title = self.setup.title.clone();
-        
-        tokio::spawn(async move {
-            loop {
-                match rx.recv().await {
-                    Ok(ticker) => {
-                        // if self.setup.sender_data.send(ExchangeStoreCMD::Quote { ticker }).await.is_err() {
-                        //     continue;
-                        // }
-                    },
-                    Err(broadcast::error::RecvError::Lagged(_)) => {
-                        continue;
-                    },
-                    Err(broadcast::error::RecvError::Closed) => {
-                        warn!("{} Канал спреда закрыт", title);
-                        break;
-                    }
-                }
-            }
-        });
     }
 }

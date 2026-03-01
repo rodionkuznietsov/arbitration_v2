@@ -1,7 +1,9 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
-use crate::models::{line::Line, exchange::ExchangeType, orderbook::{MarketType, SnapshotUi}};
+use crate::models::{exchange::{ExchangePairs, ExchangeType}, line::Line, orderbook::{MarketType, SnapshotUi}};
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Ticker {
@@ -23,7 +25,8 @@ pub enum ClientCmd {
 #[derive(Debug, Clone)]
 pub enum ServerToClientEvent {
     OrderBook(ChannelType, MarketType, SnapshotUi, String),
-    LinesHistory(ChannelType, Vec<Line>, String, MarketType),
+    LinesHistory(ChannelType, Vec<(MarketType, Vec<Line>)>, String),
+    AddLineToHistory(ChannelType, Vec<Line>, String, MarketType),
     UpdateLine(ChartEvent, Line, MarketType),
     Volume24hr(ChartEvent, String, f64, MarketType)
 }
@@ -33,7 +36,9 @@ pub enum ServerToClientEvent {
 #[strum(serialize_all="snake_case")]
 pub enum ChartEvent {
     UpdateLine,
-    Volume24hr
+    Volume24hr,
+    LinesHistory,
+    UpdateHistory
 }
 
 #[derive(Display, Deserialize, Debug, Clone, Serialize, PartialEq, Eq, Hash)]
@@ -42,6 +47,20 @@ pub enum ChartEvent {
 pub enum ChannelType {
     OrderBook,
     Chart
+}
+
+#[derive(Display, Deserialize, Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all="snake_case")]
+#[strum(serialize_all="snake_case")]
+pub enum ChannelSubscription {
+    OrderBook {
+        long_exchange: ExchangeType,
+        short_exchange: ExchangeType,
+    },
+    Chart {
+        events: HashSet<ChartEvent>,
+        exchange_pairs: ExchangePairs
+    }
 }
 
 #[derive(Debug, PartialEq)]

@@ -18,13 +18,13 @@ export const useChartStore = defineStore('chart', {
         lastShortLine: {},
         lastLongLine: {},
 
-        percision: 1000,
+        precision: 100_000,
         minMove: 0.0000000000001,
         inSeriesOptions: {
             color: '#2EBD85',
             lastValueVisible: false,
             priceLineVisible: false,
-            lineWidth: 2
+            lineWidth: 2,
         },
         inPriceLine: {
             price: 0.0,

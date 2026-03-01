@@ -55,8 +55,7 @@
     let scope
 
     onActivated(() => {
-        unsubscribe = ws.subscribe(userStateStore.ticker, 'chart', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                                    
-                    
+        unsubscribe = ws.subscribe(userStateStore.ticker, 'chart', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                                                            
             const lines = result?.lines
             if (lines) {
                 const long = lines.long
@@ -230,33 +229,42 @@
         }
 
         inSpreadSeries = chart.addSeries(LineSeries, chartStore.inSeriesOptions)
+        inSpreadSeries.applyOptions({
+            priceFormat: {
+                type: 'percent',
+                precision: chartStore.precision,
+            }
+        })
         outSpreadSeries = chart.addSeries(LineSeries, chartStore.outSeriesOptions)
+        outSpreadSeries.applyOptions({
+            priceFormat: {
+                type: 'percent',
+                precision: chartStore.precision,
+            }
+        })
 
         inPriceLine = inSpreadSeries.createPriceLine(chartStore.inPriceLine)
         outPriceLine = outSpreadSeries.createPriceLine(chartStore.outPriceLine)
 
         scope = effectScope()
+        
         scope.run(() => {
             watch(
                 (lastLongValue, lastShortValue), 
                 () => {
-
-                    // if ('time' in lastLongValue.value) {
-                        inSpreadSeries.update(chartStore.lastLongLine)
-                        inPriceLine.applyOptions({
-                            price: lastLongValue.value.value,
-                        })   
-                    // }
-
-                    // if ('time' in lastShortValue.value) {
-                        outSpreadSeries.update(chartStore.lastShortLine)
-                        outPriceLine.applyOptions({
-                            price: lastShortValue.value.value,
-                            color: '#F6465D'
-                        })
-                    // }
-
+                    inSpreadSeries.update(chartStore.lastLongLine)
+                    inPriceLine.applyOptions({
+                        price: lastLongValue.value.value,
+                    })   
                     chart.timeScale().scrollToRealTime()
+
+                    outSpreadSeries.update(chartStore.lastShortLine)
+                    outPriceLine.applyOptions({
+                        price: lastShortValue.value.value,
+                        color: '#F6465D'
+                    })
+                    chart.timeScale().scrollToRealTime()
+                    
                 }
             )
 

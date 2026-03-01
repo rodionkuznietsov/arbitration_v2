@@ -2,8 +2,6 @@ use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use lru::LruCache;
 use tokio::sync::{broadcast, mpsc, oneshot};
-use tracing::{warn};
-
 use crate::{models::{exchange::ExchangeType, orderbook::{BookEvent, Snapshot, SnapshotUi}}};
 
 impl Snapshot {
@@ -22,9 +20,12 @@ impl Snapshot {
 
         let a_price = a
             .iter()
-            .min_by(|x, y| x.0.partial_cmp(&y.0).unwrap())
-            .unwrap()
-            .0;
+            .min_by(|x, y| x.0.partial_cmp(&y.0).unwrap());
+
+        let a_price = match a_price {
+            Some(a) => a.0,
+            None => 0.0
+        };
 
         let b = self.b.iter()
             .rev()
@@ -66,7 +67,7 @@ pub enum ExchangeStoreCMD {
     Event(BookEvent),
     GetBook { 
         ticker: String,
-        reply: mpsc::Sender<Option<SnapshotUi>> 
+        reply: oneshot::Sender<SnapshotUi> 
     },
     Quote {
         ticker: String,
@@ -205,14 +206,9 @@ impl ExchangeStore {
                     }
                 }
                 ExchangeStoreCMD::GetBook { ticker, reply } => {
-                    if let Some(snapshot) = self.books.get(&format!("{}usdt", ticker)) {
+                    if let Some(snapshot) = self.books.get(&ticker) {
                         let snapshot_ui = snapshot.to_ui(6).await;
-                        match reply.send(Some(snapshot_ui)).await {
-                            Ok(_) => {}
-                            Err(e) => {
-                                warn!("[ExchangeStore]: {}", e)
-                            }
-                        }   
+                        reply.send(snapshot_ui).ok();
                     }
                 }
                 ExchangeStoreCMD::Quote { 

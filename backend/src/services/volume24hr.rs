@@ -32,7 +32,7 @@ impl ExchangeVolume {
             
             async move {
                 loop {
-                    bybit.clone().get_volume24hr(volume_tx.clone()).await;
+                    // bybit.clone().get_volume24hr(volume_tx.clone()).await;
                     gate.clone().get_volume24hr(volume_tx.clone()).await;
                     tokio::time::sleep(Duration::from_millis(10)).await;
                 }

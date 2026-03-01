@@ -61,7 +61,6 @@ impl LBankWebsocket {
         );
 
         this.clone().connect();
-        this.clone().spawn_quote_updater();
 
         this
     }
@@ -200,34 +199,34 @@ impl Websocket for LBankWebsocket {
             return;
         }
         
-        while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
-            let (tx, mut rx) = mpsc::channel(100);
-            let this = Arc::clone(&self);
+        // while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
+        //     let (tx, mut rx) = mpsc::channel(100);
+        //     let this = Arc::clone(&self);
 
-            loop {
-                let ticker = ticker.clone();
+        //     loop {
+        //         let ticker = ticker.clone();
 
-                match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
-                    Ok(_) => {},
-                    Err(e) => {
-                        tracing::error!("{}: {}", this.setup.title, e)
-                    }
-                }
+        //         match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
+        //             Ok(_) => {},
+        //             Err(e) => {
+        //                 tracing::error!("{}: {}", this.setup.title, e)
+        //             }
+        //         }
 
-                tokio::select! {
-                    data = rx.recv() => {
-                        if let Some(snapshot_ui) = data {
-                            if let Some(snapshot) = snapshot_ui {
-                                match snapshot_tx.send(snapshot).await {
-                                    Ok(_) => {},
-                                    Err(_) => {}
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        //         tokio::select! {
+        //             data = rx.recv() => {
+        //                 if let Some(snapshot_ui) = data {
+        //                     if let Some(snapshot) = snapshot_ui {
+        //                         match snapshot_tx.send(snapshot).await {
+        //                             Ok(_) => {},
+        //                             Err(_) => {}
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     async fn get_tickers(&self, _channel_type: &str) -> Option<Vec<models::websocket::Ticker>> {
@@ -280,42 +279,5 @@ impl Websocket for LBankWebsocket {
                 last_price: json.tick.last_price 
             }
         ))
-    }
-}
-
-#[async_trait]
-impl ExchangeWebsocket for LBankWebsocket {
-    fn ticker_tx(&self) -> async_channel::Sender<(String, String)> {
-        self.setup.ticker_tx.clone()
-    }
-
-    async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
-        self.get_last_snapshot(snapshot_tx).await
-    }
-
-    fn spawn_quote_updater(
-        self: Arc<Self>
-    ) {
-        let mut rx = self.setup.books_updates.subscribe();
-        let title = self.setup.title.clone();
-        
-        tokio::spawn(async move {
-            loop {
-                match rx.recv().await {
-                    Ok(ticker) => {
-                        // if self.setup.sender_data.send(ExchangeStoreCMD::Quote { ticker }).await.is_err() {
-                        //     continue;
-                        // }
-                    },
-                    Err(broadcast::error::RecvError::Lagged(_)) => {
-                        continue;
-                    },
-                    Err(broadcast::error::RecvError::Closed) => {
-                        warn!("{} Канал спреда закрыт", title);
-                        break;
-                    }
-                }
-            }
-        });
     }
 }
