@@ -1,6 +1,4 @@
 use std::{sync::Arc, time::Duration};
-
-use async_trait::async_trait;
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::{Notify, broadcast, mpsc, oneshot};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
@@ -31,7 +29,8 @@ impl GateWebsocket {
         );
 
         this.clone().connect();
-        this.setup.clone().spawn_quote_updater(aggregator_tx);
+        this.setup.clone().spawn_quote_updater(aggregator_tx.clone());
+        this.setup.clone().spawn_volume_updater(aggregator_tx);
         this.clone().spawn_oderbooks_updater();
 
         this
@@ -76,15 +75,6 @@ impl GateWebsocket {
         let ticker = ticker.replace("_", "");
         
         Some(ExchangeStoreCMD::Event(BookEvent::Volume24hr { ticker: ticker.to_lowercase(), volume }))
-    }
-
-    pub async fn get_volume24hr(
-        self: Arc<Self>,
-        volume_tx: broadcast::Sender<(ExchangeType, String, f64)>
-    ) {
-        if self.setup.sender_data.send(ExchangeStoreCMD::GetVolume24hr { ticker: "moca".to_string(), reply: volume_tx }).await.is_err() {
-            return ;
-        }
     }
 }
 
@@ -244,7 +234,7 @@ impl Websocket for GateWebsocket {
             let this = Arc::clone(&self);
 
             loop {
-                let (tx, mut rx) = oneshot::channel();
+                let (tx, rx) = oneshot::channel();
                 let ticker = ticker.clone();
                 match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx }).await {
                     Ok(_) => {},

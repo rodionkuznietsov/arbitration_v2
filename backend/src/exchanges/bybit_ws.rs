@@ -42,7 +42,8 @@ impl BybitWebsocket {
         );
 
         this.clone().connect();
-        this.setup.clone().spawn_quote_updater(aggregator_tx);
+        this.setup.clone().spawn_quote_updater(aggregator_tx.clone());
+        this.setup.clone().spawn_volume_updater(aggregator_tx);
         this.clone().spawn_oderbooks_updater();
 
         this

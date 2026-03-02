@@ -69,14 +69,14 @@ pub enum ExchangeStoreCMD {
         ticker: String,
         reply: oneshot::Sender<SnapshotUi> 
     },
-    Quote {
+    GetQuote {
         ticker: String,
         reply: oneshot::Sender<(f64, f64)>
     },
-    GetVolume24hr {
+    GetVolume {
         ticker: String,
-        reply: broadcast::Sender<(ExchangeType, String, f64)>
-    },
+        reply: oneshot::Sender<f64>
+    }
 } 
 
 pub struct ExchangeStore {
@@ -211,7 +211,7 @@ impl ExchangeStore {
                         reply.send(snapshot_ui).ok();
                     }
                 }
-                ExchangeStoreCMD::Quote { 
+                ExchangeStoreCMD::GetQuote { 
                     ticker ,
                     reply
                 } => {
@@ -241,9 +241,9 @@ impl ExchangeStore {
                         }
                     }
                 },
-                ExchangeStoreCMD::GetVolume24hr { ticker, reply } => {
-                    if let Some(volume) = self.volumes24hr.get(&format!("{}usdt", ticker)) {
-                        if reply.send((self.id, ticker, *volume)).is_err() {
+                ExchangeStoreCMD::GetVolume { ticker, reply } => {
+                    if let Some(volume) = self.volumes24hr.get(&ticker) {
+                        if reply.send(*volume).is_err() {
                             continue;
                         }
                     }

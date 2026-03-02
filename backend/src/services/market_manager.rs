@@ -13,6 +13,11 @@ pub trait ExchangeWebsocket: Send + Sync {
         self: Arc<Self>,
         aggregator_tx: mpsc::Sender<AggregatorCommand>
     );
+
+    fn spawn_volume_updater(
+        self: Arc<Self>,
+        aggregator_tx: mpsc::Sender<AggregatorCommand>
+    );
 }
 
 pub async fn run_websockets(
@@ -23,6 +28,7 @@ pub async fn run_websockets(
     let (spread_tx, _) = broadcast::channel(1000);
     let (lines_cache_tx, _) = broadcast::channel(1);
     let (books_tx, _) = broadcast::channel::<HashMap<(ExchangeType, String), SnapshotUi>>(1);
+    let (volume_tx, _) = broadcast::channel::<(String, String, f64)>(1000);
 
     let aggregator = Aggregator::new(
         aggregator_rx, 
@@ -30,6 +36,7 @@ pub async fn run_websockets(
         pool.clone(),
         lines_cache_tx.clone(),
         books_tx.clone(),
+        volume_tx.clone()
     );
     tokio::spawn(aggregator.run());
 
@@ -55,8 +62,35 @@ pub async fn run_websockets(
                         events,
                         exchange_pairs
                     } => {
-                        let mut client = client.clone();
+                        let client = client.clone();
+
+                        if events.contains(&ChartEvent::Volume24hr) {
+                            let client = client.clone();
+                            let token = client.token.clone();
+                            let volume_tx = volume_tx.clone();
+                            let ticker = ticker.clone();
+                            let exchange_pairs = exchange_pairs.clone();
+
+                            tokio::spawn(async move {
+                                loop {
+                                    tokio::select! {
+                                        _ = token.cancelled() => {
+                                                break;
+                                            }
+                                        
+                                        _ = handle_volume(
+                                            volume_tx.clone(),
+                                            ticker.clone(),
+                                            exchange_pairs.clone(),
+                                            client.clone()
+                                        ) => {}
+                                    }
+                                }
+                            });
+                        }
+
                         if events.contains(&ChartEvent::LinesHistory) {
+                            let mut client = client.clone();
                             let futures = exchange_pairs.iter().map(|(market_type, pair)| {
                                 let aggregator_tx = aggregator_tx.clone();
                                 let ticker = ticker.clone();
@@ -84,6 +118,7 @@ pub async fn run_websockets(
                         if events.contains(&ChartEvent::UpdateHistory) {
                             tokio::spawn({
                                 let exchange_pairs = exchange_pairs.clone();
+                                let client = client.clone();
                                 let ticker = client.ticker.clone();
                                 let token = client.token.clone();
                                 let lines_tx = lines_cache_tx.clone();
@@ -110,6 +145,7 @@ pub async fn run_websockets(
 
                         if events.contains(&ChartEvent::UpdateLine) {
                             tokio::spawn({
+                                let client = client.clone();
                                 let token = client.token.clone();
                                 let spread_tx = spread_tx.clone();
                                 let aggregator_tx = aggregator_tx.clone();
@@ -186,6 +222,39 @@ pub async fn run_websockets(
                     }
                 }
             }
+        }
+    }
+}
+
+async fn handle_volume(
+    volume_tx: broadcast::Sender<(String, String, f64)>,
+    ticker: String,
+    exchange_pairs: ExchangePairs,
+    mut client: ConnectedClient
+) {
+    let mut rx = volume_tx.subscribe();
+    loop {    
+        match rx.recv().await {
+            Ok((_pair, t, volume)) => {
+                if ticker != t {
+                    continue;
+                }
+                
+                for (market_type, _exchange_pair) in exchange_pairs.iter() {
+                    if _pair == _exchange_pair {
+                        client.send_to_client(ServerToClientEvent::Volume24hr(
+                            ChartEvent::Volume24hr,
+                            ticker.clone(),
+                            volume,
+                            market_type
+                        )).await;
+                    }
+                }
+            },
+            Err(broadcast::error::RecvError::Closed) => {
+                break;
+            },
+            _ => continue
         }
     }
 }

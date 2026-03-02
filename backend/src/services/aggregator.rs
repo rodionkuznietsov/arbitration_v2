@@ -19,6 +19,11 @@ pub enum AggregatorCommand {
         snapshot_ui: SnapshotUi,
         ticker: String
     },
+    UpdateVolumes {
+        exchange_type: ExchangeType,
+        volume: f64,
+        ticker: String
+    },
     GetLinesHistory {
         exchange_pair: String,
         ticker: String,
@@ -43,13 +48,15 @@ pub struct Aggregator {
     lines_cache: HashMap<(String, String), Vec<Line>>,
     exchanges: Vec<ExchangeType>,
     books: HashMap<(ExchangeType, String), SnapshotUi>,
+    volumes: HashMap<(ExchangeType, String), f64>,
 
     rx: mpsc::Receiver<AggregatorCommand>,
     client_spread_tx: broadcast::Sender<(String, String, f64)>,
     pool: sqlx::PgPool,
 
     pub lines_cache_tx: broadcast::Sender<HashMap<(String, String), Vec<Line>>>,
-    books_tx: broadcast::Sender<HashMap<(ExchangeType, String), SnapshotUi>>
+    books_tx: broadcast::Sender<HashMap<(ExchangeType, String), SnapshotUi>>,
+    volumes_tx: broadcast::Sender<(String, String, f64)>,
 }
 
 impl Aggregator {
@@ -58,7 +65,8 @@ impl Aggregator {
         client_spread_tx: broadcast::Sender<(String, String, f64)>,
         pool: sqlx::PgPool,
         lines_cache_tx: broadcast::Sender<HashMap<(String, String), Vec<Line>>>,
-        books_tx: broadcast::Sender<HashMap<(ExchangeType, String), SnapshotUi>>
+        books_tx: broadcast::Sender<HashMap<(ExchangeType, String), SnapshotUi>>,
+        volumes_tx: broadcast::Sender<(String, String, f64)>,
     ) -> Self {
         let exchanges = vec![
             ExchangeType::Gate,
@@ -66,19 +74,21 @@ impl Aggregator {
         ];
 
         let books = HashMap::new();
+        let volumes = HashMap::new();
         
         Self { 
             quotes: LruCache::new(NonZeroUsize::new(5000).unwrap()), 
             pending_lines: LruCache::new(NonZeroUsize::new(5000).unwrap()),
             lines_cache: HashMap::new(),
-            exchanges, books,
+            exchanges, books, volumes,
 
             rx: aggregator_rx, 
             client_spread_tx, 
+            books_tx, volumes_tx,
 
             lines_cache_tx,
 
-            pool, books_tx
+            pool, 
         }
     }
 
@@ -128,6 +138,18 @@ impl Aggregator {
                                 snapshot_ui
                             ).await;
                         },
+                        AggregatorCommand::UpdateVolumes {
+                            exchange_type,
+                            volume,
+                            ticker
+                        } => {
+                            self.volumes.insert((
+                                exchange_type, 
+                                ticker.clone()), 
+                                volume
+                            );
+                            self.handle_volumes(ticker).await;
+                        }
                         AggregatorCommand::GetLinesHistory {
                             exchange_pair,
                             ticker,
@@ -206,6 +228,37 @@ impl Aggregator {
             exchange_type, ticker
         ), snapshot_ui);
         self.books_tx.send(self.books.clone()).ok();
+    }
+
+    async fn handle_volumes(
+        &self,
+        ticker: String
+    ) {
+        for i in 0..self.exchanges.len() {
+            for j in (i+1)..self.exchanges.len() {
+                let long_ex = self.exchanges[i];
+                let short_ex = self.exchanges[j];
+                
+                let long_volume = self.volumes.get(&(long_ex, ticker.clone())).cloned();
+                let short_volume = self.volumes.get(&(short_ex, ticker.clone())).cloned();
+
+                if let (Some(l_vol), Some(s_vol)) = (long_volume, short_volume) {
+                    let long_pair = format!("{}/{}", long_ex, short_ex);
+                    // println!("{} -> {}: {}", long_pair, ticker, l_vol);
+
+                    let short_pair = format!("{}/{}", short_ex, long_ex);
+                    // println!("{} -> {}: {}", short_pair, ticker, s_vol);
+
+                    if self.volumes_tx.send((long_pair, ticker.clone(), l_vol)).is_err() {
+                        continue;
+                    }
+
+                    if self.volumes_tx.send((short_pair, ticker.clone(), s_vol)).is_err() {
+                        continue;
+                    }
+                }
+            }
+        }
     }
 
     fn calculate_spread(&mut self, ticker: String) {

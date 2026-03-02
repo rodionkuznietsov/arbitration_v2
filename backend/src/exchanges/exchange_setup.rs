@@ -63,7 +63,7 @@ impl ExchangeWebsocket for ExchangeSetup {
                 match rx.recv().await {
                     Ok(ticker) => {
                         let (reply, rx) = oneshot::channel::<(f64, f64)>();
-                        if self.sender_data.send(ExchangeStoreCMD::Quote { ticker: ticker.clone(), reply: reply }).await.is_err() {
+                        if self.sender_data.send(ExchangeStoreCMD::GetQuote { ticker: ticker.clone(), reply: reply }).await.is_err() {
                             continue;
                         }
 
@@ -74,6 +74,46 @@ impl ExchangeWebsocket for ExchangeSetup {
                                     ticker: ticker.clone(),
                                     ask,
                                     bid
+                                }
+                            ).await.is_err() {
+                                continue;
+                            }
+                        }
+                    },
+                    Err(broadcast::error::RecvError::Lagged(_)) => {
+                        continue;
+                    },
+                    Err(broadcast::error::RecvError::Closed) => {
+                        warn!("{} Канал спреда закрыт", title);
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+    fn spawn_volume_updater(
+        self: Arc<Self>,
+        aggregator_tx: mpsc::Sender<AggregatorCommand>
+    ) {
+        let mut rx = self.books_updates.subscribe();
+        let title = self.title.clone();
+        
+        tokio::spawn(async move {
+            loop {
+                match rx.recv().await {
+                    Ok(ticker) => {
+                        let (reply, rx) = oneshot::channel::<f64>();
+                        if self.sender_data.send(ExchangeStoreCMD::GetVolume { ticker: ticker.clone(), reply }).await.is_err() {
+                            continue;
+                        }
+
+                        if let Ok(volume) = rx.await {
+                            if aggregator_tx.clone().send(
+                                AggregatorCommand::UpdateVolumes { 
+                                    exchange_type: self.exchange_id, 
+                                    volume, 
+                                    ticker
                                 }
                             ).await.is_err() {
                                 continue;
