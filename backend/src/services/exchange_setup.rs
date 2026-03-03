@@ -2,8 +2,17 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tokio::sync::{broadcast, mpsc, oneshot};
 use tracing::warn;
-use crate::{models::exchange::ExchangeType, services::{aggregator::AggregatorCommand, exchange_store::{ExchangeStore, ExchangeStoreCMD}, market_manager::ExchangeWebsocket}};
+use crate::models::{exchange::ExchangeType, orderbook::SnapshotUi};
+use crate::services::{aggregator::AggregatorCommand, exchange_aggregator::{ExchangeStore, ExchangeStoreCMD}};
 
+#[async_trait]
+pub trait ExchangeWebsocket: Send + Sync {
+    fn spawn_quote_updater(self: Arc<Self>);
+    fn spawn_volume_updater(self: Arc<Self>);
+    fn spawn_oderbooks_updater(self: Arc<Self>);
+}
+
+/// Init Exchange
 pub struct ExchangeSetup {
     pub title: String,
     pub enabled: bool,
@@ -15,13 +24,16 @@ pub struct ExchangeSetup {
     pub client: reqwest::Client,
     pub sender_data: mpsc::Sender<ExchangeStoreCMD>,
     pub books_updates: broadcast::Sender<String>,
-    exchange_id: ExchangeType
+    exchange_id: ExchangeType,
+
+    aggregator_tx: mpsc::Sender<AggregatorCommand>
 }
 
 impl ExchangeSetup {
     pub fn new(
         exchange_id: ExchangeType,
         enabled: bool,
+        aggregator_tx: mpsc::Sender<AggregatorCommand> 
     ) -> Arc<Self> {
         let title = format!("{}{}Websocket ->", &exchange_id.to_string()[..1].to_uppercase(), &exchange_id.to_string()[1..]);
         let (ticker_tx, ticker_rx) = async_channel::bounded(1);
@@ -29,10 +41,7 @@ impl ExchangeSetup {
         let client = reqwest::Client::new();
         let (sender_data, rx_data) = mpsc::channel::<ExchangeStoreCMD>(1);
 
-        let store = ExchangeStore::new(
-            rx_data, 
-            exchange_id
-        );
+        let store = ExchangeStore::new(rx_data);
         let books_updates = store.book_updates.clone();
         tokio::spawn(async move {
             store.set_data().await;
@@ -42,8 +51,12 @@ impl ExchangeSetup {
             title, enabled, channel_type,
             ticker_tx, ticker_rx, client,
             sender_data, books_updates,
-            exchange_id
+            exchange_id, aggregator_tx
         });
+
+        this.clone().spawn_quote_updater();
+        this.clone().spawn_volume_updater();
+        this.clone().spawn_oderbooks_updater();
 
         this
     }
@@ -53,7 +66,6 @@ impl ExchangeSetup {
 impl ExchangeWebsocket for ExchangeSetup {
     fn spawn_quote_updater(
         self: Arc<Self>,
-        aggregator_tx: mpsc::Sender<AggregatorCommand>
     ) {
         let mut rx = self.books_updates.subscribe();
         let title = self.title.clone();
@@ -68,16 +80,14 @@ impl ExchangeWebsocket for ExchangeSetup {
                         }
 
                         if let Ok((ask, bid)) = rx.await {
-                            if aggregator_tx.clone().send(
+                            self.aggregator_tx.clone().send(
                                 AggregatorCommand::UpdateQuotes { 
                                     exchange_type: self.exchange_id,
                                     ticker: ticker.clone(),
                                     ask,
                                     bid
                                 }
-                            ).await.is_err() {
-                                continue;
-                            }
+                            ).await.ok();
                         }
                     },
                     Err(broadcast::error::RecvError::Lagged(_)) => {
@@ -94,7 +104,6 @@ impl ExchangeWebsocket for ExchangeSetup {
 
     fn spawn_volume_updater(
         self: Arc<Self>,
-        aggregator_tx: mpsc::Sender<AggregatorCommand>
     ) {
         let mut rx = self.books_updates.subscribe();
         let title = self.title.clone();
@@ -109,15 +118,13 @@ impl ExchangeWebsocket for ExchangeSetup {
                         }
 
                         if let Ok(volume) = rx.await {
-                            if aggregator_tx.clone().send(
+                            self.aggregator_tx.clone().send(
                                 AggregatorCommand::UpdateVolumes { 
                                     exchange_type: self.exchange_id, 
                                     volume, 
                                     ticker
                                 }
-                            ).await.is_err() {
-                                continue;
-                            }
+                            ).await.ok();
                         }
                     },
                     Err(broadcast::error::RecvError::Lagged(_)) => {
@@ -127,6 +134,35 @@ impl ExchangeWebsocket for ExchangeSetup {
                         warn!("{} Канал спреда закрыт", title);
                         break;
                     }
+                }
+            }
+        });
+    }
+
+    fn spawn_oderbooks_updater(
+        self: Arc<Self>,
+    ) {
+        let mut rx = self.books_updates.subscribe();
+        
+        tokio::spawn(async move {
+            loop {
+                match rx.recv().await {
+                    Ok(ticker) => {
+                        let (reply, rx) = oneshot::channel::<SnapshotUi>();
+                        self.sender_data.send(ExchangeStoreCMD::GetBook { ticker: ticker.clone(), reply }).await.ok();
+
+                        if let Ok(snapshot) = rx.await {
+                            self.aggregator_tx.send(AggregatorCommand::UpdateOrderbooks { 
+                                exchange_type: self.exchange_id,
+                                snapshot_ui: snapshot,
+                                ticker,
+                            }).await.ok();
+                        }   
+                    }
+                    Err(broadcast::error::RecvError::Closed) => {
+                        break;
+                    }
+                    _ => continue
                 }
             }
         });

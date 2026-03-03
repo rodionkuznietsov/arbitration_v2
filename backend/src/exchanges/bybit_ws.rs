@@ -1,14 +1,14 @@
-use std::{sync::{Arc}, time::Duration};
+use std::{sync::{Arc}};
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Notify, broadcast, mpsc, oneshot};
+use tokio::sync::{Notify, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 use futures_util::{StreamExt, SinkExt};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, warn};
 
-use crate::{exchanges::exchange_setup::ExchangeSetup, models::{exchange::{ExchangeType, TickerEvent}, orderbook::OrderBookEvent, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{aggregator::AggregatorCommand, exchange_store::ExchangeStoreCMD, market_manager::ExchangeWebsocket}};
-use crate::models::orderbook::{BookEvent, Delta, Snapshot, SnapshotUi};
-use crate::services::{websocket::Websocket, exchange_store::{parse_levels__}};
+use crate::{models::{exchange::{ExchangeType, TickerEvent}, orderbook::OrderBookEvent, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{aggregator::AggregatorCommand, exchange_setup::{ExchangeSetup}, exchange_aggregator::ExchangeStoreCMD}};
+use crate::models::orderbook::{BookEvent, Delta, Snapshot};
+use crate::services::{websocket::Websocket, exchange_aggregator::{parse_levels__}};
 
 #[derive(Deserialize, Debug, Serialize)]
 struct TickerResponse {
@@ -25,7 +25,6 @@ struct TickerResult {
 #[derive(Clone)]
 pub struct BybitWebsocket {
     setup: Arc<ExchangeSetup>,
-    aggregator_tx: mpsc::Sender<AggregatorCommand>
 }
 
 impl BybitWebsocket {
@@ -33,47 +32,20 @@ impl BybitWebsocket {
         enabled: bool,
         aggregator_tx: mpsc::Sender<AggregatorCommand>
     ) -> Arc<Self> {
-        let setup = ExchangeSetup::new(ExchangeType::Bybit, enabled);
+        let setup = ExchangeSetup::new(
+            ExchangeType::Bybit, 
+            enabled,
+            aggregator_tx
+        );
+
         let this = Arc::new(
             Self { 
                 setup,
-                aggregator_tx: aggregator_tx.clone()
             }
         );
 
         this.clone().connect();
-        this.setup.clone().spawn_quote_updater(aggregator_tx.clone());
-        this.setup.clone().spawn_volume_updater(aggregator_tx);
-        this.clone().spawn_oderbooks_updater();
-
         this
-    }
-
-    fn spawn_oderbooks_updater(self: Arc<Self>) {
-        let mut rx = self.setup.books_updates.subscribe();
-        
-        tokio::spawn(async move {
-            loop {
-                match rx.recv().await {
-                    Ok(ticker) => {
-                        let (reply, rx) = oneshot::channel::<SnapshotUi>();
-                        self.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker: ticker.clone(), reply }).await.ok();
-
-                        if let Ok(snapshot) = rx.await {
-                            self.aggregator_tx.send(AggregatorCommand::UpdateOrderbooks { 
-                                exchange_type: ExchangeType::Bybit,
-                                snapshot_ui: snapshot,
-                                ticker
-                            }).await.ok();
-                        }   
-                    }
-                    Err(broadcast::error::RecvError::Closed) => {
-                        break;
-                    }
-                    _ => continue
-                }
-            }
-        });
     }
 
     async fn handle_volume24hr(self: Arc<Self>, json: TickerEvent) -> Option<ExchangeStoreCMD> {
@@ -95,7 +67,6 @@ impl Websocket for BybitWebsocket {
     type Price = TickerEvent;
 
     fn connect(self: Arc<Self>) {
-        let this = Arc::clone(&self);
         tokio::spawn({
             async move {
                 if !self.setup.enabled {
@@ -103,10 +74,9 @@ impl Websocket for BybitWebsocket {
                     return;
                 } 
 
-                let tickers = this.get_tickers(&this.setup.channel_type).await;
-
+                let tickers = self.get_tickers(&self.setup.channel_type).await;
                 if let Some(tickers) = tickers {
-                    this.reconnect(&tickers).await;
+                    self.reconnect(&tickers).await;
                 }
             }
         });
@@ -257,42 +227,6 @@ impl Websocket for BybitWebsocket {
         }
 
         WebSocketStatus::Finished
-    }
-
-    async fn get_last_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
-        if !self.setup.enabled {
-            return ;
-        }
-
-        while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
-            let this = self.clone();
-
-            loop {
-                let (tx, rx) = oneshot::channel();
-                let ticker = ticker.clone();
-
-                match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx }).await {
-                    Ok(_) => {},
-                    Err(e) => {
-                        tracing::error!("{}: {}", this.setup.title, e);
-                        break;
-                    },
-                };
-
-                tokio::select! {
-                    data = rx => {
-                        if let Ok(snapshot) = data {
-                            match snapshot_tx.send(snapshot).await {
-                                Ok(_) => {}
-                                Err(_) => {}
-                            }
-                        }
-                    }
-
-                    _ = tokio::time::sleep(Duration::from_millis(750)) => {}
-                }
-            }
-        }
     }
 
     async fn get_tickers(&self, channel_type: &str) -> Option<Vec<Ticker>> {

@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
@@ -24,7 +24,7 @@ pub enum ClientCmd {
 
 #[derive(Debug, Clone)]
 pub enum ServerToClientEvent {
-    OrderBook(ChannelType, MarketType, SnapshotUi, String),
+    OrderBook(ChannelType, MarketType, Arc<SnapshotUi>, String),
     LinesHistory(ChannelType, Vec<(MarketType, Vec<Line>)>, String),
     AddLineToHistory(ChannelType, Vec<Line>, String, MarketType),
     UpdateLine(ChartEvent, Line, MarketType),
@@ -59,7 +59,8 @@ pub enum ChannelSubscription {
     },
     Chart {
         events: HashSet<ChartEvent>,
-        exchange_pairs: ExchangePairs
+        long_exchange: ExchangeType,
+        short_exchange: ExchangeType,
     }
 }
 

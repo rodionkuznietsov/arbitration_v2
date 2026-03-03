@@ -5,4 +5,3 @@ pub mod binance_ws;
 pub mod bybit_ws;
 pub mod gate_rs;
 pub mod lbank_ws;
-pub mod exchange_setup;

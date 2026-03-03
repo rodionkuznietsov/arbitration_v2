@@ -1,18 +1,17 @@
 use std::{sync::Arc, time::Duration};
 use futures_util::{SinkExt, StreamExt};
-use tokio::sync::{Notify, broadcast, mpsc, oneshot};
+use tokio::sync::{Notify, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
 
-use crate::{exchanges::exchange_setup::ExchangeSetup, models::{self, exchange::{ExchangeType, TickerEvent}, orderbook::{OrderBookEvent, SnapshotUi}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{aggregator::AggregatorCommand, exchange_store::ExchangeStoreCMD, market_manager::ExchangeWebsocket}};
+use crate::{models::{self, exchange::{ExchangeType, TickerEvent}, orderbook::{OrderBookEvent}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{aggregator::AggregatorCommand, exchange_setup::{ExchangeSetup}, exchange_aggregator::ExchangeStoreCMD}};
 use crate::models::orderbook::{BookEvent, Snapshot};
-use crate::services::{websocket::Websocket, exchange_store::{parse_levels__}};
+use crate::services::{websocket::Websocket, exchange_aggregator::{parse_levels__}};
 
 pub struct GateWebsocket {
     setup: Arc<ExchangeSetup>,
-    aggregator_tx: mpsc::Sender<AggregatorCommand>
 }
 
 impl GateWebsocket {
@@ -20,47 +19,20 @@ impl GateWebsocket {
         enabled: bool, 
         aggregator_tx: mpsc::Sender<AggregatorCommand>
     ) -> Arc<Self> {
-        let setup = ExchangeSetup::new(ExchangeType::Gate, enabled);
+        let setup = ExchangeSetup::new(
+            ExchangeType::Gate, 
+            enabled,
+            aggregator_tx
+        );
+        
         let this = Arc::new(
             Self { 
                 setup,
-                aggregator_tx: aggregator_tx.clone()
             }
         );
 
         this.clone().connect();
-        this.setup.clone().spawn_quote_updater(aggregator_tx.clone());
-        this.setup.clone().spawn_volume_updater(aggregator_tx);
-        this.clone().spawn_oderbooks_updater();
-
         this
-    }
-
-    fn spawn_oderbooks_updater(self: Arc<Self>) {
-        let mut rx = self.setup.books_updates.subscribe();
-        
-        tokio::spawn(async move {
-            loop {
-                match rx.recv().await {
-                    Ok(ticker) => {
-                        let (reply, rx) = oneshot::channel::<SnapshotUi>();
-                        self.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker: ticker.clone(), reply }).await.ok();
-
-                        if let Ok(snapshot) = rx.await {
-                            self.aggregator_tx.send(AggregatorCommand::UpdateOrderbooks { 
-                                exchange_type: ExchangeType::Gate,
-                                snapshot_ui: snapshot,
-                                ticker,
-                            }).await.ok();
-                        }   
-                    }
-                    Err(broadcast::error::RecvError::Closed) => {
-                        break;
-                    }
-                    _ => continue
-                }
-            }
-        });
     }
 
     async fn handle_volume24hr(self: Arc<Self>, json: TickerEvent) -> Option<ExchangeStoreCMD> {
@@ -225,38 +197,6 @@ impl Websocket for GateWebsocket {
         WebSocketStatus::Finished
     }
 
-    async fn get_last_snapshot(self: Arc<Self>, snapshot_tx: tokio::sync::mpsc::Sender<SnapshotUi>) {
-        if !self.setup.enabled {
-            return;
-        }
-        
-        while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
-            let this = Arc::clone(&self);
-
-            loop {
-                let (tx, rx) = oneshot::channel();
-                let ticker = ticker.clone();
-                match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx }).await {
-                    Ok(_) => {},
-                    Err(e) => {
-                        tracing::error!("{}: {}", this.setup.title, e)
-                    }
-                }
-
-                tokio::select! {
-                    data = rx => {
-                        if let Ok(snapshot) = data {
-                            match snapshot_tx.send(snapshot).await {
-                                Ok(_) => {},
-                                Err(_) => {}
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     async fn get_tickers(&self, _channel_type: &str) -> Option<Vec<models::websocket::Ticker>> {
         let url = "https://api.gateio.ws/api/v4/spot/currency_pairs";
         let response = self.setup.client.get(url).send().await;
@@ -316,54 +256,3 @@ impl Websocket for GateWebsocket {
         ))
     }
 }
-
-// #[async_trait]
-// impl ExchangeWebsocket for GateWebsocket {
-//     fn ticker_tx(&self) -> async_channel::Sender<(String, String)> {
-//         self.setup.ticker_tx.clone()
-//     }
-
-//     async fn get_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
-//         self.get_last_snapshot(snapshot_tx).await
-//     }
-
-//     fn spawn_quote_updater(
-//         self: Arc<Self>
-//     ) {
-//         let mut rx = self.setup.books_updates.subscribe();
-//         let title = self.setup.title.clone();
-        
-//         tokio::spawn(async move {
-//             loop {
-//                 match rx.recv().await {
-//                     Ok(ticker) => {
-//                         let (reply, rx) = oneshot::channel::<(f64, f64)>();
-//                         if self.setup.sender_data.send(ExchangeStoreCMD::Quote { ticker: ticker.clone(), reply: reply }).await.is_err() {
-//                             continue;
-//                         }
-                        
-//                         if let Ok((ask, bid)) = rx.await {
-//                             if self.aggregator_tx.clone().send(
-//                                 AggregatorCommand::UpdateQuotes { 
-//                                     exchange_type: ExchangeType::Gate,
-//                                     ticker: ticker.clone(),
-//                                     ask,
-//                                     bid
-//                                 }
-//                             ).await.is_err() {
-//                                 continue;
-//                             }
-//                         }
-//                     },
-//                     Err(broadcast::error::RecvError::Lagged(_)) => {
-//                         continue;
-//                     },
-//                     Err(broadcast::error::RecvError::Closed) => {
-//                         warn!("{} Канал спреда закрыт", title);
-//                         break;
-//                     }
-//                 }
-//             }
-//         });
-//     }
-// }

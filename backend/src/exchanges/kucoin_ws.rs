@@ -1,17 +1,15 @@
 use std::{sync::{Arc}, time::Duration};
-use async_trait::async_trait;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Notify, broadcast, mpsc};
+use tokio::sync::{Notify, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use futures_util::{SinkExt, StreamExt};
 use anyhow::{Result};
 use tokio_util::sync::CancellationToken;
-use tracing::warn;
 
-use crate::{exchanges::exchange_setup::ExchangeSetup, models::{exchange::ExchangeType, orderbook::SnapshotUi, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{exchange_store::ExchangeStoreCMD, market_manager::ExchangeWebsocket}};
+use crate::{models::{exchange::ExchangeType, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{aggregator::AggregatorCommand, exchange_setup::ExchangeSetup, exchange_aggregator::ExchangeStoreCMD}};
 use crate::models::orderbook::{BookEvent, Snapshot};
-use crate::services::{websocket::Websocket, exchange_store::{parse_levels__}};
+use crate::services::{websocket::Websocket, exchange_aggregator::{parse_levels__}};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct ApiKeyResponse {
@@ -66,20 +64,27 @@ struct TickerEventData {
 }
 
 pub struct KuCoinWebsocket {
-    setup: Arc<ExchangeSetup>
+    setup: Arc<ExchangeSetup>,
 }
 
 impl KuCoinWebsocket {
-    pub fn new(enabled: bool) -> Arc<Self> {
-        let setup = ExchangeSetup::new(ExchangeType::KuCoin, enabled);
+    pub fn new(
+        enabled: bool,
+        aggregator_tx: mpsc::Sender<AggregatorCommand>
+    ) -> Arc<Self> {
+        let setup = ExchangeSetup::new(
+            ExchangeType::KuCoin, 
+            enabled,
+            aggregator_tx.clone()
+        );
+        
         let this = Arc::new(
             Self { 
-                setup 
+                setup,
             }
         );
 
         this.clone().connect();
-
         this
     }
 
@@ -238,43 +243,6 @@ impl Websocket for KuCoinWebsocket {
         }
 
         WebSocketStatus::Finished
-    }
-
-    async fn get_last_snapshot(self: Arc<Self>, snapshot_tx: mpsc::Sender<SnapshotUi>) {
-        if !self.setup.enabled {
-            return ;
-        }
-
-        // while let Ok((_uuid, ticker)) = self.setup.ticker_rx.recv().await {
-        //     let (tx, mut rx) = mpsc::channel(100);    
-        //     let this = Arc::clone(&self);
-
-        //     loop {
-        //         let ticker = ticker.clone();
-                
-        //         match this.setup.sender_data.send(ExchangeStoreCMD::GetBook { ticker, reply: tx.clone() }).await {
-        //             Ok(_) => {},
-        //             Err(e) => {
-        //                 println!("{}: {{sender_data_event_get_book}} {e}", this.setup.title)
-        //             },
-        //         };
-
-        //         tokio::select! {
-        //             data = rx.recv() => {
-        //                 if let Some(snapshot_ui) = data {
-        //                     if let Some(snapshot) = snapshot_ui {
-        //                         match snapshot_tx.send(snapshot).await {
-        //                             Ok(_) => {}
-        //                             Err(_) => {}
-        //                         }
-        //                     }
-        //                 }
-        //             }
-
-        //             _ = tokio::time::sleep(Duration::from_millis(750)) => {}
-        //         }
-        //     }
-        // }
     }
     
     async fn get_tickers(&self, _channel_type: &str) -> Option<Vec<Ticker>> {

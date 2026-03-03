@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use lru::LruCache;
 use tokio::sync::{broadcast, mpsc, oneshot};
-use crate::{models::{exchange::ExchangeType, orderbook::{BookEvent, Snapshot, SnapshotUi}}};
+use crate::{models::{orderbook::{BookEvent, Snapshot, SnapshotUi}}};
 
 impl Snapshot {
     pub async fn to_ui(&self, depth: usize) -> SnapshotUi {
@@ -80,7 +80,6 @@ pub enum ExchangeStoreCMD {
 } 
 
 pub struct ExchangeStore {
-    pub id: ExchangeType,
     pub books: LruCache<String, Snapshot>,
     pub volumes24hr: LruCache<String, f64>,
     pub rx: mpsc::Receiver<ExchangeStoreCMD>,
@@ -88,7 +87,7 @@ pub struct ExchangeStore {
 }
 
 impl ExchangeStore {
-    pub fn new(rx: mpsc::Receiver<ExchangeStoreCMD>, id: ExchangeType) -> Self {
+    pub fn new(rx: mpsc::Receiver<ExchangeStoreCMD>) -> Self {
         let cache_capacity = std::env::var("ORDERBOOK_CACHE_CAPACITY")
             .unwrap_or_else(|_| "1000".into())
             .parse::<usize>()
@@ -97,7 +96,6 @@ impl ExchangeStore {
         let (book_updates, _) = broadcast::channel(1);
 
         Self {
-            id,
             books: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
             volumes24hr: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
             rx: rx,

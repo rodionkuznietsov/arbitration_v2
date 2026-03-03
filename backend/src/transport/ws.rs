@@ -323,13 +323,6 @@ async fn handle_connection(
                                         let long_exchange = subscription.long_exchange.unwrap();
                                         let short_exchange = subscription.short_exchange.unwrap();
 
-                                        let long_pair = format!("{}/{}", long_exchange, short_exchange);
-                                        let short_pair = format!("{}/{}", short_exchange, long_exchange);
-                                        let exchange_pairs = ExchangePairs {
-                                            long_pair: long_pair,
-                                            short_pair: short_pair
-                                        };
-
                                         let mut events = HashSet::new();
                                         events.insert(ChartEvent::LinesHistory);
                                         events.insert(ChartEvent::UpdateHistory);
@@ -340,7 +333,8 @@ async fn handle_connection(
                                             ChannelType::Chart, 
                                             ChannelSubscription::Chart { 
                                                 events,
-                                                exchange_pairs
+                                                long_exchange,
+                                                short_exchange
                                             }
                                         );
                                     }
