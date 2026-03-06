@@ -5,7 +5,7 @@ use ordered_float::OrderedFloat;
 use sqlx::types::BigDecimal;
 use tokio::{sync::{mpsc}, time::{Instant, interval_at}};
 use tracing::{error, info};
-use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorCmd}, exchange::{ExchangeType, Spread}, line::{Line, TimeFrame}, orderbook::SnapshotUi, websocket::{ChannelSubscription, Symbol}}, storage::line_storage::add_new_line};
+use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse}, exchange::{ExchangeType, Spread}, line::{Line, TimeFrame}, orderbook::SnapshotUi, websocket::{ChannelSubscription, Symbol}}, storage::line_storage::add_new_line, transport::client_aggregator::ClientAggregatorCmd};
 
 pub enum AggregatorCommand {
     UpdateQuotes {
@@ -32,7 +32,7 @@ pub struct BestBidAsk {
     pub ask: f64,
 }
 
-pub struct Aggregator {
+pub struct DataAggregator {
     quotes: LruCache<(ExchangeType, String), BestBidAsk>,
     pending_lines: LruCache<(String, String), Spread>,
     lines_cache: HashMap<(String, String), Vec<Line>>,
@@ -44,14 +44,15 @@ pub struct Aggregator {
     pool: sqlx::PgPool,
 }
 
-impl Aggregator {
+impl DataAggregator {
     pub fn new(
         aggregator_rx: mpsc::Receiver<AggregatorCommand>, 
         pool: sqlx::PgPool,
     ) -> Self {
         let exchanges = vec![
             ExchangeType::Gate,
-            ExchangeType::Bybit
+            ExchangeType::Bybit,
+            ExchangeType::KuCoin,
         ];
 
         let books = HashMap::new();
@@ -168,10 +169,12 @@ impl Aggregator {
                         ticker: symbol.clone() 
                     });
 
-                    client_aggregator_tx.try_send(ClientAggregatorCmd::Publish { 
-                        key: long_key,
-                        payload: long_payload
-                    }).ok();
+                    client_aggregator_tx.try_send(ClientAggregatorCmd::Use(
+                        ClientAggregatorUse::Publish { 
+                            key: long_key,
+                            payload: long_payload
+                        }
+                    )).ok();
 
                     let short_key = ChannelSubscription::OrderBook { 
                         long_exchange: *short_ex, 
@@ -185,10 +188,12 @@ impl Aggregator {
                         ticker: symbol.clone() 
                     });
 
-                    client_aggregator_tx.try_send(ClientAggregatorCmd::Publish { 
-                        key: short_key,
-                        payload: short_payload
-                    }).ok();
+                    client_aggregator_tx.try_send(ClientAggregatorCmd::Use(
+                        ClientAggregatorUse::Publish { 
+                            key: short_key,
+                            payload: short_payload
+                        }
+                    )).ok();
                 }
             }
         }

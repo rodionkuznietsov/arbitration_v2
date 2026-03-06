@@ -2,9 +2,13 @@ use std::{collections::{HashMap, HashSet}, sync::Arc, time::Duration};
 use futures_util::{StreamExt, SinkExt};
 use tokio::{net::TcpListener, sync::{mpsc}};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
+use tracing::info;
 use uuid::Uuid;
 
-use crate::models::{aggregator::{AggregatorPayload, ClientAggregatorCmd}, websocket::{ChannelSubscription, ChannelType, ChartEvent, ClientCmd, Subscription, WsMessage, WebsocketResult}};
+use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse}, websocket::{ChannelSubscription, ChannelType, ChartEvent, ClientCmd, Subscription, WebsocketResult, WsMessage}}, transport::client_aggregator::ClientAggregatorCmd};
+
+const PING_DELAY: u64 = 20; // в секундах
+const WEBSOCKET_NAME: &'static str = "ArbitrationWebsocket";
 
 pub async fn connect_async(
     sender: mpsc::Sender<ClientAggregatorCmd>,
@@ -12,7 +16,7 @@ pub async fn connect_async(
     let addr = "127.0.0.1:9000";
     let listener = TcpListener::bind(addr).await.unwrap();
     
-    println!("🌐 [Arbitration-Websocket] is running",);
+    info!("{} -> is running", WEBSOCKET_NAME);
 
     while let Ok((stream, _)) = listener.accept().await {
         tokio::spawn(handle_connection(
@@ -35,15 +39,18 @@ async fn handle_connection(
     let cancel_token = tokio_util::sync::CancellationToken::new();
 
     sender.send(ClientAggregatorCmd::Register { 
-        id: new_id, 
+        client_id: new_id, 
         tx: tx
     }).await.ok();
 
     tokio::spawn({
         let sender = sender.clone(); 
+        let cancel_token = cancel_token.clone();
+
         let mut books = HashMap::new();
 
         let mut interval = tokio::time::interval(Duration::from_millis(20));
+        let mut ping_interval = tokio::time::interval(Duration::from_secs(PING_DELAY));
 
         async move {
             loop {
@@ -74,8 +81,8 @@ async fn handle_connection(
                         }
                     },
                     _ = cancel_token.cancelled() => {
-                        sender.send(ClientAggregatorCmd::UnRegister(new_id)).await.ok();
-                        println!("Client {} disconnected", new_id);
+                        sender.send(ClientAggregatorCmd::Use(ClientAggregatorUse::UnRegister(new_id))).await.ok();
+                        info!("{} -> отключился", new_id);
                         break;
                     },
                     _ = interval.tick() => {
@@ -84,6 +91,11 @@ async fn handle_connection(
                                 cancel_token.cancel();
                             }
                         }
+                    },
+                    _ = ping_interval.tick() => {
+                        if ws_sender.send(Message::Ping(vec![])).await.is_err() {
+                            cancel_token.cancel();
+                        }
                     }
                 }
             }
@@ -91,11 +103,11 @@ async fn handle_connection(
     });
 
     // Обрабатываем входящие сообщения от клиента
-    tokio::spawn(async move {
-        while let Some(msg) = ws_receiver.next().await {
-            if let Ok(msg) = msg {
-                if msg.is_text() {
-                    if let Ok(subscription) = serde_json::from_str::<Subscription>(&msg.to_text().unwrap()) {                        
+    while let Some(msg) = ws_receiver.next().await {
+        if let Ok(msg) = msg {
+            match msg {
+                Message::Text(msg) => {
+                    if let Ok(subscription) = serde_json::from_str::<Subscription>(&msg) {                        
                         let ticker = Arc::new(format!("{}usdt", subscription.ticker.to_lowercase()));
 
                         match subscription.action {
@@ -105,8 +117,8 @@ async fn handle_connection(
                                         let long_exchange = subscription.long_exchange.unwrap();
                                         let short_exchange = subscription.short_exchange.unwrap();
 
-                                        sender.send(
-                                            ClientAggregatorCmd::Subscribe(
+                                        sender.send(ClientAggregatorCmd::Use(
+                                            ClientAggregatorUse::Subscribe(
                                                 new_id, 
                                                 ChannelSubscription::OrderBook { 
                                                     long_exchange, 
@@ -114,7 +126,7 @@ async fn handle_connection(
                                                     ticker: ticker
                                                 }
                                             )
-                                        ).await.ok();
+                                        )).await.ok();
                                     },
                                     ChannelType::Chart => {
                                         let long_exchange = subscription.long_exchange.unwrap();
@@ -126,13 +138,15 @@ async fn handle_connection(
                                         events.insert(ChartEvent::UpdateLine);
                                         events.insert(ChartEvent::Volume24hr);
 
-                                        sender.send(ClientAggregatorCmd::Subscribe(
-                                            new_id, 
-                                            ChannelSubscription::Chart { 
-                                                long_exchange, 
-                                                short_exchange, 
-                                                ticker: ticker
-                                            }
+                                        sender.send(ClientAggregatorCmd::Use(
+                                            ClientAggregatorUse::Subscribe(
+                                                new_id, 
+                                                ChannelSubscription::OrderBook { 
+                                                    long_exchange, 
+                                                    short_exchange, 
+                                                    ticker: ticker
+                                                }
+                                            )
                                         )).await.ok();
                                     },
                                     _ => {}
@@ -143,8 +157,12 @@ async fn handle_connection(
                             }
                         }
                     }
-                }
+                },
+                Message::Pong(_) => {
+                    info!("{} -> Ответил", new_id)
+                },
+                _ => {}
             }
         }
-    });
+    }
 }

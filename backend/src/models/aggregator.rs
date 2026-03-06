@@ -1,14 +1,8 @@
 use std::sync::Arc;
-use tokio::sync::{mpsc};
 use uuid::Uuid;
-
 use crate::models::{orderbook::SnapshotUi, websocket::{ChannelSubscription, ChartEvent, Symbol}};
 
-pub enum ClientAggregatorCmd {
-    Register {
-        id: Uuid,
-        tx: mpsc::Sender<Arc<AggregatorPayload>>
-    },
+pub enum ClientAggregatorUse {
     #[allow(unused)]
     UnRegister(Uuid),
     Subscribe(Uuid, ChannelSubscription),

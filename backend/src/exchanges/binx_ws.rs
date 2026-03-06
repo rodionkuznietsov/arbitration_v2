@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::{Notify, mpsc};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
-use crate::{models::{self, exchange::ExchangeType, orderbook::{BookEvent, Snapshot}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{aggregator::AggregatorCommand, exchange_setup::ExchangeSetup, exchange_aggregator::ExchangeStoreCMD}};
+use crate::{models::{self, exchange::ExchangeType, orderbook::{BookEvent, Snapshot}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{data_aggregator::AggregatorCommand, exchange_setup::ExchangeSetup, exchange_aggregator::ExchangeStoreCMD}};
 use crate::services::{websocket::Websocket, exchange_aggregator::{parse_levels__}};
 
 #[derive(Debug, Deserialize, Serialize)]

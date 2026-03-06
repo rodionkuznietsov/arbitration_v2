@@ -4,15 +4,15 @@ use lru::LruCache;
 use tokio::sync::{broadcast, mpsc, oneshot};
 use crate::{models::{orderbook::{BookEvent, Snapshot, SnapshotUi}}};
 
+const PRICE_TICK: f64 = 900000000.0;
+
 impl Snapshot {
     pub async fn to_ui(&self, depth: usize) -> SnapshotUi {
-        let tick = 900000000.0;
-        
         let mut a = self.a.iter()
-            .filter(|(p, _)| (**p as f64) / tick >= self.last_price)
+            .filter(|(p, _)| (**p as f64) / PRICE_TICK >= self.last_price)
             .scan(0.0, |acc, (p, v)| {
                 *acc += *v;
-                Some(((*p as f64 / tick), *acc))
+                Some(((*p as f64 / PRICE_TICK), *acc))
             })
             .take(depth)
             .collect::<Vec<(f64, f64)>>();
@@ -29,10 +29,10 @@ impl Snapshot {
 
         let b = self.b.iter()
             .rev()
-            .filter(|(p, _)| (**p as f64) / tick < a_price && (**p as f64) / tick <= self.last_price)
+            .filter(|(p, _)| (**p as f64) / PRICE_TICK < a_price && (**p as f64) / PRICE_TICK <= self.last_price)
             .scan(0.0, |acc, (p, v)| {
                 *acc += *v;
-                Some(((*p as f64 / tick), *acc))
+                Some(((*p as f64 / PRICE_TICK), *acc))
             })
             .take(depth)
             .collect::<Vec<(f64, f64)>>();
@@ -49,12 +49,10 @@ impl Snapshot {
 
 pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
     let mut values = BTreeMap::new();
-    let tick = 900000000.0;
-
     for vec in data {
         let price = vec[0].parse::<f64>().expect("[Orderbook] Bad price");
         let volume = vec[1].parse::<f64>().expect("[Orderbook] Bad volume");
-        let price_with_tick = (price * tick).round() as i64;
+        let price_with_tick = (price * PRICE_TICK).round() as i64;
 
         values.insert(price_with_tick, volume);
     }
@@ -62,7 +60,6 @@ pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
     values
 }
 
-#[derive(Debug)]
 pub enum ExchangeStoreCMD {
     Event(BookEvent),
     GetBook { 
@@ -213,16 +210,14 @@ impl ExchangeStore {
                     ticker ,
                     reply
                 } => {
-                    let tick = 900000000.0; 
-
                     if let Some(snapshot) = self.books.get(&ticker) {
                         let best_ask = snapshot.a.iter()
                             .min_by_key(|x| x.0)
-                            .map(|(price, _)| *price as f64 / tick);
+                            .map(|(price, _)| *price as f64 / PRICE_TICK);
 
                         let best_bid = snapshot.b.iter()
                             .max_by_key(|x| x.0)
-                            .map(|(price, _)| *price as f64 / tick);
+                            .map(|(price, _)| *price as f64 / PRICE_TICK);
 
                         let best_ask = match best_ask {
                             Some(v) => v,
@@ -234,16 +229,12 @@ impl ExchangeStore {
                             None => 0.0
                         };
 
-                        if reply.send((best_ask, best_bid)).is_err() {
-                            continue;
-                        }
+                        reply.send((best_ask, best_bid)).ok();
                     }
                 },
                 ExchangeStoreCMD::GetVolume { ticker, reply } => {
                     if let Some(volume) = self.volumes24hr.get(&ticker) {
-                        if reply.send(*volume).is_err() {
-                            continue;
-                        }
+                        reply.send(*volume).ok();
                     }
                 },
             }

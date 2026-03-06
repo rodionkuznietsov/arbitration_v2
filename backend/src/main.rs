@@ -30,7 +30,7 @@ async fn main() {
     tokio::spawn({
         let client_tx = client_tx.clone();
         async move {
-            services::market_manager::run_websockets(
+            services::market_manager::run_ws_exchanges(
                 client_tx, storage_pool
             ).await;
         }

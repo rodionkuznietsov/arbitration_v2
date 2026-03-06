@@ -6,7 +6,7 @@ use futures_util::{StreamExt, SinkExt};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, warn};
 
-use crate::{models::{exchange::{ExchangeType, TickerEvent}, orderbook::OrderBookEvent, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{aggregator::AggregatorCommand, exchange_setup::{ExchangeSetup}, exchange_aggregator::ExchangeStoreCMD}};
+use crate::{models::{exchange::{ExchangeType, TickerEvent}, orderbook::OrderBookEvent, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{data_aggregator::AggregatorCommand, exchange_setup::{ExchangeSetup}, exchange_aggregator::ExchangeStoreCMD}};
 use crate::models::orderbook::{BookEvent, Delta, Snapshot};
 use crate::services::{websocket::Websocket, exchange_aggregator::{parse_levels__}};
 

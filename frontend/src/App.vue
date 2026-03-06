@@ -27,9 +27,9 @@
     --color-input-border: #b7bcc4;
     --color-chart-border-bottom: #dfdede;
     --color-popup: #333B47;
-    --color-success: #2EBD85;
+    --color-success: #16C784;
     --color-success-opacity-0_15: hsl(157 61% 46% / 0.15);
-    --color-error: #F6465D;
+    --color-error: #EE8282;
     --color-error-opacity-0_15: hsl(352 91% 62% / 0.15);
     --default-font-color: #1f1f1f;
     --default-font-size: 16px;
@@ -37,7 +37,7 @@
     --default-padding: 8px;
     --default-icon-size: 16px;
     --default-border-radius: 8px;
-    --default-input-color: #DFDFDF80;
+    --default-input-color: DFDFDF80;
     --default-chart-ticker-color: #DFDFDF80;
     --default-font: "Noto Sans", sans-serif;
     --default-input-bg: #DFDFDF80;

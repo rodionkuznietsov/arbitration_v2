@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use tokio::sync::{broadcast, mpsc, oneshot};
 use tracing::warn;
 use crate::models::{exchange::ExchangeType, orderbook::SnapshotUi};
-use crate::services::{aggregator::AggregatorCommand, exchange_aggregator::{ExchangeStore, ExchangeStoreCMD}};
+use crate::services::{data_aggregator::AggregatorCommand, exchange_aggregator::{ExchangeStore, ExchangeStoreCMD}};
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
