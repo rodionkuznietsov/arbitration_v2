@@ -1,9 +1,12 @@
-use std::{collections::HashSet, sync::Arc};
-
+use std::{sync::Arc};
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
+use uuid::Uuid;
 
-use crate::models::{exchange::{ExchangePairs, ExchangeType}, line::Line, orderbook::{MarketType, SnapshotUi}};
+use crate::models::{exchange::{ ExchangeType}, orderbook::{SnapshotUi}};
+
+pub type ClientId = Uuid;
+pub type Symbol = String;
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Ticker {
@@ -22,15 +25,6 @@ pub enum ClientCmd {
     UnSubscribe
 }
 
-#[derive(Debug, Clone)]
-pub enum ServerToClientEvent {
-    OrderBook(ChannelType, MarketType, Arc<SnapshotUi>, String),
-    LinesHistory(ChannelType, Vec<(MarketType, Vec<Line>)>, String),
-    AddLineToHistory(ChannelType, Vec<Line>, String, MarketType),
-    UpdateLine(ChartEvent, Line, MarketType),
-    Volume24hr(ChartEvent, String, f64, MarketType)
-}
-
 #[derive(Display, Deserialize, Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all="snake_case")]
 #[strum(serialize_all="snake_case")]
@@ -46,21 +40,23 @@ pub enum ChartEvent {
 #[strum(serialize_all="snake_case")]
 pub enum ChannelType {
     OrderBook,
-    Chart
+    Chart,
+    Unknown
 }
 
-#[derive(Display, Deserialize, Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Display, Deserialize, Debug, Clone, Serialize, Hash, PartialEq, Eq)]
 #[serde(rename_all="snake_case")]
 #[strum(serialize_all="snake_case")]
 pub enum ChannelSubscription {
     OrderBook {
         long_exchange: ExchangeType,
         short_exchange: ExchangeType,
+        ticker: Arc<Symbol>,
     },
     Chart {
-        events: HashSet<ChartEvent>,
         long_exchange: ExchangeType,
         short_exchange: ExchangeType,
+        ticker: Arc<Symbol>
     }
 }
 
@@ -76,5 +72,29 @@ pub struct Subscription {
     pub channel: ChannelType,
     pub long_exchange: Option<ExchangeType>, 
     pub short_exchange: Option<ExchangeType>,
-    pub ticker: String
+    pub ticker: Symbol
+}
+
+#[derive(Serialize)]
+#[serde(rename_all="snake_case")]
+pub enum WebsocketResult {
+    #[serde(rename="books")]
+    OrderBook {
+        long: Arc<SnapshotUi>,
+        short: Arc<SnapshotUi>
+    },
+    #[allow(unused)]
+    LinesHistory {
+        value: String,
+        time: u64,
+    },
+    #[allow(unused)]
+    Unknown
+}
+
+#[derive(Serialize)]
+pub struct WsMessage {
+    pub channel: ChannelType,
+    pub result: WebsocketResult,
+    pub ticker: Arc<Symbol>
 }

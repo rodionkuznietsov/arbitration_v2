@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{Type, prelude::FromRow, types::BigDecimal};
 
+use crate::models::websocket::Symbol;
+
 #[derive(Debug, Clone, FromRow)]
 pub struct Line {
     pub timestamp: chrono::DateTime<chrono::Utc>,
     pub exchange_pair: String,
-    pub symbol: String,
+    pub symbol: Symbol,
     pub timeframe: TimeFrame,
     pub value: BigDecimal
 }
@@ -20,12 +22,6 @@ pub enum TimeFrame {
 
 impl TimeFrame {
     pub fn to_secs_i64(&self) -> i64 {
-        match self {
-            Self::One => 60
-        }
-    }
-
-    pub fn to_secs_u64(&self) -> u64 {
         match self {
             Self::One => 60
         }

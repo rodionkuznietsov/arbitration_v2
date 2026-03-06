@@ -1,15 +1,6 @@
-use strum_macros::Display;
 use std::{collections::{BTreeMap}};
 use serde::{Deserialize, Serialize};
-
-#[derive(Display, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-#[derive(Hash)]
-#[strum(serialize_all="snake_case")]
-pub enum MarketType {
-    Long, 
-    Short
-}
+use crate::models::websocket::Symbol;
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct OrderBookEvent {
@@ -55,19 +46,19 @@ pub struct SnapshotUi {
 #[derive(Debug)]
 pub enum BookEvent {
     Snapshot { 
-        ticker: String, 
+        ticker: Symbol, 
         snapshot: Snapshot,
     },
     Delta { 
-        ticker: String, 
+        ticker: Symbol, 
         delta: Delta 
     },
     Price { 
-        ticker: String, 
+        ticker: Symbol, 
         last_price: f64 
     },
     Volume24hr {
-        ticker: String, 
+        ticker: Symbol, 
         volume: f64 
     }
 }

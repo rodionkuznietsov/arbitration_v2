@@ -1,5 +1,7 @@
 use std::{time::Duration};
-use crate::{transport::ws::ConnectedClient};
+use tokio::sync::mpsc;
+
+use crate::transport::{client_aggregator::{ClientAggregator}};
 
 mod exchanges;
 mod transport;
@@ -20,17 +22,22 @@ async fn main() {
     
     let storage_pool = storage::pool::create_pool().await;
 
-    let (client_tx, client_rx) = async_channel::unbounded::<ConnectedClient>();
+    let (client_tx, client_rx) = mpsc::channel(1024);
+    let client_aggregator = ClientAggregator::new(client_rx);
 
+    tokio::spawn(client_aggregator.run());
+    
     tokio::spawn({
+        let client_tx = client_tx.clone();
         async move {
             services::market_manager::run_websockets(
-                client_rx, storage_pool
+                client_tx, storage_pool
             ).await;
         }
     });
     
     tokio::spawn({
+        let client_tx = client_tx.clone();
         async move {
             transport::ws::connect_async(
                 client_tx,

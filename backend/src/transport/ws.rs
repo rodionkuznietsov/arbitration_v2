@@ -1,57 +1,13 @@
-use std::{collections::{HashMap, HashSet}, time::Duration};
+use std::{collections::{HashMap, HashSet}, sync::Arc, time::Duration};
 use futures_util::{StreamExt, SinkExt};
-use serde_json::Value;
-use tokio::{net::TcpListener, time::interval};
+use tokio::{net::TcpListener, sync::{mpsc}};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use uuid::Uuid;
 
-use crate::models::{exchange::{ExchangePairs, ExchangeType}, websocket::{ChannelSubscription, ChannelType, ChartEvent, ClientCmd, ServerToClientEvent, Subscription}};
-
-#[derive(Debug, Clone)]
-pub struct ConnectedClient {
-    pub uuid: Uuid,
-    pub ticker: String,
-    pub long_exchange: ExchangeType,
-    pub short_exchange: ExchangeType,
-    pub sender: async_channel::Sender<ServerToClientEvent>,
-    pub receiver: async_channel::Receiver<ServerToClientEvent>,
-    pub token: tokio_util::sync::CancellationToken,
-    pub exchange_pair: ExchangePairs,
-    pub subscriptions: HashMap<ChannelType, ChannelSubscription>
-}
-
-impl ConnectedClient {
-    pub fn new() -> Self {
-        let (sender, receiver) = async_channel::bounded::<ServerToClientEvent>(5);
-        Self { 
-            uuid: Uuid::new_v4(),
-            ticker: String::new(),
-            long_exchange: ExchangeType::Unknown, 
-            short_exchange: ExchangeType::Unknown,
-            sender: sender,
-            receiver: receiver,
-            token: tokio_util::sync::CancellationToken::new(),
-            exchange_pair: ExchangePairs::new(),
-            subscriptions: HashMap::new()
-        }
-    }
-
-    pub fn update(&mut self, ticker: &str, long_exchange: ExchangeType, short_exchange: ExchangeType) {
-        self.ticker = ticker.to_string();
-        self.long_exchange = long_exchange;
-        self.short_exchange = short_exchange;
-    }
-
-    pub async fn send_to_client(
-        &mut self, 
-        event: ServerToClientEvent
-    ) {
-        self.sender.send(event).await.expect("[ConnectedClient] Failed to send snapshot")
-    }
-}
+use crate::models::{aggregator::{AggregatorPayload, ClientAggregatorCmd}, websocket::{ChannelSubscription, ChannelType, ChartEvent, ClientCmd, Subscription, WsMessage, WebsocketResult}};
 
 pub async fn connect_async(
-    sender: async_channel::Sender<ConnectedClient>,
+    sender: mpsc::Sender<ClientAggregatorCmd>,
 ) {
     let addr = "127.0.0.1:9000";
     let listener = TcpListener::bind(addr).await.unwrap();
@@ -68,223 +24,64 @@ pub async fn connect_async(
 
 async fn handle_connection(
     stream: tokio::net::TcpStream, 
-    sender: async_channel::Sender<ConnectedClient>,
+    sender: mpsc::Sender<ClientAggregatorCmd>,
 ) {
 
     let ws_stream: tokio_tungstenite::WebSocketStream<tokio::net::TcpStream> = accept_async(stream).await.unwrap();
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
-    let mut client = ConnectedClient::new();
-    let receiver = client.receiver.clone(); 
-    let task_token = client.token.clone();
+    let new_id = Uuid::new_v4();
+    let (tx, mut rx) = mpsc::channel::<Arc<AggregatorPayload>>(1024);
+    let cancel_token = tokio_util::sync::CancellationToken::new();
 
-    println!("Client: `{}` is successfully connected", client.uuid);
+    sender.send(ClientAggregatorCmd::Register { 
+        id: new_id, 
+        tx: tx
+    }).await.ok();
 
     tokio::spawn({
-        async move {
-            let mut books = HashMap::new();
-            let mut orderbooks = HashMap::new();
-            let mut chart = HashMap::new();
-            let mut interval = interval(Duration::from_millis(50));   
+        let sender = sender.clone(); 
+        let mut books = HashMap::new();
 
+        let mut interval = tokio::time::interval(Duration::from_millis(20));
+
+        async move {
             loop {
                 tokio::select! {
-                    _ = task_token.cancelled() => {
-                        println!("Client: `{}` disconnected", client.uuid);
-                        break;
-                    }
-
-                    Ok(event) = receiver.recv() => {
-                        match event {
-                            ServerToClientEvent::OrderBook(
-                                channel, 
-                                order_type, 
-                                snapshot, 
+                    Some(payload) = rx.recv() => {
+                        let payload = payload.as_ref();
+                        
+                        match payload {
+                            AggregatorPayload::OrderBook { 
+                                long_order_book,
+                                short_order_book,
                                 ticker
-                            ) => {
-                                books.insert(order_type, snapshot);
-                                let json = serde_json::json!({
-                                    "channel": channel,
-                                    "result": {
-                                        "books": books
+                            } => {
+                                let msg = WsMessage {
+                                    channel: ChannelType::OrderBook,
+                                    result: WebsocketResult::OrderBook { 
+                                        long: long_order_book.clone(), 
+                                        short: short_order_book.clone() 
                                     },
-                                    "ticker": ticker
-                                });
-                                orderbooks.insert(channel, json);
-                            }
-                            ServerToClientEvent::LinesHistory(
-                                channel, 
-                                results,
-                                ticker,
-                            ) => {
+                                    ticker: ticker.clone()
+                                };
 
-                                let entry = chart
-                                    .entry(channel.clone())
-                                    .or_insert_with(|| {
-                                            serde_json::json!({
-                                                "channel": channel,
-                                                "result": {
-                                                    "lines": {}
-                                                },
-                                                "ticker": ticker,
-                                            })
-                                        }
-                                    );
-                                
-                                let mut map = serde_json::Map::new();
+                                let string_msg = serde_json::to_string(&msg).unwrap();
 
-                                for (market_type, lines) in results.iter() {
-                                    let key = market_type.to_string();
-
-                                    let value = lines.iter().map(|line| {
-                                        serde_json::json!({
-                                            "value": line.value.to_string(),
-                                            "time": line.timestamp.to_rfc3339()
-                                        })
-                                    }).collect::<Vec<_>>();
-
-                                    map.insert(key, serde_json::json!(value));
-                                }
-
-                                let result_obj = entry
-                                    .as_object_mut()
-                                    .unwrap()
-                                    .entry("result")
-                                    .or_insert_with(|| serde_json::json!({}));
-
-                                if let Some(result) = result_obj.as_object_mut() {
-                                    result.insert("lines".to_string(), serde_json::Value::Object(map));
-                                }
+                                books.insert(ChannelType::OrderBook, string_msg);
                             },
-                            ServerToClientEvent::AddLineToHistory(
-                                channel, 
-                                line,
-                                ticker,
-                                market_type
-                            ) => {
-                                // println!("{channel} -> {ticker}: {line:?}; {market_type}")
-
-                                let entry = chart
-                                    .entry(channel.clone())
-                                    .or_insert_with(|| {
-                                        serde_json::json!({
-                                            "channel": channel,
-                                            "result": {},
-                                            "ticker": ticker
-                                        })
-                                    });
-
-                                if let Some(result) = entry.get_mut("result") {
-                                    let lines_obj = result
-                                        .as_object_mut()
-                                        .unwrap()
-                                        .entry("lines")
-                                        .or_insert_with(|| serde_json::json!({}));
-                                        
-                                    let value: Value = line.iter().map(|line| {
-                                        serde_json::json!({
-                                            "time": line.timestamp.to_rfc3339(),
-                                            "value": line.value.to_string()
-                                        })
-                                    }).collect();
-                                    let value = &value[0];
-
-                                    let type_obj = lines_obj
-                                        .as_object_mut()
-                                        .unwrap()
-                                        .entry(market_type.to_string())
-                                        .or_insert_with(|| serde_json::json!({}));
-
-                                    if let Some(t) = type_obj.as_array_mut() {
-                                        t.push(value.clone());
-                                    }
-                                }
-                            }
-                            ServerToClientEvent::UpdateLine(event, line, market_type) => {
-                                let entry = chart
-                                    .entry(ChannelType::Chart)
-                                    .or_insert_with(|| {
-                                            serde_json::json!({
-                                                "channel": ChannelType::Chart,
-                                                "result": {
-                                                    "events": {}
-                                                },
-                                            })
-                                        }
-                                    );
-
-                                if let Some(result) = entry.get_mut("result") {
-                                    let events = result
-                                        .as_object_mut()
-                                        .unwrap()
-                                        .entry("events")
-                                        .or_insert_with(|| serde_json::json!({}));
-                                        
-                                    let update_line = events
-                                        .as_object_mut()
-                                        .unwrap()
-                                        .entry(&event.to_string())
-                                        .or_insert_with(|| serde_json::json!({}));
-
-                                    if let Some(update_line_obj) = update_line.as_object_mut() {
-                                        update_line_obj.insert(
-                                            market_type.to_string(),
-                                            serde_json::json!({
-                                                "time": line.timestamp.to_rfc3339(),
-                                                "value": line.value.to_string()
-                                            })
-                                        );
-                                    }
-                                }
-                            },
-                            ServerToClientEvent::Volume24hr(event, ticker, turnover_volume, market_type) => {
-                                let entry = chart
-                                    .entry(ChannelType::Chart)
-                                    .or_insert_with(|| {
-                                            serde_json::json!({
-                                                "channel": ChannelType::Chart,
-                                                "result": {
-                                                    "events": {}
-                                                },
-                                                "ticker": ticker,
-                                            })
-                                        }
-                                    );
-                                
-                                if let Some(result) = entry.get_mut("result") {
-                                    let events = result
-                                        .as_object_mut()
-                                        .unwrap()
-                                        .entry("events")
-                                        .or_insert_with(|| {
-                                            serde_json::json!({})
-                                        });
-
-                                    let volume = events
-                                        .as_object_mut()
-                                        .unwrap()
-                                        .entry(&event.to_string())
-                                        .or_insert_with(|| serde_json::json!({}));
-
-                                    volume[&market_type.to_string()] = serde_json::json!({
-                                        "volume": turnover_volume
-                                    });
-                                }
-                            }
+                            _ => {}
                         }
-                    }
-
+                    },
+                    _ = cancel_token.cancelled() => {
+                        sender.send(ClientAggregatorCmd::UnRegister(new_id)).await.ok();
+                        println!("Client {} disconnected", new_id);
+                        break;
+                    },
                     _ = interval.tick() => {
-                        for json in orderbooks.values() {
-                            if ws_sender.send(Message::Text(json.to_string().into())).await.is_err() {
-                                task_token.cancel();
-                            }
-                        }
-
-                        for json in chart.values() {
-                            // println!("{:#?}", json);
-                            if ws_sender.send(Message::Text(json.to_string().into())).await.is_err() {
-                                task_token.cancel();
+                        for (_, str_msg) in &books {
+                            if ws_sender.send(Message::Text(str_msg.to_string())).await.is_err() {
+                                cancel_token.cancel();
                             }
                         }
                     }
@@ -293,16 +90,13 @@ async fn handle_connection(
         }
     });
 
+    // Обрабатываем входящие сообщения от клиента
     tokio::spawn(async move {
         while let Some(msg) = ws_receiver.next().await {
             if let Ok(msg) = msg {
                 if msg.is_text() {
-                    println!("{}", msg);
                     if let Ok(subscription) = serde_json::from_str::<Subscription>(&msg.to_text().unwrap()) {                        
-                        let ticker = format!("{}usdt", subscription.ticker.to_lowercase());
-                        let task_token = client.token.clone();
-
-                        client.ticker = ticker;
+                        let ticker = Arc::new(format!("{}usdt", subscription.ticker.to_lowercase()));
 
                         match subscription.action {
                             ClientCmd::Subscribe => {
@@ -311,13 +105,16 @@ async fn handle_connection(
                                         let long_exchange = subscription.long_exchange.unwrap();
                                         let short_exchange = subscription.short_exchange.unwrap();
 
-                                        client.subscriptions.insert(
-                                            ChannelType::OrderBook, 
-                                            ChannelSubscription::OrderBook { 
-                                                long_exchange, 
-                                                short_exchange
-                                            }
-                                        );
+                                        sender.send(
+                                            ClientAggregatorCmd::Subscribe(
+                                                new_id, 
+                                                ChannelSubscription::OrderBook { 
+                                                    long_exchange, 
+                                                    short_exchange, 
+                                                    ticker: ticker
+                                                }
+                                            )
+                                        ).await.ok();
                                     },
                                     ChannelType::Chart => {
                                         let long_exchange = subscription.long_exchange.unwrap();
@@ -329,29 +126,25 @@ async fn handle_connection(
                                         events.insert(ChartEvent::UpdateLine);
                                         events.insert(ChartEvent::Volume24hr);
 
-                                        client.subscriptions.insert(
-                                            ChannelType::Chart, 
+                                        sender.send(ClientAggregatorCmd::Subscribe(
+                                            new_id, 
                                             ChannelSubscription::Chart { 
-                                                events,
-                                                long_exchange,
-                                                short_exchange
+                                                long_exchange, 
+                                                short_exchange, 
+                                                ticker: ticker
                                             }
-                                        );
-                                    }
+                                        )).await.ok();
+                                    },
+                                    _ => {}
                                 }
                             }
                             ClientCmd::UnSubscribe => {
-                                client.subscriptions.clear();
-                                task_token.cancel();
                                 break;
                             }
                         }
-
-                        sender.send(client.clone()).await.expect("[Arbitration-Websocket] Failed to send exchange names");
                     }
                 }
             }
         }
     });
-
 }
