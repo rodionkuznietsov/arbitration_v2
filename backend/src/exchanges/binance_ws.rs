@@ -7,7 +7,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
 
-use crate::{models::{self, exchange::ExchangeType, orderbook::{BookEvent, Delta, Snapshot}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{data_aggregator::AggregatorCommand, exchange_setup::ExchangeSetup, exchange_aggregator::ExchangeStoreCMD}};
+use crate::{adapters::binance_adapter::BinanceAdapter, exchanges::exchange_adapter::ExchangeAdapter, models::{self, exchange::ExchangeType, orderbook::{BookEvent, Delta, Snapshot}, websocket::{Ticker, WebSocketStatus, WsCmd}}, services::{data_aggregator::AggregatorCommand, exchange_aggregator::ExchangeStoreCMD, exchange_setup::ExchangeSetup}};
 use crate::services::{websocket::Websocket, exchange_aggregator::{parse_levels__}};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -52,8 +52,10 @@ impl BinanceWebsocket {
         enabled: bool,
         aggregator_tx: mpsc::Sender<AggregatorCommand>
     ) -> Arc<Self> {
+        let adapter = BinanceAdapter;
         let setup = ExchangeSetup::new(
             ExchangeType::Binance, 
+            adapter,
             enabled,
             aggregator_tx.clone()
         );
@@ -160,9 +162,11 @@ impl Websocket for BinanceWebsocket {
                 for ticker in chunk {
                     let symbol = ticker.symbol.clone().unwrap();
                     let symbol_cl = symbol.clone();
-                    if cmd_tx.send(WsCmd::Subscribe(symbol)).await.is_err() {
-                        error!("{} is it not possible to send the command", self.setup.title)
-                    }
+
+
+                    // if cmd_tx.send(WsCmd::Subscribe(symbol)).await.is_err() {
+                    //     error!("{} is it not possible to send the command", self.setup.title)
+                    // }
 
                     tokio::spawn({
                         let semaphore = semaphore.clone();
@@ -204,7 +208,9 @@ impl Websocket for BinanceWebsocket {
                             _ = token.cancelled() => {
                                 return ;
                             }
-                            _ = this.run_websocket(&mut cmd_rx) => {
+                            _ = this.run_websocket(
+                                &mut cmd_rx, None
+                            ) => {
                                 token.cancel();
                             }
                         };
@@ -217,33 +223,37 @@ impl Websocket for BinanceWebsocket {
         }
     }
 
-    async fn run_websocket(self: Arc<Self>, cmd_rx: &mut tokio::sync::mpsc::Receiver<models::websocket::WsCmd>) -> models::websocket::WebSocketStatus {
+    async fn run_websocket(
+        self: Arc<Self>, 
+        cmd_rx: &mut tokio::sync::mpsc::Receiver<models::websocket::WsCmd>,
+        _api_token: Option<String>
+    ) -> models::websocket::WebSocketStatus {
         let url = Url::parse("wss://stream.binance.com:443/ws").unwrap();
         let (ws_stream, _) = connect_async(url.to_string()).await.expect("[Binance] Failed to connect");
         let (mut write, mut read) = ws_stream.split();
 
         info!("{}", format!("{} is now live", self.setup.title));
 
-        while let Some(cmd) = cmd_rx.recv().await {
-            match cmd {
-                WsCmd::Subscribe(ticker) => {
-                    info!("{}", ticker);
+        // while let Some(cmd) = cmd_rx.recv().await {
+        //     match cmd {
+        //         WsCmd::Subscribe(ticker) => {
+        //             info!("{}", ticker);
 
-                    let orderbook = format!("{}@depth@100ms", ticker.to_lowercase());
-                    let price = format!("{}@ticker", ticker.to_lowercase());
+        //             let orderbook = format!("{}@depth@100ms", ticker.to_lowercase());
+        //             let price = format!("{}@ticker", ticker.to_lowercase());
 
-                    write.send(tokio_tungstenite::tungstenite::Message::Text(
-                        serde_json::json!({
-                            "method": "SUBSCRIBE",
-                            "params": [
-                                orderbook,
-                                price
-                            ]
-                        }).to_string().into()
-                    )).await.unwrap();
-                }
-            }
-        }   
+        //             write.send(tokio_tungstenite::tungstenite::Message::Text(
+        //                 serde_json::json!({
+        //                     "method": "SUBSCRIBE",
+        //                     "params": [
+        //                         orderbook,
+        //                         price
+        //                     ]
+        //                 }).to_string().into()
+        //             )).await.unwrap();
+        //         }
+        //     }
+        // }   
 
         let this = self.clone();
         while let Some(msg) = read.next().await {

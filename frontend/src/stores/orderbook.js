@@ -12,6 +12,7 @@ export const useOrderBookStore = defineStore('orderbook', {
         longAsks: [],
         longBids: [],
         longLastPrice: 0.0,
+        
         longFirstAskPrice: 0.0,
         longFirstBidPrice: 0.0,
         
@@ -22,7 +23,10 @@ export const useOrderBookStore = defineStore('orderbook', {
         shortBids: [],
         shortAsks: [],
         shortLastPrice: 0.0,
+
         shortFirstAskPrice: 0.0,
+        shortLastAskPrice: 0.0,
+
         shortFirstBidPrice: 0.0,
     }),
 
@@ -63,7 +67,7 @@ export const useOrderBookStore = defineStore('orderbook', {
 
         updateData(books) {
             this.longLastPrice = books.long?.last_price
-            this.longFirstAskPrice = books.long?.a?.[0]?.[0];
+            this.longFirstAskPrice = books.long?.a?.at(-1)?.[0];
             this.longFirstBidPrice = books.long?.b?.[0]?.[0];
 
             if (books.long?.a) {
@@ -99,7 +103,7 @@ export const useOrderBookStore = defineStore('orderbook', {
             }
 
             this.shortLastPrice = books.short?.last_price
-            this.shortFirstAskPrice = books.short?.a?.[0]?.[0];
+            this.shortFirstAskPrice = books.short?.a?.at(-1)?.[0];
             this.shortFirstBidPrice = books.short?.b?.[0]?.[0];
         },
 

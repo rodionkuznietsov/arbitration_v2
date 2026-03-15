@@ -1,15 +1,19 @@
-use std::{collections::BTreeMap, num::NonZeroUsize};
+use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 
 use lru::LruCache;
 use tokio::sync::{broadcast, mpsc, oneshot};
-use crate::{models::{orderbook::{BookEvent, Snapshot, SnapshotUi}}};
+use crate::models::{orderbook::{BookEvent, Snapshot, SnapshotUi}, websocket::Symbol};
 
 const PRICE_TICK: f64 = 900000000.0;
 
 impl Snapshot {
-    pub async fn to_ui(&self, depth: usize) -> SnapshotUi {
+    pub fn to_ui(&self, 
+        depth: usize,
+        last_price: f64,
+    ) -> SnapshotUi {
+
         let mut a = self.a.iter()
-            .filter(|(p, _)| (**p as f64) / PRICE_TICK >= self.last_price)
+            .filter(|(p, _)| (**p as f64) / PRICE_TICK >= last_price)
             .scan(0.0, |acc, (p, v)| {
                 *acc += *v;
                 Some(((*p as f64 / PRICE_TICK), *acc))
@@ -29,7 +33,7 @@ impl Snapshot {
 
         let b = self.b.iter()
             .rev()
-            .filter(|(p, _)| (**p as f64) / PRICE_TICK < a_price && (**p as f64) / PRICE_TICK <= self.last_price)
+            .filter(|(p, _)| (**p as f64) / PRICE_TICK < a_price && (**p as f64) / PRICE_TICK <= last_price)
             .scan(0.0, |acc, (p, v)| {
                 *acc += *v;
                 Some(((*p as f64 / PRICE_TICK), *acc))
@@ -37,12 +41,14 @@ impl Snapshot {
             .take(depth)
             .collect::<Vec<(f64, f64)>>();
 
-        let last_price = self.last_price;
+
+        let timestamp = self.timestamp;
 
         SnapshotUi {
             a,
             b,
-            last_price
+            last_price,
+            timestamp,
         }
     }
 }
@@ -60,25 +66,33 @@ pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
     values
 }
 
+pub struct BookData {
+    pub snapshot: Option<Snapshot>,
+    pub last_price: Option<f64>,
+    pub volume24h: Option<f64>
+}
+
 pub enum ExchangeStoreCMD {
     Event(BookEvent),
+    RegisterSymbol {
+        symbol: Arc<Symbol>
+    },
     GetBook { 
-        ticker: String,
+        symbol: Arc<Symbol>,
         reply: oneshot::Sender<SnapshotUi> 
     },
     GetQuote {
-        ticker: String,
+        symbol: Arc<Symbol>,
         reply: oneshot::Sender<(f64, f64)>
     },
     GetVolume {
-        ticker: String,
+        symbol: Arc<Symbol>,
         reply: oneshot::Sender<f64>
     }
 } 
 
 pub struct ExchangeStore {
-    pub books: LruCache<String, Snapshot>,
-    pub volumes24hr: LruCache<String, f64>,
+    pub market_data: LruCache<Symbol, BookData>,
     pub rx: mpsc::Receiver<ExchangeStoreCMD>,
     pub book_updates: broadcast::Sender<String>,
 }
@@ -93,8 +107,7 @@ impl ExchangeStore {
         let (book_updates, _) = broadcast::channel(1);
 
         Self {
-            books: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
-            volumes24hr: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
+            market_data: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
             rx: rx,
             book_updates, 
         }
@@ -105,136 +118,169 @@ impl ExchangeStore {
         while let Some(cmd) = self.rx.recv().await {
 
             match cmd {
+                ExchangeStoreCMD::RegisterSymbol { 
+                    symbol 
+                } => {
+                    // Разобрать с normilize_symbol;
+                    let symbol: String = symbol
+                        .chars()
+                        .filter(|c| *c != '_' && *c != '-')
+                        .map(|c| c.to_ascii_lowercase())
+                        .collect();
+
+                    self.market_data.put(symbol, BookData { 
+                        snapshot: None, 
+                        last_price: None, 
+                        volume24h: None
+                    });
+                },
                 ExchangeStoreCMD::Event(event) => {
                     match event {
-                        BookEvent::Snapshot { ticker, snapshot  } => {
-                            match self.books.get_mut(&ticker) {
-                                Some(book) => {
-                                    book.a = snapshot.a;
-                                    book.b = snapshot.b;
-                                }
-                                None => {
-                                    self.books.put(ticker.clone(), snapshot);
-                                }
+                        BookEvent::Snapshot { 
+                            symbol, 
+                            snapshot  
+                        } => {
+                            if let Some(data) = self.market_data.get_mut(&symbol) {
+                                data.snapshot = Some(snapshot);
                             }
-                            let _ = self.book_updates.send(ticker);
+                            let _ = self.book_updates.send(symbol);
                         }
-                        BookEvent::Delta { ticker, delta } => {
-                            if let Some(snapshot) = self.books.get_mut(&ticker) {
-                                match snapshot.last_update_id {
-                                    Some(_) => {
-                                        let from_version = delta.from_version.unwrap();
-                                        let to_version = delta.to_version.unwrap();
+                        BookEvent::Delta { 
+                            symbol, 
+                            delta 
+                        } => {
+                            if let Some(data) = self.market_data.get_mut(&symbol) {
+                                if let Some(snapshot) = &mut data.snapshot {
+                                    match snapshot.last_update_id {
+                                        Some(_) => {
+                                            let from_version = delta.from_version.unwrap();
+                                            let to_version = delta.to_version.unwrap();
 
-                                        for (price, volume) in delta.a {
-                                            if volume == 0.0 {
-                                                snapshot.a.remove(&price);
-                                            } else {
-                                                if let Some(v) = snapshot.a.get_mut(&price) {
-                                                    *v = volume;
+                                            for (price, volume) in delta.a {
+                                                if volume == 0.0 {
+                                                    snapshot.a.remove(&price);
                                                 } else {
-                                                    snapshot.a.insert(price, volume);
+                                                    if let Some(v) = snapshot.a.get_mut(&price) {
+                                                        *v = volume;
+                                                    } else {
+                                                        snapshot.a.insert(price, volume);
+                                                    }
+                                                }
+                                            }
+
+                                            for (price, volume) in delta.b {
+                                                if volume == 0.0 {
+                                                    snapshot.b.remove(&price);
+                                                } else {
+                                                    if let Some(v) = snapshot.b.get_mut(&price) {
+                                                        *v = volume;
+                                                    } else {
+                                                        snapshot.b.insert(price, volume);
+                                                    }
+                                                }
+                                            }
+
+                                            if last_version_id == 0 {
+                                                continue;
+                                            }
+
+                                            if from_version != last_version_id {
+                                                println!("[OrderBookManager]: Packet loss detected");
+                                                continue;
+                                            }
+                                            last_version_id = to_version + 1;  
+                                        }
+                                        None => {
+                                            for (price, volume) in delta.a {
+                                                if volume == 0.0 {
+                                                    snapshot.a.remove(&price);
+                                                } else {
+                                                    if let Some(v) = snapshot.a.get_mut(&price) {
+                                                        *v = volume;
+                                                    } else {
+                                                        snapshot.a.insert(price, volume);
+                                                    }
+                                                }
+                                            }
+
+                                            for (price, volume) in delta.b {
+                                                if volume == 0.0 {
+                                                    snapshot.b.remove(&price);
+                                                } else {
+                                                    if let Some(v) = snapshot.b.get_mut(&price) {
+                                                        *v = volume;
+                                                    } else {
+                                                        snapshot.b.insert(price, volume);
+                                                    }
                                                 }
                                             }
                                         }
-
-                                        for (price, volume) in delta.b {
-                                            if volume == 0.0 {
-                                                snapshot.b.remove(&price);
-                                            } else {
-                                                if let Some(v) = snapshot.b.get_mut(&price) {
-                                                    *v = volume;
-                                                } else {
-                                                    snapshot.b.insert(price, volume);
-                                                }
-                                            }
-                                        }
-
-                                        if last_version_id == 0 {
-                                            continue;
-                                        }
-
-                                        if from_version != last_version_id {
-                                            println!("[OrderBookManager]: Packet loss detected");
-                                            continue;
-                                        }
-                                        last_version_id = to_version + 1;  
-                                    }
-                                    None => {
-                                        for (price, volume) in delta.a {
-                                            if volume == 0.0 {
-                                                snapshot.a.remove(&price);
-                                            } else {
-                                                if let Some(v) = snapshot.a.get_mut(&price) {
-                                                    *v = volume;
-                                                } else {
-                                                    snapshot.a.insert(price, volume);
-                                                }
-                                            }
-                                        }
-
-                                        for (price, volume) in delta.b {
-                                            if volume == 0.0 {
-                                                snapshot.b.remove(&price);
-                                            } else {
-                                                if let Some(v) = snapshot.b.get_mut(&price) {
-                                                    *v = volume;
-                                                } else {
-                                                    snapshot.b.insert(price, volume);
-                                                }
-                                            }
-                                        }
-                                    }
-                                } 
-                                let _ = self.book_updates.send(ticker);
+                                    } 
+                                }
+                                let _ = self.book_updates.send(symbol);
                             }
-                        }
-                        BookEvent::Price { ticker, last_price } => {
-                            if let Some(t) = self.books.get_mut(&ticker) {
-                                t.last_price = last_price;
-                            }
-                            let _ = self.book_updates.send(ticker);
                         },
-                        BookEvent::Volume24hr { ticker, volume } => {
-                            self.volumes24hr.put(ticker.clone(), volume);
+                        BookEvent::TickerUpdate { 
+                            symbol, 
+                            last_price, 
+                            volume 
+                        } => {
+                            if let Some(data) = self.market_data.get_mut(&symbol) {
+                                data.last_price = Some(last_price);
+                                data.volume24h = Some(volume);
+                            }
                         },
                     }
                 }
-                ExchangeStoreCMD::GetBook { ticker, reply } => {
-                    if let Some(snapshot) = self.books.get(&ticker) {
-                        let snapshot_ui = snapshot.to_ui(6).await;
-                        reply.send(snapshot_ui).ok();
+                ExchangeStoreCMD::GetBook { 
+                    symbol, 
+                    reply 
+                } => {
+                    if let Some(data) = self.market_data.get(&symbol.to_string()) {
+                        let snapshot_ui = &data.snapshot;
+                        if let Some(snapshot) = snapshot_ui {
+                            if let Some(price) = data.last_price {
+                                reply.send(snapshot.to_ui(6, price)).ok();
+                            }
+                        }
                     }
                 }
                 ExchangeStoreCMD::GetQuote { 
-                    ticker ,
+                    symbol ,
                     reply
-                } => {
-                    if let Some(snapshot) = self.books.get(&ticker) {
-                        let best_ask = snapshot.a.iter()
-                            .min_by_key(|x| x.0)
-                            .map(|(price, _)| *price as f64 / PRICE_TICK);
+                } => {                    
+                    if let Some(data) = self.market_data.get(&symbol.to_string()) {
+                        if let Some(snapshot) = &data.snapshot {
+                            let best_ask = snapshot.a.iter()
+                                .min_by_key(|x| x.0)
+                                .map(|(price, _)| *price as f64 / PRICE_TICK);
 
-                        let best_bid = snapshot.b.iter()
-                            .max_by_key(|x| x.0)
-                            .map(|(price, _)| *price as f64 / PRICE_TICK);
+                            let best_bid = snapshot.b.iter()
+                                .max_by_key(|x| x.0)
+                                .map(|(price, _)| *price as f64 / PRICE_TICK);
 
-                        let best_ask = match best_ask {
-                            Some(v) => v,
-                            None => 0.0
-                        };
+                            let best_ask = match best_ask {
+                                Some(v) => v,
+                                None => 0.0
+                            };
 
-                        let best_bid = match best_bid {
-                            Some(v) => v,
-                            None => 0.0
-                        };
+                            let best_bid = match best_bid {
+                                Some(v) => v,
+                                None => 0.0
+                            };
 
-                        reply.send((best_ask, best_bid)).ok();
+                            reply.send((best_ask, best_bid)).ok();
+                        }
                     }
                 },
-                ExchangeStoreCMD::GetVolume { ticker, reply } => {
-                    if let Some(volume) = self.volumes24hr.get(&ticker) {
-                        reply.send(*volume).ok();
+                ExchangeStoreCMD::GetVolume { 
+                    symbol, 
+                    reply 
+                } => {             
+                    if let Some(data) = self.market_data.get(&symbol.to_string()) {
+                        if let Some(volume) = data.volume24h {
+                            reply.send(volume).ok();
+                        }
                     }
                 },
             }

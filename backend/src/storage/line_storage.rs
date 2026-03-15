@@ -1,7 +1,9 @@
-use crate::{models::line::Line};
+use std::collections::VecDeque;
 
-pub async fn get_spread_history(pool: &sqlx::PgPool, symbol: &str, exchange_pair: &str) -> Result<Vec<Line>, sqlx::Error> {    
-    let lines: Vec<Line> = sqlx::query_as::<_, Line>(
+use crate::models::{aggregator::KeyPair, line::Line};
+
+pub async fn get_spread_history(pool: &sqlx::PgPool, symbol: &str, exchange_pair: &str) -> Result<VecDeque<Line>, sqlx::Error> {    
+    let lines: VecDeque<Line> = sqlx::query_as::<_, Line>(
         r#"
         SELECT timestamp, exchange_pair, symbol, timeframe, value
         FROM storage.lines
@@ -13,7 +15,7 @@ pub async fn get_spread_history(pool: &sqlx::PgPool, symbol: &str, exchange_pair
     .bind(symbol)
     .bind(exchange_pair)
     .fetch_all(pool)
-    .await?;
+    .await?.into();
 
     Ok(lines.into_iter().rev().collect())
 }
@@ -39,28 +41,24 @@ pub async fn get_last_timestamp(
     Ok(line)
 }
 
-pub async fn add_new_line(pool: &sqlx::PgPool, line: Line) -> Result<(), sqlx::Error> {
-    let symbol = line.symbol;
-    let exchange_pair = line.exchange_pair;
-    let timestamp = line.timestamp;
-    let value = line.value;
-    let timeframe = line.timeframe;
+pub async fn add_new_lines(
+    pool: &sqlx::PgPool, 
+    lines: &Vec<(Line, KeyPair)>,
+    query: &str
+) -> Result<(), sqlx::Error> {
+    let mut q = sqlx::query(
+        query
+    );
 
-    let _ = sqlx::query(
-        r#"
-            INSERT INTO storage.lines
-                (timestamp, exchange_pair, symbol, timeframe, value)
-            VALUES 
-                ($1, $2, $3, $4, $5)
-        "#
-    )
-    .bind(timestamp)
-    .bind(exchange_pair)
-    .bind(symbol)
-    .bind(timeframe)
-    .bind(value)
-    .execute(pool)
-    .await?;
+    for (v, _) in lines {
+        q = q
+            .bind(v.exchange_pair.clone())
+            .bind(v.symbol.clone())
+            .bind(v.timeframe.clone())
+            .bind(v.value.clone());
+    }
+
+    q.execute(pool).await?;
 
     Ok(())
 }

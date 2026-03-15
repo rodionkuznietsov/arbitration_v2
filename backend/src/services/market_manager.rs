@@ -1,23 +1,30 @@
+use std::sync::Arc;
+
 use tokio::sync::{mpsc};
 
-use crate::{exchanges::{binance_ws::BinanceWebsocket, binx_ws::BinXWebsocket, bybit_ws::BybitWebsocket, gate_rs::GateWebsocket, kucoin_ws::KuCoinWebsocket, lbank_ws::LBankWebsocket, mexc_ws::MexcWebsocket}, services::data_aggregator::DataAggregator, transport::client_aggregator::ClientAggregatorCmd};
+use crate::{adapters::{bybit_adapter::BybitAdapter, gate_adapter::GateAdapter, kucoin_adapter::KuCoinAdapter}, models::exchange::ExchangeType, services::{data_aggregator::DataAggregatorCmd, exchange_setup::ExchangeSetup}};
 
 pub async fn run_ws_exchanges(
-    client_tx: mpsc::Sender<ClientAggregatorCmd>,
-    pool: sqlx::PgPool
+    data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>,
 ) {
-    let (aggregator_tx, aggregator_rx) = mpsc::channel(1024);
-    let aggregator = DataAggregator::new(
-        aggregator_rx, 
-        pool.clone(),
-    );
-    tokio::spawn(aggregator.run(client_tx));
+    ExchangeSetup::new(
+        ExchangeType::Bybit,
+        Arc::new(BybitAdapter),
+        true,
+        data_aggregator_tx.clone()
+    ).start();
 
-    BybitWebsocket::new(true, aggregator_tx.clone());
-    GateWebsocket::new(true, aggregator_tx.clone());
-    KuCoinWebsocket::new(true, aggregator_tx.clone());
-    BinXWebsocket::new(false, aggregator_tx.clone());
-    MexcWebsocket::new(false, aggregator_tx.clone());
-    BinanceWebsocket::new(false, aggregator_tx.clone());
-    LBankWebsocket::new(false, aggregator_tx.clone());
+    ExchangeSetup::new(
+        ExchangeType::Gate,
+        Arc::new(GateAdapter),
+        true,
+        data_aggregator_tx.clone()
+    ).start();
+
+    ExchangeSetup::new(
+        ExchangeType::KuCoin,
+        Arc::new(KuCoinAdapter),
+        false,
+        data_aggregator_tx.clone()
+    ).start();
 }

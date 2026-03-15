@@ -112,7 +112,7 @@ impl Websocket for BinXWebsocket {
                             return;
                         }
 
-                        _ = this.clone().run_websocket(&mut cmd_rx) => {
+                        _ = this.clone().run_websocket(&mut cmd_rx, None) => {
                             token.cancel();
                         }
                     };
@@ -123,47 +123,51 @@ impl Websocket for BinXWebsocket {
 
                 for ticker in chunk {
                     let symbol = ticker.symbol.clone().unwrap();
-                    match cmd_tx.send(WsCmd::Subscribe(symbol)).await {
-                        Ok(_) => {}
-                        Err(e) => {
-                            println!("{}: {e}", self.setup.title)
-                        }
-                    }
+                    // match cmd_tx.send(WsCmd::Subscribe(symbol)).await {
+                    //     Ok(_) => {}
+                    //     Err(e) => {
+                    //         println!("{}: {e}", self.setup.title)
+                    //     }
+                    // }
                 }
             }
         }
     }
 
-    async fn run_websocket(self: Arc<Self>, cmd_rx: &mut mpsc::Receiver<WsCmd>) -> WebSocketStatus {        
+    async fn run_websocket(
+        self: Arc<Self>, 
+        cmd_rx: &mut mpsc::Receiver<WsCmd>, 
+        _api_token: Option<String>
+    ) -> WebSocketStatus {        
         let url = url::Url::parse("wss://open-api-ws.bingx.com/market").unwrap();
         let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.setup.title));
         let (mut write, mut read) = ws_stream.split();
 
         println!("🌐 [BinX-Websocket] is running");
         
-        while let Some(cmd) = cmd_rx.recv().await {
-            match cmd {
-                WsCmd::Subscribe(ticker) => {
-                    let orderbook = format!("{}@depth50", ticker.to_uppercase());
-                    write.send(Message::Text(
-                        serde_json::json!({
-                            "id": "e745cd6d-d0f6-4a70-8d5a-043e4c741b40",
-                            "reqType": "sub",
-                            "dataType": orderbook
-                        }).to_string().into()
-                    )).await.unwrap();
+        // while let Some(cmd) = cmd_rx.recv().await {
+        //     match cmd {
+        //         WsCmd::Subscribe(ticker) => {
+        //             let orderbook = format!("{}@depth50", ticker.to_uppercase());
+        //             write.send(Message::Text(
+        //                 serde_json::json!({
+        //                     "id": "e745cd6d-d0f6-4a70-8d5a-043e4c741b40",
+        //                     "reqType": "sub",
+        //                     "dataType": orderbook
+        //                 }).to_string().into()
+        //             )).await.unwrap();
     
-                    let price = format!("{}@lastPrice", ticker.to_uppercase());
-                    write.send(Message::Text(
-                        serde_json::json!({
-                            "id": "e745cd6d-d0f6-4a70-8d5a-043e4c741b40",
-                            "reqType": "sub",
-                            "dataType": price
-                        }).to_string().into()
-                    )).await.unwrap();
-                }
-            }
-        }
+        //             let price = format!("{}@lastPrice", ticker.to_uppercase());
+        //             write.send(Message::Text(
+        //                 serde_json::json!({
+        //                     "id": "e745cd6d-d0f6-4a70-8d5a-043e4c741b40",
+        //                     "reqType": "sub",
+        //                     "dataType": price
+        //                 }).to_string().into()
+        //             )).await.unwrap();
+        //         }
+        //     }
+        // }
 
         while let Some(msg) = read.next().await {
             let msg_type = match msg {

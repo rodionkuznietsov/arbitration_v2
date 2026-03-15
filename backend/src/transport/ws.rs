@@ -1,11 +1,11 @@
-use std::{collections::{HashMap, HashSet}, sync::Arc, time::Duration};
+use std::{collections::{HashMap, VecDeque}, sync::Arc, time::Duration};
 use futures_util::{StreamExt, SinkExt};
-use tokio::{net::TcpListener, sync::{mpsc}};
+use tokio::{net::TcpListener, sync::{mpsc, watch}};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
 use tracing::info;
 use uuid::Uuid;
 
-use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse}, websocket::{ChannelSubscription, ChannelType, ChartEvent, ClientCmd, Subscription, WebsocketResult, WsMessage}}, transport::client_aggregator::ClientAggregatorCmd};
+use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse}, line::{Line, MarketType}, websocket::{ChannelSubscription, ChannelType, ChartData, ChartEvent, ClientCmd, OrderBookData, Subscription}}, transport::client_aggregator::ClientAggregatorCmd};
 
 const PING_DELAY: u64 = 20; // в секундах
 const WEBSOCKET_NAME: &'static str = "ArbitrationWebsocket";
@@ -35,49 +35,100 @@ async fn handle_connection(
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
     let new_id = Uuid::new_v4();
-    let (tx, mut rx) = mpsc::channel::<Arc<AggregatorPayload>>(1024);
+    let (tx, mut rx) = watch::channel(Arc::new(AggregatorPayload::default()));
+    let (lines_tx, mut lines_rx) = mpsc::channel::<(VecDeque<Line>, MarketType)>(1);
     let cancel_token = tokio_util::sync::CancellationToken::new();
 
-    sender.send(ClientAggregatorCmd::Register { 
-        client_id: new_id, 
-        tx: tx
-    }).await.ok();
+    sender.send(
+        ClientAggregatorCmd::Register { 
+            client_id: new_id, 
+            tx: tx.clone(),
+            lines_tx
+        }
+    ).await.ok();
 
     tokio::spawn({
         let sender = sender.clone(); 
         let cancel_token = cancel_token.clone();
 
-        let mut books = HashMap::new();
+        let mut chart_data = HashMap::new();
+        chart_data.insert(
+            ChannelType::Chart, 
+            ChartData::new()
+        );
 
-        let mut interval = tokio::time::interval(Duration::from_millis(20));
+        let mut books = HashMap::new();
+        books.insert(
+            ChannelType::OrderBook,
+            OrderBookData::new()
+        );
+
+        let mut interval = tokio::time::interval(Duration::from_millis(50));
         let mut ping_interval = tokio::time::interval(Duration::from_secs(PING_DELAY));
 
         async move {
             loop {
                 tokio::select! {
-                    Some(payload) = rx.recv() => {
-                        let payload = payload.as_ref();
+                    Some((lines, market_type)) = lines_rx.recv() => {
+                        if let Some(chart) = chart_data.get_mut(&ChannelType::Chart) {
+                            match market_type {
+                                MarketType::Long => {
+                                    chart.long_lines = Some(lines);
+                                },
+                                MarketType::Short => {
+                                    chart.short_lines = Some(lines);
+                                }
+                            }
+                        }
+                    },
+                    Ok(_) = rx.changed() => {
+                        let payload = rx.borrow().clone();
                         
-                        match payload {
+                        match payload.as_ref() {
                             AggregatorPayload::OrderBook { 
                                 long_order_book,
                                 short_order_book,
+                                ticker,
+                            } => {
+                                if let Some(data) = books.get_mut(&ChannelType::OrderBook) {
+                                    data.ticker = Some(ticker.clone());
+                                    data.long = Some(long_order_book.clone());
+                                    data.short = Some(short_order_book.clone());
+                                }
+                            },
+                            AggregatorPayload::ChartEvent {
+                                event,
                                 ticker
                             } => {
-                                let msg = WsMessage {
-                                    channel: ChannelType::OrderBook,
-                                    result: WebsocketResult::OrderBook { 
-                                        long: long_order_book.clone(), 
-                                        short: short_order_book.clone() 
+                                if let Some(chart) = chart_data.get_mut(&ChannelType::Chart) {
+                                    chart.ticker = Some(ticker.clone());
+                                }
+
+                                match event {
+                                    ChartEvent::Volume24hr(
+                                        long_vol, 
+                                        short_vol
+                                    ) => {
+                                        if let Some(chart) = chart_data.get_mut(&ChannelType::Chart) {
+                                            chart.volume24h = Some((*long_vol, *short_vol));
+                                        }
                                     },
-                                    ticker: ticker.clone()
-                                };
-
-                                let string_msg = serde_json::to_string(&msg).unwrap();
-
-                                books.insert(ChannelType::OrderBook, string_msg);
-                            },
-                            _ => {}
+                                    ChartEvent::UpdateLine(
+                                        long_spread, 
+                                        short_spread,
+                                        timestamp
+                                    ) => {
+                                        if let Some(chart) = chart_data.get_mut(&ChannelType::Chart) {
+                                            chart.update_line = Some((
+                                                *long_spread, 
+                                                *short_spread,
+                                                *timestamp
+                                            ));
+                                        }
+                                    },
+                                    _ => {}
+                                }
+                            }
                         }
                     },
                     _ = cancel_token.cancelled() => {
@@ -86,9 +137,85 @@ async fn handle_connection(
                         break;
                     },
                     _ = interval.tick() => {
-                        for (_, str_msg) in &books {
-                            if ws_sender.send(Message::Text(str_msg.to_string())).await.is_err() {
-                                cancel_token.cancel();
+                        for (key, data) in &books {
+                            let long_book = data.long.clone();
+                            let short_book = data.short.clone();
+
+                            if let (Some(l), Some(s)) = (long_book, short_book) {
+                                let msg = serde_json::json!({
+                                    "channel": key,
+                                    "result": {
+                                        "order_book": {
+                                            "long": l,
+                                            "short": s
+                                        }
+                                    },
+                                    "ticker": data.ticker
+                                });
+
+                                if ws_sender.send(Message::Text(msg.to_string())).await.is_err() {
+                                    cancel_token.cancel();
+                                }  
+                            }
+                        }
+                        
+                        for (key, data) in &chart_data {
+                            let volume24h = data.volume24h;
+                            let update_line = data.update_line;
+                            let long_lines = &data.long_lines;
+                            let short_lines = &data.short_lines;
+
+                            if let (Some(long), Some(short), Some(vol), Some(line)) = (long_lines, short_lines, volume24h, update_line) {
+                                let long_lines_json: Vec<serde_json::Value> = long
+                                    .into_iter()
+                                    .map(|line| {
+                                        serde_json::json!({
+                                            "time": line.timestamp.to_rfc3339(),
+                                            "value": line.value.to_string()
+                                        })
+                                    })
+                                    .collect();
+
+                                let short_lines_json: Vec<serde_json::Value> = short
+                                    .into_iter()
+                                    .map(|line| {
+                                        serde_json::json!({
+                                            "time": line.timestamp.to_rfc3339(),
+                                            "value": line.value.to_string()
+                                        })
+                                    })
+                                    .collect();
+
+                                let msg = serde_json::json!({
+                                    "channel": key,
+                                    "result": {
+                                        "lines": {
+                                            "long": long_lines_json,
+                                            "short": short_lines_json,
+                                        },
+                                        "events": {
+                                            "volume24h": {
+                                                "long_vol": vol.0,
+                                                "short_vol": vol.1
+                                            },
+                                            "update_line": {
+                                                "long": {
+                                                    "time": line.2,
+                                                    "value": line.0,
+                                                },
+                                                "short": {
+                                                    "time": line.2,
+                                                    "value": line.1
+                                                },
+                                            }
+                                        }
+                                    },
+                                    "ticker": data.ticker
+                                });
+
+                                if ws_sender.send(Message::Text(msg.to_string())).await.is_err() {
+                                    cancel_token.cancel();
+                                }
                             }
                         }
                     },
@@ -132,16 +259,10 @@ async fn handle_connection(
                                         let long_exchange = subscription.long_exchange.unwrap();
                                         let short_exchange = subscription.short_exchange.unwrap();
 
-                                        let mut events = HashSet::new();
-                                        events.insert(ChartEvent::LinesHistory);
-                                        events.insert(ChartEvent::UpdateHistory);
-                                        events.insert(ChartEvent::UpdateLine);
-                                        events.insert(ChartEvent::Volume24hr);
-
                                         sender.send(ClientAggregatorCmd::Use(
                                             ClientAggregatorUse::Subscribe(
                                                 new_id, 
-                                                ChannelSubscription::OrderBook { 
+                                                ChannelSubscription::Chart { 
                                                     long_exchange, 
                                                     short_exchange, 
                                                     ticker: ticker

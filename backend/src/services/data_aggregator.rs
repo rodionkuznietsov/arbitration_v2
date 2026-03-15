@@ -1,79 +1,83 @@
-use std::{collections::HashMap, num::NonZeroUsize, str::FromStr, sync::Arc, time::Duration};
-use chrono::{TimeZone, Timelike, Utc, Duration as ChronoDuration};
-use lru::LruCache;
-use ordered_float::OrderedFloat;
+use std::{collections::HashMap, str::FromStr, sync::Arc, time::{Duration, Instant}};
+use chrono::{Timelike, Utc, Duration as ChronoDuration};
 use sqlx::types::BigDecimal;
-use tokio::{sync::{mpsc}, time::{Instant, interval_at}};
-use tracing::{error, info};
-use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse}, exchange::{ExchangeType, Spread}, line::{Line, TimeFrame}, orderbook::SnapshotUi, websocket::{ChannelSubscription, Symbol}}, storage::line_storage::add_new_line, transport::client_aggregator::ClientAggregatorCmd};
+use tokio::{sync::{broadcast, mpsc, watch}, time::{Instant as TokioInstant, interval_at}};
+use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse, KeyPair}, exchange::{ExchangeType, Spread}, line::{Line, TimeFrame}, orderbook::SnapshotUi, websocket::{ChannelSubscription, ChartEvent, Symbol}}, services::cache_aggregator::CacheAggregatorCmd, storage::line_storage::add_new_lines, transport::client_aggregator::ClientAggregatorCmd};
 
-pub enum AggregatorCommand {
+pub enum DataAggregatorCmd {
+    MarketRegister {
+        symbol: Arc<Symbol>,
+        exchange_id: ExchangeType
+    }, 
     UpdateQuotes {
-        exchange_type: ExchangeType,
-        ticker: String,
+        exchange_id: ExchangeType,
+        symbol: Arc<Symbol>,
         ask: f64,
         bid: f64,
     },
     UpdateOrderbooks {
-        exchange_type: ExchangeType,
+        exchange_id: ExchangeType,
         snapshot_ui: SnapshotUi,
-        ticker: String
+        symbol: Arc<Symbol>,
+        _created_at: Instant
     },
     UpdateVolumes {
-        exchange_type: ExchangeType,
+        exchange_id: ExchangeType,
         volume: f64,
-        ticker: String
+        symbol: Arc<Symbol>
     },
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct BestBidAsk {
+pub struct Quote {
     pub bid: f64,
     pub ask: f64,
 }
 
-pub struct DataAggregator {
-    quotes: LruCache<(ExchangeType, String), BestBidAsk>,
-    pending_lines: LruCache<(String, String), Spread>,
-    lines_cache: HashMap<(String, String), Vec<Line>>,
-    exchanges: Vec<ExchangeType>,
-    books: HashMap<Arc<Symbol>, HashMap<ExchangeType, Arc<SnapshotUi>>>,
-    volumes: HashMap<(ExchangeType, String), f64>,
+#[derive(Debug)]
+pub struct ExchangeBookData {
+    pub snapshot: Option<Arc<SnapshotUi>>,
+    pub quote: Option<Quote>,
+    pub volume24h: Option<f64>,
+}
 
-    rx: mpsc::Receiver<AggregatorCommand>,
+pub struct DataAggregator {
+    pending_lines: HashMap<Arc<Symbol>, Spread>,
+    markets: HashMap<Arc<Symbol>, HashMap<ExchangeType, ExchangeBookData>>,
+
+    rx: mpsc::Receiver<DataAggregatorCmd>,
+    cache_aggregator_tx: mpsc::Sender<CacheAggregatorCmd>,
+    markets_updated: broadcast::Sender<Arc<Symbol>>,
+
     pool: sqlx::PgPool,
 }
 
+// Исправить дефект с базой данных
 impl DataAggregator {
     pub fn new(
-        aggregator_rx: mpsc::Receiver<AggregatorCommand>, 
+        aggregator_rx: mpsc::Receiver<DataAggregatorCmd>,
+        cache_aggregator_tx: mpsc::Sender<CacheAggregatorCmd>,
+
         pool: sqlx::PgPool,
     ) -> Self {
-        let exchanges = vec![
-            ExchangeType::Gate,
-            ExchangeType::Bybit,
-            ExchangeType::KuCoin,
-        ];
-
-        let books = HashMap::new();
-        let volumes = HashMap::new();
+        let markets = HashMap::new();
+        let (markets_updated, _) = broadcast::channel(32);
         
         Self {
-            quotes: LruCache::new(NonZeroUsize::new(1000).unwrap()),
-            pending_lines: LruCache::new(NonZeroUsize::new(1000).unwrap()),
-            lines_cache: HashMap::new(),
-            exchanges,
-            books,
-            volumes,
+            pending_lines: HashMap::new(),
+            markets,
 
             rx: aggregator_rx,
+            cache_aggregator_tx,
+            markets_updated,
+
             pool,
         }
     }
     
     pub async fn run(
         mut self, 
-        client_aggregator_tx: mpsc::Sender<ClientAggregatorCmd>
+        client_aggregator_tx: watch::Sender<Arc<ClientAggregatorCmd>>
     ) {
         // Поток для отправки orderbooks клиентам, которые подписались на них, 
         // но с конкретным токеном, а не всеми подряд
@@ -85,10 +89,13 @@ impl DataAggregator {
 
         let delay = next_min - Utc::now();
         let delay_std = Duration::from_secs(delay.num_seconds() as u64);
-        let mut interval = interval_at(Instant::now() + delay_std, Duration::from_secs(60));
+        let mut interval = interval_at(TokioInstant::now() + delay_std, Duration::from_secs(60));
 
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         
+        let (spread_tx, mut spread_rx) = mpsc::channel::<Spread>(1024);
+        let mut markets_updated_rx = self.markets_updated.subscribe();
+
         loop {
             tokio::select! {
                 Some(cmd) = self.rx.recv() => {
@@ -97,179 +104,334 @@ impl DataAggregator {
 
                 _ = interval.tick() => {
                     self.db_writer().await;
+                },
+
+                Ok(symbol) = markets_updated_rx.recv() => {
+                    self.send_payload_to_client_aggregator(
+                        client_aggregator_tx.clone(), 
+                        spread_tx.clone(),
+                        symbol.clone(),
+                    ).await;
+                }
+
+                Some(spread) = spread_rx.recv() => {
+                    self.pending_lines.insert(
+                        spread.symbol.clone(), 
+                        spread
+                    );
                 }
             };
-
-            // Создаем Payload для отправки клиентам, которые подписались на обновления, и отправляем его
-            self.send_payload_to_client_aggregator(client_aggregator_tx.clone()).await;
         }
     }
 
-    async fn handle_command(&mut self, cmd: AggregatorCommand) {
+    async fn handle_command(&mut self, cmd: DataAggregatorCmd) {
         match cmd {
-            AggregatorCommand::UpdateQuotes { 
-                exchange_type ,
-                ticker,
+            DataAggregatorCmd::MarketRegister { 
+                symbol, 
+                exchange_id 
+            } => {
+                // Приводим symbol к общему формату symbolusdt
+                let symbol: String = symbol.chars()
+                    .filter(|c| *c != '_' && *c != '-')
+                    .map(|c| c.to_ascii_lowercase())
+                    .collect();
+
+                let entry = self.markets
+                    .entry(Arc::new(symbol))
+                    .or_insert_with(HashMap::new);
+
+                entry.insert(exchange_id, ExchangeBookData { 
+                    snapshot: None, 
+                    quote: None, 
+                    volume24h: None,
+                });
+            },
+            DataAggregatorCmd::UpdateQuotes { 
+                exchange_id,
+                symbol,
                 ask,
                 bid
             } => {
-                self.quotes.put(
-                    (
-                        exchange_type, 
-                        ticker.clone()
-                    ), 
-                    BestBidAsk { 
-                        bid, 
-                        ask 
-                    }
-                );
-                self.calculate_spread(ticker);
+                if let Some(exchange_map) = self.markets.get_mut(&symbol) {
+                    if let Some(data) = exchange_map.get_mut(&exchange_id) {
+                        data.quote = Some(Quote { bid, ask });
+                        _ = self.markets_updated.send(symbol);
+                    }                    
+                }
             },
-            AggregatorCommand::UpdateOrderbooks {
-                exchange_type,
+            DataAggregatorCmd::UpdateOrderbooks {
+                exchange_id,
                 snapshot_ui,
-                ticker
+                symbol,
+                _created_at
             } => {
-                let entry = self.books
-                    .entry(Arc::new(ticker))
-                    .or_insert_with(HashMap::new);
-
-                entry.insert(exchange_type, Arc::new(snapshot_ui));
+                if let Some(exchange_map) = self.markets.get_mut(&symbol) {
+                    if let Some(data) = exchange_map.get_mut(&exchange_id) {                        
+                        data.snapshot = Some(Arc::new(snapshot_ui));
+                        _ = self.markets_updated.send(symbol);
+                    }                    
+                }
             },
-            AggregatorCommand::UpdateVolumes {
-                exchange_type,
+            DataAggregatorCmd::UpdateVolumes {
+                exchange_id,
                 volume,
-                ticker
+                symbol
             } => {
-                self.volumes.insert((
-                    exchange_type, 
-                    ticker.clone()), 
-                    volume
-                );
+                if let Some(exchange_map) = self.markets.get_mut(&symbol) {
+                    if let Some(data) = exchange_map.get_mut(&exchange_id) {
+                        data.volume24h = Some(volume);
+                        _ = self.markets_updated.send(symbol);
+                    }
+                }
             },
         }
     }
 
     async fn send_payload_to_client_aggregator(
         &mut self,
-        client_aggregator_tx: mpsc::Sender<ClientAggregatorCmd>
+        client_aggregator_tx: watch::Sender<Arc<ClientAggregatorCmd>>,
+        spread_tx: mpsc::Sender<Spread>,
+        symbol: Arc<Symbol>
     ) {
-        for (symbol, exchanges) in &self.books {
-            for (i, (long_ex, long_book)) in exchanges.iter().enumerate() {
-                for (short_ex, short_book) in exchanges.iter().skip(i+1) {
-                    let long_key = ChannelSubscription::OrderBook { 
-                        long_exchange: *long_ex, 
-                        short_exchange: *short_ex, 
-                        ticker: symbol.clone()
-                    };
+        let data = self.markets.get(&symbol);
+        if let Some(exchanges) = data {
+            for (i, (long_ex, long_data)) in exchanges.iter().enumerate() {
+                for (short_ex, short_data) in exchanges.iter().skip(i+1) {
+                    let long_book = &long_data.snapshot;
+                    let short_book = &short_data.snapshot;
 
-                    let long_payload = Arc::new(AggregatorPayload::OrderBook { 
-                        long_order_book: long_book.clone(), 
-                        short_order_book: short_book.clone(), 
-                        ticker: symbol.clone() 
-                    });
+                    if let (Some(long), Some(short)) = (long_book, short_book) {
+                        let long_key = ChannelSubscription::OrderBook { 
+                            long_exchange: *long_ex, 
+                            short_exchange: *short_ex, 
+                            ticker: symbol.clone()
+                        };
+                        
+                        let long_payload = Arc::new(AggregatorPayload::OrderBook { 
+                            long_order_book: long.clone(), 
+                            short_order_book: short.clone(), 
+                            ticker: symbol.clone(),
+                        });
 
-                    client_aggregator_tx.try_send(ClientAggregatorCmd::Use(
-                        ClientAggregatorUse::Publish { 
-                            key: long_key,
-                            payload: long_payload
-                        }
-                    )).ok();
+                        let short_key = ChannelSubscription::OrderBook { 
+                            long_exchange: *short_ex, 
+                            short_exchange: *long_ex, 
+                            ticker: symbol.clone()
+                        };
 
-                    let short_key = ChannelSubscription::OrderBook { 
-                        long_exchange: *short_ex, 
-                        short_exchange: *long_ex, 
-                        ticker: symbol.clone()
-                    };
+                        let short_payload = Arc::new(AggregatorPayload::OrderBook { 
+                            long_order_book: short.clone(), 
+                            short_order_book: long.clone(), 
+                            ticker: symbol.clone(),
+                        });
+                        
+                        client_aggregator_tx.send(Arc::new(ClientAggregatorCmd::Use(
+                            ClientAggregatorUse::Publish { 
+                                key: long_key,
+                                payload: long_payload
+                            }
+                        ))).ok();
 
-                    let short_payload = Arc::new(AggregatorPayload::OrderBook { 
-                        long_order_book: short_book.clone(), 
-                        short_order_book: long_book.clone(), 
-                        ticker: symbol.clone() 
-                    });
+                        client_aggregator_tx.send(Arc::new(ClientAggregatorCmd::Use(
+                            ClientAggregatorUse::Publish { 
+                                key: short_key,
+                                payload: short_payload
+                            }
+                        ))).ok();
 
-                    client_aggregator_tx.try_send(ClientAggregatorCmd::Use(
-                        ClientAggregatorUse::Publish { 
-                            key: short_key,
-                            payload: short_payload
-                        }
-                    )).ok();
+                    }
+
+                    let long_volume = long_data.volume24h;
+                    let short_volume = short_data.volume24h;
+
+                    if let (
+                        Some(long_volume), 
+                        Some(short_volume)
+                    ) = (
+                        long_volume, 
+                        short_volume
+                    ) {
+                        let long_key = ChannelSubscription::Chart { 
+                            long_exchange: *long_ex, 
+                            short_exchange: *short_ex, 
+                            ticker: symbol.clone()
+                        };
+
+                        let long_payload = Arc::new(AggregatorPayload::ChartEvent { 
+                            event: ChartEvent::Volume24hr(long_volume, short_volume), 
+                            ticker: symbol.clone()
+                        });
+
+                        let short_key = ChannelSubscription::Chart { 
+                            long_exchange: *short_ex, 
+                            short_exchange: *long_ex, 
+                            ticker: symbol.clone()
+                        };
+
+                        let short_payload = Arc::new(AggregatorPayload::ChartEvent { 
+                            event: ChartEvent::Volume24hr(short_volume, long_volume), 
+                            ticker: symbol.clone()
+                        });
+
+                        client_aggregator_tx.send(Arc::new(ClientAggregatorCmd::Use(
+                            ClientAggregatorUse::Publish { 
+                                key: long_key,
+                                payload: long_payload
+                            }
+                        ))).ok();
+
+                        client_aggregator_tx.send(Arc::new(ClientAggregatorCmd::Use(
+                            ClientAggregatorUse::Publish { 
+                                key: short_key,
+                                payload: short_payload
+                            }
+                        ))).ok();
+                    }
+
+                    if let (
+                        Some(long_quote), 
+                        Some(short_quote)
+                    ) = (
+                        long_data.quote, 
+                        short_data.quote
+                    ) {
+                        self.calculate_spread(
+                            spread_tx.clone(),
+                            symbol.clone(),
+                            *long_ex,
+                            long_quote,
+                            *short_ex,
+                            short_quote,
+                            client_aggregator_tx.clone()
+                        ).await;
+                    }
                 }
             }
         }
     }
 
-    fn calculate_spread(&mut self, ticker: String) {
-        for i in 0..self.exchanges.len() {
-            for j in (i+1)..self.exchanges.len() {
-                let long_ex = self.exchanges[i];
-                let short_ex = self.exchanges[j];
+    async fn calculate_spread(
+        &self,
+        spread_tx: mpsc::Sender<Spread>,
 
-                let long_spread = self.quotes.get(&(long_ex, ticker.clone())).cloned();
-                let short_spread = self.quotes.get(&(short_ex, ticker.clone())).cloned();
-                
-                if let (Some(long_spread), Some(short_spread)) = (long_spread, short_spread) {
-                    let mid_price  = (short_spread.bid + short_spread.ask) / 2.0;
-                    let spread_in_percent = (short_spread.bid - long_spread.ask) / mid_price * 100.0;
+        symbol: Arc<Symbol>,
 
-                    let long_pair = format!("{}/{}", long_ex, short_ex);
-                    self.pending_lines.put(
-                        (long_pair.clone(), ticker.clone()), 
-                        Spread { 
-                            ticker: ticker.clone(), 
-                            pair: long_pair.clone(), 
-                            spread: OrderedFloat(spread_in_percent) 
-                        }
-                    );
+        long_exchange: ExchangeType,
+        long_quote: Quote,
 
-                    let mid_out_price = (long_spread.bid + short_spread.ask) / 2.0;
-                    let spread_out_percent = (long_spread.bid - short_spread.ask) / mid_out_price * 100.0;
+        short_exchange: ExchangeType,
+        short_quote: Quote,
+        client_aggregator_tx: watch::Sender<Arc<ClientAggregatorCmd>>
+    ) {
+        let mid_in_price = (short_quote.bid + long_quote.ask) / 2.0;
+        let spread_in_percent = (short_quote.bid - long_quote.ask) / mid_in_price * 100.0;
+        
+        let mid_out_price = (long_quote.ask + short_quote.bid) / 2.0;
+        let spread_out_percent = (long_quote.ask - short_quote.bid) / mid_out_price * 100.0;
 
-                    let short_pair = format!("{}/{}", short_ex, long_ex);
-                    self.pending_lines.put(
-                        (short_pair.clone(), ticker.clone()), 
-                        Spread { 
-                            ticker: ticker.clone(), 
-                            pair: short_pair.clone(), 
-                            spread: OrderedFloat(spread_out_percent) 
-                        }
-                    );
-                }
+        let now = Utc::now();
+        let timestamp = now.timestamp() - (now.timestamp() % 60);
+
+        spread_tx.send(Spread { symbol: symbol.clone(), long_exchange, short_exchange, spread: spread_in_percent, timestamp }).await.ok();
+        spread_tx.send(Spread { symbol: symbol.clone(), long_exchange, short_exchange, spread: spread_out_percent, timestamp }).await.ok();
+
+        let long_key = ChannelSubscription::Chart { 
+            long_exchange, 
+            short_exchange, 
+            ticker: symbol.clone()
+        };
+
+        let long_payload = Arc::new(
+            AggregatorPayload::ChartEvent { 
+                event: ChartEvent::UpdateLine(
+                    spread_in_percent, 
+                    spread_out_percent,
+                    timestamp
+                ),
+                ticker: symbol.clone()
             }
-        }
+        );
+        
+        client_aggregator_tx.send(Arc::new(
+            ClientAggregatorCmd::Use(
+                ClientAggregatorUse::Publish { 
+                    key: long_key, 
+                    payload: long_payload 
+                }
+            )
+        )).ok();
+
+        let short_key = ChannelSubscription::Chart { 
+            long_exchange: short_exchange, 
+            short_exchange: long_exchange, 
+            ticker: symbol.clone()
+        };
+
+        let short_payload = Arc::new(
+            AggregatorPayload::ChartEvent { 
+                event: ChartEvent::UpdateLine(
+                    spread_out_percent, 
+                    spread_in_percent,
+                    timestamp
+                ),
+                ticker: symbol
+            }
+        );
+        
+        client_aggregator_tx.send(Arc::new(
+            ClientAggregatorCmd::Use(
+                ClientAggregatorUse::Publish { 
+                    key: short_key, 
+                    payload: short_payload 
+                }
+            )
+        )).ok();
     }
 
     /// Берет данные из <b>lines</b> и сохраняет данные в базуданных
     async fn db_writer(&mut self) {
         let pool = self.pool.clone();
-        let all_spreads = self.pending_lines.clone();
-        for ((pair, ticker), spread) in all_spreads.clone() {
-            let now = Utc::now();
-            let ts = now.timestamp();
-            let start_minute = ts - (ts % TimeFrame::One.to_secs_i64());
-            
+        
+        let mut placeholders: Vec<String> = Vec::new();
+        let mut lines = Vec::new();
+
+        for (i, (symbol, spread)) in self.pending_lines.iter().enumerate() {
+            // Создаем плейсхолдеры для sql_query
+            let step = i*4;
+            let exchange_pair = format!("{}/{}", spread.long_exchange, spread.short_exchange);
+            let key_pair = KeyPair::new(spread.long_exchange, spread.short_exchange, symbol.clone());
+
             let value = match BigDecimal::from_str(&format!("{}", spread.spread)) {
-                Ok(p) => p,
+                Ok(n) => n,
                 Err(_) => continue
             };
 
-            let new_line = Line {
-                timestamp: Utc.timestamp_opt(start_minute, 0).unwrap(),
-                exchange_pair: pair.clone(),
-                symbol: ticker.clone(),
+            let line = Line {
+                timestamp: Utc::now(),
+                exchange_pair: exchange_pair,
+                symbol: symbol.to_string(),
                 timeframe: TimeFrame::One,
-                value: value
+                value: value,
             };
-            
-            match add_new_line(&pool, new_line.clone()).await {
+            lines.push((line, key_pair));
+
+            let placeholder = format!("(${}, ${}, ${}::timeframe, ${}::numeric)", step+1, step+2, step+3, step+4);
+            placeholders.push(placeholder);
+        }
+
+        let slice = &placeholders[..placeholders.len() - 4];
+        let slq_query = format!("INSERT INTO storage.lines (exchange_pair, symbol, timeframe, value) VALUES {}", slice.join(", "));
+        if !lines.is_empty() {
+            match add_new_lines(&pool, &lines, &slq_query).await {
                 Ok(_) => {
-                    self.lines_cache.insert((pair.clone(), ticker.clone()), vec![new_line]);
-                    info!("Добавлена новая линия: {} -> {}", pair, ticker);
+                    tracing::info!("Данные отправлены");
+                    self.cache_aggregator_tx.try_send(CacheAggregatorCmd::AddLines { lines }).ok();
+                    self.pending_lines.clear();
                 },
                 Err(e) => {
-                    error!("{}", e)
+                    tracing::error!("Ошибка отправки батча: {e}")
                 }
-            }
+            };
         }
     }
 }

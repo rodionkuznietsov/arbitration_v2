@@ -1,11 +1,12 @@
-use std::{fmt::{self, Display}};
-use ordered_float::OrderedFloat;
+use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
 
 use crate::models::{websocket::Symbol};
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Copy, Eq, Hash, PartialOrd)]
+#[derive(Display, Debug, Clone, PartialEq, Deserialize, Serialize, Copy, Eq, Hash, PartialOrd)]
 #[serde(rename_all="snake_case")]
+#[strum(serialize_all="PascalCase")]
 #[repr(u8)]
 pub enum ExchangeType {
     Binance = 0, 
@@ -17,22 +18,6 @@ pub enum ExchangeType {
     Gate = 5,
     LBank = 6,
     Unknown = 7
-}
-
-impl Display for ExchangeType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            ExchangeType::Binance => "binance",
-            ExchangeType::Bybit => "bybit",
-            ExchangeType::BinX => "binx",
-            ExchangeType::Gate => "gate",
-            ExchangeType::KuCoin => "kucoin",
-            ExchangeType::LBank => "lbank",
-            ExchangeType::Mexc => "mexc",
-            ExchangeType::Unknown => "unknown"
-        };
-        write!(f, "{}", s)
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -51,9 +36,29 @@ pub struct TickerEvent {
     pub result: Option<TickerEventData>
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Spread {
-    pub ticker: Symbol,
-    pub pair: String,
-    pub spread: OrderedFloat<f64>
+    pub symbol: Arc<Symbol>,
+    pub long_exchange: ExchangeType,
+    pub short_exchange: ExchangeType,
+    pub spread: f64,
+    pub timestamp: i64,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct TickerResponse {
+    #[serde(rename="result", alias="data")]
+    pub result: TickerResult
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct TickerResult {
+    #[serde(rename="list", alias="ticker")]
+    pub list: Vec<TickerInfo>
+}
+
+#[derive(Deserialize, Debug, Serialize, Clone)]
+pub struct TickerInfo {
+    #[serde(rename="symbol", alias="id")]
+    pub symbol: Option<String>
 }

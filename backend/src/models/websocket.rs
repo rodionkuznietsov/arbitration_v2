@@ -1,21 +1,16 @@
-use std::{sync::Arc};
+use std::{collections::VecDeque, sync::Arc};
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
+use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
-use crate::models::{exchange::{ ExchangeType}, orderbook::{SnapshotUi}};
+use crate::models::{exchange::ExchangeType, line::{Line}, orderbook::SnapshotUi};
 
 pub type ClientId = Uuid;
 pub type Symbol = String;
 
-#[derive(Deserialize, Debug, Serialize, Clone)]
-pub struct Ticker {
-    #[serde(rename="symbol", alias="id")]
-    pub symbol: Option<String>
-}
-
 pub enum WsCmd {
-    Subscribe(String)
+    Subscribe(Vec<Message>)
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -25,12 +20,12 @@ pub enum ClientCmd {
     UnSubscribe
 }
 
-#[derive(Display, Deserialize, Debug, Clone, Serialize, PartialEq, Eq, Hash)]
+#[derive(Display, Deserialize, Debug, Clone, Serialize)]
 #[serde(rename_all="snake_case")]
 #[strum(serialize_all="snake_case")]
 pub enum ChartEvent {
-    UpdateLine,
-    Volume24hr,
+    UpdateLine(f64, f64, i64),
+    Volume24hr(f64, f64),
     LinesHistory,
     UpdateHistory
 }
@@ -60,11 +55,6 @@ pub enum ChannelSubscription {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub enum WebSocketStatus {
-    Finished,
-}
-
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all="camelCase")]
 pub struct Subscription {
@@ -75,26 +65,39 @@ pub struct Subscription {
     pub ticker: Symbol
 }
 
-#[derive(Serialize)]
-#[serde(rename_all="snake_case")]
-pub enum WebsocketResult {
-    #[serde(rename="books")]
-    OrderBook {
-        long: Arc<SnapshotUi>,
-        short: Arc<SnapshotUi>
-    },
-    #[allow(unused)]
-    LinesHistory {
-        value: String,
-        time: u64,
-    },
-    #[allow(unused)]
-    Unknown
+#[derive(Debug)]
+pub struct ChartData {
+    pub ticker: Option<Arc<Symbol>>,
+    pub volume24h: Option<(f64, f64)>,
+    pub update_line: Option<(f64, f64, i64)>,
+    pub long_lines: Option<VecDeque<Line>>,
+    pub short_lines: Option<VecDeque<Line>>,
 }
 
-#[derive(Serialize)]
-pub struct WsMessage {
-    pub channel: ChannelType,
-    pub result: WebsocketResult,
-    pub ticker: Arc<Symbol>
+impl ChartData {
+    pub fn new() -> Self {
+        Self {
+            ticker: None,
+            volume24h: None, 
+            update_line: None,
+            long_lines: None,
+            short_lines: None,
+        }
+    }
+}
+
+pub struct OrderBookData {
+    pub ticker: Option<Arc<Symbol>>,
+    pub long: Option<Arc<SnapshotUi>>,
+    pub short: Option<Arc<SnapshotUi>>,
+}
+
+impl OrderBookData {
+    pub fn new() -> Self {
+        Self {
+            ticker: None,
+            long: None, 
+            short: None
+        }
+    }
 }

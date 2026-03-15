@@ -24,11 +24,11 @@
     let legend = null
 
     const lastLongPriceSwapped = computed(() => {
-        return swapActive.value ? orderBookStore.shortLastPrice : orderBookStore.longLastPrice
+        return swapActive.value ? orderBookStore.shortFirstAskPrice : orderBookStore.longFirstBidPrice
     })
 
     const lastShortPriceSwapped = computed(() => {
-        return swapActive.value ? orderBookStore.longLastPrice : orderBookStore.shortLastPrice
+        return swapActive.value ? orderBookStore.longFirstBidPrice : orderBookStore.shortFirstAskPrice
     })
 
     const lastLongValue = computed(() => {
@@ -75,22 +75,14 @@
             }
 
             const events = result?.events
-            if (events) {
-                const volume24hr = events?.volume24hr
-                if (volume24hr) {
-                    const long = volume24hr.long
-                    if (long) {
-                        let vol = chartStore.volume24hrFormat(long.volume)
-                        chartStore.longVolume24hr = vol 
-                    }
-                    const short = volume24hr.short
-                    if (short) {
-                        let vol = chartStore.volume24hrFormat(short.volume)
-                        chartStore.shortVolume24hr = vol
-                    }
+            if (events) {            
+                const volume24h = events.volume24h
+                if (volume24h) {
+                    chartStore.longVolume24hr = chartStore.volume24hrFormat(volume24h.long_vol)
+                    chartStore.shortVolume24hr = chartStore.volume24hrFormat(volume24h.short_vol)
                 }
                 
-                const updateLine = events?.update_line
+                const updateLine = events.update_line
                 if (updateLine) {
                     const long = updateLine.long
                     const long_time = long?.time
@@ -99,14 +91,14 @@
 
                     if (long_time) {
                         chartStore.lastLongLine = {
-                            time: Math.floor(new Date(long.time).getTime() / 1000),
+                            time: Math.floor(new Date(long.time).getTime()),
                             value: parseFloat(long.value)
                         }
                     }
 
                     if (short_time) {
                         chartStore.lastShortLine = {
-                            time: Math.floor(new Date(short.time).getTime() / 1000),
+                            time: Math.floor(new Date(short.time).getTime()),
                             value: parseFloat(short.value)
                         }
                     }
@@ -264,13 +256,13 @@
                         color: '#F6465D'
                     })
                     chart.timeScale().scrollToRealTime()
-                    
                 }
             )
 
             watch(
                 () => [chartStore.linesLongHistory.length, chartStore.linesShortHistory.length],
                 ([longLen, shortLen]) => {
+                    console.log(longLen, shortLen)
                     if (longLen > 0 && shortLen > 0) {
                         inSpreadSeries.setData(chartStore.linesLongHistory)
                         outSpreadSeries.setData(chartStore.linesShortHistory)

@@ -119,10 +119,10 @@ impl Websocket for LBankWebsocket {
 
                 for ticker in chunk {
                     let symbol = ticker.symbol.clone().unwrap();
-                    if let Some(err) = cmd_tx.send(WsCmd::Subscribe(symbol)).await.err() {
-                        error!("{} {}", self.setup.title, err);
-                        return ;
-                    }
+                    // if let Some(err) = cmd_tx.send(WsCmd::Subscribe(symbol)).await.err() {
+                    //     error!("{} {}", self.setup.title, err);
+                    //     return ;
+                    // }
                 }
 
                 tokio::spawn({
@@ -136,7 +136,7 @@ impl Websocket for LBankWebsocket {
                             _ = token.cancelled() => {
                                 return ;
                             }
-                            _ = this.run_websocket(&mut cmd_rx) => {
+                            _ = this.run_websocket(&mut cmd_rx, None) => {
                                 token.cancel();
                             }
                         }
@@ -149,7 +149,11 @@ impl Websocket for LBankWebsocket {
         }
     }
 
-    async fn run_websocket(self: Arc<Self>, cmd_rx: &mut tokio::sync::mpsc::Receiver<models::websocket::WsCmd>) -> models::websocket::WebSocketStatus {
+    async fn run_websocket(
+        self: Arc<Self>, 
+        cmd_rx: &mut tokio::sync::mpsc::Receiver<models::websocket::WsCmd>,
+        _api_token: Option<String>
+    ) -> models::websocket::WebSocketStatus {
         let url = Url::parse("wss://www.lbkex.net/ws/V2/").unwrap();
         let (ws_stream, _) = connect_async(url.to_string()).await.unwrap();
         let (mut write, _read) = ws_stream.split();
@@ -166,34 +170,34 @@ impl Websocket for LBankWebsocket {
             } 
         });
 
-        while let Some(cmd) = cmd_rx.recv().await {
-            match cmd {
-                WsCmd::Subscribe(ticker) => {
-                    println!("{}", ticker);
-                    let depth_sub = serde_json::json!({
-                        "action": "subscribe",
-                        "subscribe": "depth",
-                        "depth": "10",
-                        "pair": ticker
-                    });
+        // while let Some(cmd) = cmd_rx.recv().await {
+        //     match cmd {
+        //         WsCmd::Subscribe(ticker) => {
+        //             println!("{}", ticker);
+        //             let depth_sub = serde_json::json!({
+        //                 "action": "subscribe",
+        //                 "subscribe": "depth",
+        //                 "depth": "10",
+        //                 "pair": ticker
+        //             });
                     
-                    if tx.send(Message::Text(depth_sub.to_string())).is_err() {
-                        println!("Error sending depth subscription");
-                        break;
-                    }
+        //             if tx.send(Message::Text(depth_sub.to_string())).is_err() {
+        //                 println!("Error sending depth subscription");
+        //                 break;
+        //             }
 
-                    let ticker_sub = serde_json::json!({
-                        "action": "subscribe",
-                        "subscribe": "tick",
-                        "pair": ticker
-                    });
+        //             let ticker_sub = serde_json::json!({
+        //                 "action": "subscribe",
+        //                 "subscribe": "tick",
+        //                 "pair": ticker
+        //             });
                     
-                    if tx.send(Message::Text(ticker_sub.to_string())).is_err() {
-                        break;
-                    }
-                }
-            }
-        }
+        //             if tx.send(Message::Text(ticker_sub.to_string())).is_err() {
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
 
         write_handle.abort();
         WebSocketStatus::Finished

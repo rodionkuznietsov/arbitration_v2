@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{Type, prelude::FromRow, types::BigDecimal};
 
-use crate::models::websocket::Symbol;
+use crate::models::{websocket::Symbol};
 
 #[derive(Debug, Clone, FromRow)]
 pub struct Line {
@@ -13,17 +13,15 @@ pub struct Line {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Type)]
-#[sqlx(type_name="timeframe")]
+#[sqlx(type_name="timeframe", rename_all="lowercase")]
 pub enum TimeFrame {
     #[serde(rename="1m")]
     #[sqlx(rename="1m")]
     One
 }
 
-impl TimeFrame {
-    pub fn to_secs_i64(&self) -> i64 {
-        match self {
-            Self::One => 60
-        }
-    }
+#[derive(Debug, Clone, Deserialize, Serialize, Type)]
+pub enum MarketType {
+    Long,
+    Short
 }

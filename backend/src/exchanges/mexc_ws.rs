@@ -151,12 +151,12 @@ impl Websocket for MexcWebsocket {
                     let symbol = ticker.symbol.clone().unwrap();
                     let symbol_cl = symbol.clone();
 
-                    match cmd_tx.send(WsCmd::Subscribe(symbol.clone())).await {
-                        Ok(_) => {},
-                        Err(e) => {
-                            tracing::error!("{}: {}", this.setup.title, e)
-                        }
-                    };
+                    // match cmd_tx.send(WsCmd::Subscribe(symbol.clone())).await {
+                    //     Ok(_) => {},
+                    //     Err(e) => {
+                    //         tracing::error!("{}: {}", this.setup.title, e)
+                    //     }
+                    // };
 
                     let this = this.clone();
                     let semaphore = semaphore.clone();
@@ -190,7 +190,7 @@ impl Websocket for MexcWebsocket {
                         _ = token.cancelled() => {
                             return ;
                         }
-                        _ = this.run_websocket(&mut cmd_rx) => {
+                        _ = this.run_websocket(&mut cmd_rx, None) => {
                             token.cancel();
                         }
                     }
@@ -199,31 +199,35 @@ impl Websocket for MexcWebsocket {
         }
     }
 
-    async fn run_websocket(self: Arc<Self>, cmd_rx: &mut mpsc::Receiver<models::websocket::WsCmd>) -> models::websocket::WebSocketStatus {
+    async fn run_websocket(
+        self: Arc<Self>, 
+        cmd_rx: &mut mpsc::Receiver<models::websocket::WsCmd>,
+        _api_token: Option<String>
+    ) -> models::websocket::WebSocketStatus {
         let url = Url::parse("wss://wbs-api.mexc.com/ws").unwrap();
         let (ws_stream, _) = connect_async(url.to_string()).await.expect(&format!("{} Failed to connect", self.setup.title));
         let (mut write, mut read) = ws_stream.split();
 
         println!("🌐 {} is running", self.setup.title);
 
-        while let Some(cmd) = cmd_rx.recv().await {
-            match cmd {
-                WsCmd::Subscribe(ticker) => {
-                    if ticker == "SOLUSDT" {
-                        println!("{}", ticker)
-                    }
-                    write.send(TungsteniteMessage::Text(
-                        serde_json::json!({
-                            "method": "SUBSCRIPTION",
-                            "params": [
-                                format!("spot@public.aggre.depth.v3.api.pb@100ms@{ticker}"),
-                                format!("spot@public.miniTicker.v3.api.pb@{ticker}@UTC+8")
-                            ]
-                        }).to_string().into()
-                    )).await.unwrap();
-                }
-            }
-        }
+        // while let Some(cmd) = cmd_rx.recv().await {
+        //     match cmd {
+        //         WsCmd::Subscribe(ticker) => {
+        //             if ticker == "SOLUSDT" {
+        //                 println!("{}", ticker)
+        //             }
+        //             write.send(TungsteniteMessage::Text(
+        //                 serde_json::json!({
+        //                     "method": "SUBSCRIPTION",
+        //                     "params": [
+        //                         format!("spot@public.aggre.depth.v3.api.pb@100ms@{ticker}"),
+        //                         format!("spot@public.miniTicker.v3.api.pb@{ticker}@UTC+8")
+        //                     ]
+        //                 }).to_string().into()
+        //             )).await.unwrap();
+        //         }
+        //     }
+        // }
 
         while let Some(msg) = read.next().await {
             let msg_type = match msg {

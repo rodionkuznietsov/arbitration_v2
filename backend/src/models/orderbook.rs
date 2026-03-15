@@ -4,6 +4,8 @@ use crate::models::websocket::Symbol;
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct OrderBookEvent {
+    #[serde(rename="cts", alias="time_ms")]
+    pub timestamp: Option<i64>,
     #[serde(rename="type")]
     pub order_type: Option<String>,
     #[serde(rename="data", alias="result")]
@@ -24,8 +26,8 @@ pub struct OrderBookEventData {
 pub struct Snapshot {
     pub a: BTreeMap<i64, f64>,
     pub b: BTreeMap<i64, f64>,
-    pub last_price: f64,
-    pub last_update_id: Option<u64>
+    pub last_update_id: Option<u64>,
+    pub timestamp: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -41,24 +43,22 @@ pub struct SnapshotUi {
     pub a: Vec<(f64, f64)>,
     pub b: Vec<(f64, f64)>,
     pub last_price: f64,
+    pub timestamp: i64,
 }
 
 #[derive(Debug)]
 pub enum BookEvent {
     Snapshot { 
-        ticker: Symbol, 
+        symbol: Symbol,
         snapshot: Snapshot,
     },
     Delta { 
-        ticker: Symbol, 
+        symbol: Symbol, 
         delta: Delta 
     },
-    Price { 
-        ticker: Symbol, 
-        last_price: f64 
-    },
-    Volume24hr {
-        ticker: Symbol, 
-        volume: f64 
+    TickerUpdate {
+        symbol: Symbol,
+        last_price: f64,
+        volume: f64,
     }
 }

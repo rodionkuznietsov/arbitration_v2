@@ -1,26 +1,44 @@
-use std::{collections::{HashMap, HashSet}, sync::Arc};
-use tokio::sync::mpsc;
-use crate::models::{aggregator::{AggregatorPayload, ClientAggregatorUse}, websocket::{ChannelSubscription, ClientId}};
+use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc};
+use tokio::sync::{mpsc, watch};
+use tracing::{error};
+use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse, KeyPair}, line::{Line, MarketType}, websocket::{ChannelSubscription, ClientId}}, services::cache_aggregator::{CacheAggregatorCmd}};
+
+pub enum ClientMpcsChannel {
+    OrderBook(watch::Sender<Arc<AggregatorPayload>>),
+    Lines(mpsc::Sender<(VecDeque<Line>, MarketType)>)
+}
 
 pub enum ClientAggregatorCmd {
     Register {
         client_id: ClientId,
-        tx: mpsc::Sender<Arc<AggregatorPayload>>
+        tx: watch::Sender<Arc<AggregatorPayload>>,
+        lines_tx: mpsc::Sender<(VecDeque<Line>, MarketType)>,
     },
-    Use(ClientAggregatorUse)
+    Use(ClientAggregatorUse),
+    Init
 }
 
 pub struct ClientAggregator {
-    pub cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
-    pub clients: HashMap<ClientId, mpsc::Sender<Arc<AggregatorPayload>>>,
-    pub subscriptions: HashMap<ClientId, HashSet<ChannelSubscription>>,
-    pub sub_index: HashMap<ChannelSubscription, HashSet<ClientId>>,
+    watch_cmd_rx: watch::Receiver<Arc<ClientAggregatorCmd>>,
+    cache_aggregator_tx: mpsc::Sender<CacheAggregatorCmd>,
+    client_cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
+
+    clients: HashMap<ClientId, Vec<ClientMpcsChannel>>,
+    subscriptions: HashMap<ClientId, HashSet<ChannelSubscription>>,
+    sub_index: HashMap<ChannelSubscription, HashSet<ClientId>>,
 }
 
 impl ClientAggregator {
-    pub fn new(cmd_rx: mpsc::Receiver<ClientAggregatorCmd>) -> Self {
+    pub fn new(
+        watch_cmd_rx: watch::Receiver<Arc<ClientAggregatorCmd>>,
+        client_cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
+        cache_aggregator_tx: mpsc::Sender<CacheAggregatorCmd>,
+    ) -> Self {
         Self {
-            cmd_rx,
+            watch_cmd_rx,
+            cache_aggregator_tx,
+            client_cmd_rx,
+
             clients: HashMap::new(),
             subscriptions: HashMap::new(),
             sub_index: HashMap::new(),
@@ -29,23 +47,37 @@ impl ClientAggregator {
     
     pub async fn run(mut self) {
         loop {
-            if let Some(cmd) = self.cmd_rx.recv().await {
-                self.handle_cmd(cmd).await;
+            tokio::select! {
+                Ok(_) = self.watch_cmd_rx.changed() => {
+                    let cmd = self.watch_cmd_rx.borrow().clone();
+                    self.handle_cmd(cmd).await;
+                }
+
+                Some(client_cmd) = self.client_cmd_rx.recv() => {
+                    self.handle_cmd(Arc::new(client_cmd)).await;
+                }
             }
         }
     }
 
     pub async fn handle_cmd(
         &mut self, 
-        cmd: ClientAggregatorCmd
+        cmd: Arc<ClientAggregatorCmd>
     ) {
-        match cmd {
+        match cmd.as_ref() {
             ClientAggregatorCmd::Register { 
                 client_id, 
-                tx 
+                tx ,
+                lines_tx,
             } => {
-                self.clients.insert(client_id, tx);
+                let entry = self.clients
+                    .entry(*client_id)
+                    .or_insert_with(Vec::new);
+
+                entry.push(ClientMpcsChannel::OrderBook(tx.clone()));
+                entry.push(ClientMpcsChannel::Lines(lines_tx.clone()));
             },
+            ClientAggregatorCmd::Init => {},
             ClientAggregatorCmd::Use (
                 use_cmd 
             ) => {
@@ -55,25 +87,85 @@ impl ClientAggregator {
                         client_channel_sub,
                     ) => {
                         self.subscriptions
-                            .entry(client_id)
+                            .entry(*client_id)
                             .or_insert_with(HashSet::new)
                             .insert(client_channel_sub.clone());
 
-                        self.sub_index.entry(client_channel_sub)
+                        self.sub_index.entry(client_channel_sub.clone())
                             .or_insert_with(HashSet::new)
-                            .insert(client_id);
+                            .insert(*client_id);
 
                         println!("Subscriptions: {:?}", self.subscriptions);
                         println!("\nSub Index: {:?}", self.sub_index);
+
+                        // Отправляем последние 100 линий клиенту
+                        match client_channel_sub {
+                            ChannelSubscription::Chart { 
+                                long_exchange, 
+                                short_exchange, 
+                                ticker 
+                            } => {
+                                if let Some(txs) = self.clients.get(&client_id) {
+                                    for tx in txs {
+                                        match tx {
+                                            ClientMpcsChannel::Lines(
+                                                channel_tx
+                                            ) => {
+                                                self.cache_aggregator_tx.send(
+                                                CacheAggregatorCmd::GetLinesHistory { 
+                                                        key: KeyPair::new(
+                                                            *long_exchange, 
+                                                            *short_exchange, 
+                                                            ticker.clone()
+                                                        ), 
+                                                        reply: channel_tx.clone()
+                                                    }
+                                                ).await.ok();
+                                            },
+                                            _ => {}
+                                        }
+                                    }
+                                }
+                            },
+                            _ => {}
+                        }
                     },
                     ClientAggregatorUse::Publish { 
                         key,
-                        payload 
+                        payload,
                     } => {
+                        // match payload.as_ref() {
+                        //     AggregatorPayload::OrderBook { 
+                        //         long_order_book, 
+                        //         short_order_book, ticker, created_at 
+                        //     } => {
+                        //         if ticker.to_string() == "btcusdt" {
+                        //             info!("{}", long_order_book.last_price);
+                        //             info!("{}", short_order_book.last_price);
+                        //         }
+                        //     },
+                        //     _ => {}
+                        // }
+
+
                         if let Some(clients_ids) = self.sub_index.get(&key) {                    
                             for client_id in clients_ids {
-                                if let Some(client_tx) = self.clients.get(&*client_id) {
-                                    client_tx.send(payload.clone()).await.ok();
+                                if let Some(channels) = self.clients.get(&*client_id) {
+                                    for tx in channels {
+                                        match tx {
+                                            ClientMpcsChannel::OrderBook(
+                                                channel_tx
+                                            ) => {
+                                                match channel_tx.send(payload.clone()) {
+                                                    Ok(_) => {},
+                                                    Err(e) => {
+                                                        error!("ClientAggregator: {}", e)
+                                                    } 
+                                                }
+                                            },
+                                            _ => {}
+                                        }
+                                    }
                                 }
                             }
                         }

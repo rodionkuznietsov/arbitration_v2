@@ -13,7 +13,7 @@
     function start() {
         const data = userState.get_data()
 
-        unsubscribe = ws.subscribe(data.ticker.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (msg) => {
+        unsubscribe = ws.subscribe(data.ticker.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (msg) => {            
             orderBookStore.updateHeader(
                 data.ticker,
                 data.longExchange, 
@@ -22,7 +22,7 @@
                 data.shortOrderType
             )
 
-            orderBookStore.updateData(msg.books)
+            orderBookStore.updateData(msg.order_book)
             isVisible.value = "display: block;"
         })
     }
@@ -98,7 +98,7 @@
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
                         <td class="sell_label volume-bar">
                             <span class="volume-value">{{ formatVolume(ask.price *  ask.volume) }}</span>
-                            <div class="bar" :style="{ 'min-width': getFillPercentAsk(ask, 'long') + '%'}" style="width: 0%; background-color: var(--color-error-opacity-0_15); right: 0px; top: 0px;"></div>
+                            <div class="bar" :style="{ 'width': getFillPercentAsk(ask, 'long') + '%'}" style="background-color: var(--color-error-opacity-0_15); right: 0%; top: 0px;"></div>
                         </td>
                     </tr>
                     <tr>
@@ -114,7 +114,7 @@
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
                         <td class="buy_label volume-bar">
                             <span class="volume-value">{{ formatVolume(bid.price *  bid.volume) }}</span>
-                            <div class="bar" :style="{ 'min-width': getFillPercentBid(bid, 'long') + '%'}" style="width: 0%; background-color: var(--color-success-opacity-0_15); right: 0px; top: 0px;"></div>
+                            <div class="bar" :style="{ 'width': getFillPercentBid(bid, 'long') + '%'}" style="background-color: var(--color-success-opacity-0_15); right: 0%; top: 0px;"></div>
                         </td>
                     </tr>
                 </table>
@@ -139,7 +139,7 @@
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
                         <td class="sell_label volume-bar">
                             <span class="volume-value">{{ formatVolume(ask.price *  ask.volume) }}</span>
-                            <div class="bar" :style="{ 'min-width': getFillPercentAsk(ask, 'short') + '%'}" style="width: 0%; background-color: var(--color-error-opacity-0_15); right: 0px; top: 0px;"></div>
+                            <div class="bar" :style="{ 'width': getFillPercentAsk(ask, 'short') + '%'}" style="background-color: var(--color-error-opacity-0_15); right: 0%; top: 0px;"></div>
                         </td>
                     </tr>
                     <tr>
@@ -155,7 +155,7 @@
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
                         <td class="buy_label volume-bar">
                             <span class="volume-value">{{ formatVolume(bid.price *  bid.volume) }}</span>
-                            <div class="bar" :style="{ 'min-width': getFillPercentBid(bid, 'short') + '%'}" style="width: 0%; background-color: var(--color-success-opacity-0_15); right: 0px; top: 0px;"></div>
+                            <div class="bar" :style="{ 'width': getFillPercentBid(bid, 'short') + '%'}" style="background-color: var(--color-success-opacity-0_15); right: 0%; top: 0px;"></div>
                         </td>
                     </tr>
                 </table>
@@ -177,10 +177,11 @@
     .bar {
         position: absolute;
         top: 0;
+        width: 0%;
         bottom: 0;
-        left: auto;
+        right: 0;
         z-index: -1;
-        transition: width 0.15s linear;
+        transition: width 0.95s ease-out;
     }
 
     .ask_row td, .bid_row td{
