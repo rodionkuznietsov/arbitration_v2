@@ -1,7 +1,7 @@
 use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc};
 use tokio::sync::{mpsc, watch};
 use tracing::{error};
-use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse, KeyPair}, line::{Line, MarketType}, websocket::{ChannelSubscription, ClientId}}, services::cache_aggregator::{CacheAggregatorCmd}};
+use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse, KeyMarketType, KeyPair}, line::{Line, MarketType}, websocket::{ChannelSubscription, ClientId}}, services::cache_aggregator::CacheAggregatorCmd};
 
 pub enum ClientMpcsChannel {
     OrderBook(watch::Sender<Arc<AggregatorPayload>>),
@@ -60,7 +60,7 @@ impl ClientAggregator {
         }
     }
 
-    pub async fn handle_cmd(
+    async fn handle_cmd(
         &mut self, 
         cmd: Arc<ClientAggregatorCmd>
     ) {
@@ -114,9 +114,8 @@ impl ClientAggregator {
                                                 self.cache_aggregator_tx.send(
                                                 CacheAggregatorCmd::GetLinesHistory { 
                                                         key: KeyPair::new(
-                                                            *long_exchange, 
-                                                            *short_exchange, 
-                                                            ticker.clone()
+                                                            KeyMarketType::new(*long_exchange, *short_exchange, ticker.clone()), 
+                                                            KeyMarketType::new(*short_exchange, *long_exchange, ticker.clone()), 
                                                         ), 
                                                         reply: channel_tx.clone()
                                                     }
@@ -134,20 +133,6 @@ impl ClientAggregator {
                         key,
                         payload,
                     } => {
-                        // match payload.as_ref() {
-                        //     AggregatorPayload::OrderBook { 
-                        //         long_order_book, 
-                        //         short_order_book, ticker, created_at 
-                        //     } => {
-                        //         if ticker.to_string() == "btcusdt" {
-                        //             info!("{}", long_order_book.last_price);
-                        //             info!("{}", short_order_book.last_price);
-                        //         }
-                        //     },
-                        //     _ => {}
-                        // }
-
-
                         if let Some(clients_ids) = self.sub_index.get(&key) {                    
                             for client_id in clients_ids {
                                 if let Some(channels) = self.clients.get(&*client_id) {
@@ -170,11 +155,49 @@ impl ClientAggregator {
                             }
                         }
                     },
-                    ClientAggregatorUse::UnRegister(client_id) => {
+                    ClientAggregatorUse::UnRegister(
+                        client_id
+                    ) => {
                         self.clients.remove(&client_id);
                         if let Some(subs) = self.subscriptions.remove(&client_id) {
                             for sub in subs {
-                                self.sub_index.remove(&sub);
+                                if let Some(clients) = self.sub_index.get_mut(&sub) {
+                                    clients.remove(&*client_id);
+                                }
+                            }
+                        }
+
+                        // Удаляем channel_sub из sub_index, если нет клиентов
+                        for (channel_sub, clients) in self.sub_index.clone() {
+                            if clients.is_empty() {
+                                self.sub_index.remove(&channel_sub);
+
+                                match channel_sub {
+                                    ChannelSubscription::Chart { 
+                                        long_exchange, 
+                                        short_exchange, 
+                                        ticker 
+                                    } => {
+                                        // Удаляем подписку в cache
+                                        self.cache_aggregator_tx.send(
+                                            CacheAggregatorCmd::RemovePair { 
+                                                key: KeyPair { 
+                                                    long_market_type: KeyMarketType { 
+                                                        long_exchange: long_exchange, 
+                                                        short_exchange: short_exchange,
+                                                        symbol: ticker.clone()
+                                                    }, 
+                                                    short_market_type: KeyMarketType { 
+                                                        long_exchange: short_exchange, 
+                                                        short_exchange: long_exchange, 
+                                                        symbol: ticker.clone()
+                                                    }, 
+                                                } 
+                                            }
+                                        ).await.ok();
+                                    },
+                                    _ => {}
+                                }
                             }
                         }
                     }

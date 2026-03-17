@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 use tokio::sync::{mpsc, watch};
+use tracing_subscriber::EnvFilter;
 
 use crate::{services::{cache_aggregator::{CacheAggregator, CacheAggregatorCmd}, data_aggregator::{DataAggregator, DataAggregatorCmd}}, transport::client_aggregator::{ClientAggregator, ClientAggregatorCmd}};
 
@@ -18,6 +19,10 @@ mod mexc_orderbook {
 async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
+        .with_env_filter(
+            EnvFilter::new("info,sqlx::query=off")
+        )
+        .with_target(false)
         .pretty()
         .init();
     

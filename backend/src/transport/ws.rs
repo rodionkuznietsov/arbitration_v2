@@ -170,7 +170,7 @@ async fn handle_connection(
                                     .into_iter()
                                     .map(|line| {
                                         serde_json::json!({
-                                            "time": line.timestamp.to_rfc3339(),
+                                            "time": line.timestamp,
                                             "value": line.value.to_string()
                                         })
                                     })
@@ -180,7 +180,7 @@ async fn handle_connection(
                                     .into_iter()
                                     .map(|line| {
                                         serde_json::json!({
-                                            "time": line.timestamp.to_rfc3339(),
+                                            "time": line.timestamp,
                                             "value": line.value.to_string()
                                         })
                                     })

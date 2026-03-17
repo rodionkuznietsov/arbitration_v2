@@ -8,10 +8,10 @@ BEGIN
 END$$;
 
 CREATE TABLE IF NOT EXISTS storage.lines (
-    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    timestamp BIGINT NOT NULL,
     exchange_pair VARCHAR(255) NOT NULL,
     symbol VARCHAR(255) NOT NULL,
     timeframe timeframe NOT NULL,
-    value NUMERIC NOT NULL,
+    value FLOAT NOT NULL,
     PRIMARY KEY (timestamp, exchange_pair, symbol)
 )

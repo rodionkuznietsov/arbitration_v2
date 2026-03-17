@@ -1,7 +1,8 @@
-use std::{collections::{HashMap, VecDeque}};
+use std::{collections::{HashMap, HashSet, VecDeque}};
 use tokio::sync::{mpsc};
+use tracing::{error, info};
 
-use crate::{models::{aggregator::KeyPair, line::{Line, MarketType}}, storage::line_storage::get_spread_history};
+use crate::{models::{aggregator::{KeyMarketType, KeyPair}, line::{Line, MarketType}}, storage::line_storage::get_spread_history};
 
 const MAX_LINES: usize = 100;
 
@@ -19,7 +20,9 @@ pub enum CacheAggregatorCmd {
 }
 
 pub struct CacheAggregator {
-    cache_lines: HashMap<KeyPair, VecDeque<Line>>,
+    cache_lines: HashMap<KeyMarketType, VecDeque<Line>>,
+    initialization_keys: HashSet<KeyMarketType>,
+
     cache_aggregator_rx: mpsc::Receiver<CacheAggregatorCmd>,
     pool: sqlx::PgPool,
 }
@@ -31,6 +34,8 @@ impl CacheAggregator {
     ) -> Self {
         Self { 
             cache_lines: HashMap::new(),
+            initialization_keys: HashSet::new(),
+            
             cache_aggregator_rx,
             pool
         }
@@ -46,38 +51,88 @@ impl CacheAggregator {
                         lines
                     } => {
                         for (line, key) in lines {
-                            let deque = self.cache_lines
-                                .entry(key)
+                            let long_deque = self.cache_lines
+                                .entry(key.long_market_type)
                                 .or_insert_with(VecDeque::new);
 
-                            deque.push_back(line);
+                            long_deque.push_back(line.clone());
 
-                            if deque.len() > MAX_LINES {
-                                deque.pop_front();
+                            if long_deque.len() > MAX_LINES {
+                                long_deque.pop_front();
+                            }
+
+                            let short_deque = self.cache_lines
+                                .entry(key.short_market_type)
+                                .or_insert_with(VecDeque::new);
+
+                            short_deque.push_back(line);
+
+                            if short_deque.len() > MAX_LINES {
+                                short_deque.pop_front();
                             }
                         }
                     },
                     CacheAggregatorCmd::RemovePair { 
                         key
                     } => {
+                        if let Some(_) = self.cache_lines.remove(&key.long_market_type) {
+                            self.initialization_keys.remove(&key.long_market_type);
+                        }
 
+                        if let Some(_) = self.cache_lines.remove(&key.short_market_type) {
+                            self.initialization_keys.remove(&key.short_market_type);
+                        }
                     },
                     CacheAggregatorCmd::GetLinesHistory { 
                         key,
                         reply
                     } => {
-                        if let Some(lines) = self.cache_lines.get(&key).filter(|v| v.len() >= 100) {
-                            println!("VECC{:?}", lines);
+                        // Проверяем инициализированы ли данные по этому ключу
+                        if self.initialization_keys.contains(&key.long_market_type.clone()) {
+                            if let Some(lines) = self.cache_lines.get_mut(&key.long_market_type) {
+                                lines.make_contiguous().sort_by(|x, y| x.timestamp.cmp(&y.timestamp));
+                                reply.send((lines.clone(), MarketType::Long)).await.ok();
+                            }
                         } else {
-                            let long_exchange_pair = format!("{}/{}", key.long_exchange, key.short_exchange);
-                            let lines = get_spread_history(&self.pool, &key.symbol, &long_exchange_pair).await.ok();
+                            let exchange_pair = format!("{}/{}", key.long_market_type.long_exchange, key.long_market_type.short_exchange);
+                            let lines = match get_spread_history(&self.pool, &key.long_market_type.symbol, &exchange_pair).await {
+                                Ok(l) => Some(l),
+                                Err(e) => {
+                                    error!("{:?} -> {e}", key.long_market_type);
+                                    None
+                                }
+                            };
+                            
                             if let Some(lines) = lines {
+                                info!("Инициализация данных для ключа: {:?}", key.long_market_type);
+
+                                self.cache_lines.insert(key.long_market_type.clone(), lines.clone());
+                                self.initialization_keys.insert(key.long_market_type);
                                 reply.send((lines, MarketType::Long)).await.ok();
                             }
+                        }
 
-                            let short_exchange_pair = format!("{}/{}", key.short_exchange, key.long_exchange);
-                            let lines = get_spread_history(&self.pool, &key.symbol, &short_exchange_pair).await.ok();
+                        // Проверяем инициализированы ли данные по этому ключу
+                        if self.initialization_keys.contains(&key.short_market_type.clone()) {
+                            if let Some(lines) = self.cache_lines.get_mut(&key.short_market_type) {
+                                lines.make_contiguous().sort_by(|x, y| x.timestamp.cmp(&y.timestamp));
+                                reply.send((lines.clone(), MarketType::Short)).await.ok();
+                            }
+                        } else {
+                            let exchange_pair = format!("{}/{}", key.short_market_type.long_exchange, key.short_market_type.short_exchange);
+                            let lines = match get_spread_history(&self.pool, &key.short_market_type.symbol, &exchange_pair).await {
+                                Ok(l) => Some(l),
+                                Err(e) => {
+                                    error!("{:?} -> {e}", key.short_market_type);
+                                    None
+                                }
+                            };
+                            
                             if let Some(lines) = lines {
+                                info!("Инициализация данных для ключа: {:?}", key.short_market_type);
+
+                                self.cache_lines.insert(key.short_market_type.clone(), lines.clone());
+                                self.initialization_keys.insert(key.short_market_type);
                                 reply.send((lines, MarketType::Short)).await.ok();
                             }
                         }

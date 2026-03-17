@@ -51,22 +51,62 @@ impl Default for AggregatorPayload {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct KeyPair {
+pub struct KeyMarketType {
     pub long_exchange: ExchangeType,
     pub short_exchange: ExchangeType,
-    pub symbol: Arc<Symbol>
+    pub symbol: Arc<Symbol>,
+}
+
+impl KeyMarketType {
+    pub fn new(
+        long_exchange: ExchangeType,
+        short_exchange: ExchangeType,
+        symbol: Arc<Symbol>
+    ) -> Self {
+        Self { 
+            long_exchange, 
+            short_exchange,
+            symbol
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct KeyPair {
+    pub long_market_type: KeyMarketType,
+    pub short_market_type: KeyMarketType,
 }
 
 impl KeyPair {
     pub fn new(
-        long_exchange: ExchangeType,
-        short_exchange: ExchangeType,
-        symbol: Arc<Symbol>,
+        long_market_type: KeyMarketType,
+        short_market_type: KeyMarketType,
     ) -> Self {
         Self { 
-            long_exchange, 
-            short_exchange, 
-            symbol 
+            long_market_type, 
+            short_market_type, 
         }
     }
 }
+
+#[derive(Debug)]
+pub struct SpreadPair {
+    pub long_spread: f64,
+    pub short_spread: f64,
+    pub timestamp: i64
+}
+
+impl SpreadPair {
+    pub fn new(
+        long_spread: f64,
+        short_spread: f64,
+        timestamp: i64,
+    ) -> Self {
+        Self { 
+            long_spread, 
+            short_spread, 
+            timestamp 
+        }
+    }
+}
+

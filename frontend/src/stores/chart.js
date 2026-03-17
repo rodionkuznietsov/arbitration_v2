@@ -62,6 +62,15 @@ export const useChartStore = defineStore('chart', {
             }
         },
 
+        priceFormat(value) {
+            return new Intl.NumberFormat(
+                "en-US", {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 9,
+                }
+            ).format(value)
+        },
+
         clearValues() {
             this.longExchange = null
             this.shortExchange = null

@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
@@ -34,15 +33,6 @@ pub struct TickerEventData {
 pub struct TickerEvent {
     #[serde(rename="result", alias="data")]
     pub result: Option<TickerEventData>
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Spread {
-    pub symbol: Arc<Symbol>,
-    pub long_exchange: ExchangeType,
-    pub short_exchange: ExchangeType,
-    pub spread: f64,
-    pub timestamp: i64,
 }
 
 #[derive(Deserialize, Debug, Serialize)]

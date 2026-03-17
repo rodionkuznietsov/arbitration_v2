@@ -24,11 +24,11 @@
     let legend = null
 
     const lastLongPriceSwapped = computed(() => {
-        return swapActive.value ? orderBookStore.shortFirstAskPrice : orderBookStore.longFirstBidPrice
+        return swapActive.value ? chartStore.priceFormat(orderBookStore.shortFirstAskPrice) : chartStore.priceFormat(orderBookStore.longFirstBidPrice)
     })
 
     const lastShortPriceSwapped = computed(() => {
-        return swapActive.value ? orderBookStore.longFirstBidPrice : orderBookStore.shortFirstAskPrice
+        return swapActive.value ? chartStore.priceFormat(orderBookStore.longFirstBidPrice) : chartStore.priceFormat(orderBookStore.shortFirstAskPrice)
     })
 
     const lastLongValue = computed(() => {

@@ -1,8 +1,7 @@
-use std::{collections::HashMap, str::FromStr, sync::Arc, time::{Duration, Instant}};
+use std::{collections::HashMap, sync::Arc, time::{Duration, Instant}};
 use chrono::{Timelike, Utc, Duration as ChronoDuration};
-use sqlx::types::BigDecimal;
 use tokio::{sync::{broadcast, mpsc, watch}, time::{Instant as TokioInstant, interval_at}};
-use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse, KeyPair}, exchange::{ExchangeType, Spread}, line::{Line, TimeFrame}, orderbook::SnapshotUi, websocket::{ChannelSubscription, ChartEvent, Symbol}}, services::cache_aggregator::CacheAggregatorCmd, storage::line_storage::add_new_lines, transport::client_aggregator::ClientAggregatorCmd};
+use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse, KeyMarketType, KeyPair, SpreadPair}, exchange::{ExchangeType}, line::{Line, TimeFrame}, orderbook::SnapshotUi, websocket::{ChannelSubscription, ChartEvent, Symbol}}, services::cache_aggregator::CacheAggregatorCmd, storage::line_storage::add_new_lines, transport::client_aggregator::ClientAggregatorCmd};
 
 pub enum DataAggregatorCmd {
     MarketRegister {
@@ -42,7 +41,7 @@ pub struct ExchangeBookData {
 }
 
 pub struct DataAggregator {
-    pending_lines: HashMap<Arc<Symbol>, Spread>,
+    pending_lines: HashMap<KeyPair, SpreadPair>,
     markets: HashMap<Arc<Symbol>, HashMap<ExchangeType, ExchangeBookData>>,
 
     rx: mpsc::Receiver<DataAggregatorCmd>,
@@ -93,7 +92,7 @@ impl DataAggregator {
 
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         
-        let (spread_tx, mut spread_rx) = mpsc::channel::<Spread>(1024);
+        let (spread_tx, mut spread_rx) = mpsc::channel::<(KeyPair, SpreadPair)>(1024);
         let mut markets_updated_rx = self.markets_updated.subscribe();
 
         loop {
@@ -114,9 +113,9 @@ impl DataAggregator {
                     ).await;
                 }
 
-                Some(spread) = spread_rx.recv() => {
+                Some((key_pair, spread)) = spread_rx.recv() => {
                     self.pending_lines.insert(
-                        spread.symbol.clone(), 
+                        key_pair, 
                         spread
                     );
                 }
@@ -190,7 +189,7 @@ impl DataAggregator {
     async fn send_payload_to_client_aggregator(
         &mut self,
         client_aggregator_tx: watch::Sender<Arc<ClientAggregatorCmd>>,
-        spread_tx: mpsc::Sender<Spread>,
+        spread_tx: mpsc::Sender<(KeyPair, SpreadPair)>,
         symbol: Arc<Symbol>
     ) {
         let data = self.markets.get(&symbol);
@@ -312,7 +311,7 @@ impl DataAggregator {
 
     async fn calculate_spread(
         &self,
-        spread_tx: mpsc::Sender<Spread>,
+        spread_tx: mpsc::Sender<(KeyPair, SpreadPair)>,
 
         symbol: Arc<Symbol>,
 
@@ -331,9 +330,18 @@ impl DataAggregator {
 
         let now = Utc::now();
         let timestamp = now.timestamp() - (now.timestamp() % 60);
-
-        spread_tx.send(Spread { symbol: symbol.clone(), long_exchange, short_exchange, spread: spread_in_percent, timestamp }).await.ok();
-        spread_tx.send(Spread { symbol: symbol.clone(), long_exchange, short_exchange, spread: spread_out_percent, timestamp }).await.ok();
+        
+        spread_tx.send((
+            KeyPair::new(
+                KeyMarketType::new(long_exchange, short_exchange, symbol.clone()),
+                KeyMarketType::new(short_exchange, long_exchange, symbol.clone()),
+            ),
+            SpreadPair::new(
+                spread_in_percent, 
+                spread_out_percent, 
+                timestamp
+            )
+        )).await.ok();
 
         let long_key = ChannelSubscription::Chart { 
             long_exchange, 
@@ -388,39 +396,44 @@ impl DataAggregator {
         )).ok();
     }
 
-    /// Берет данные из <b>lines</b> и сохраняет данные в базуданных
+    /// Обрабатывает pending_lines и сохраняет в базу данных
     async fn db_writer(&mut self) {
         let pool = self.pool.clone();
         
         let mut placeholders: Vec<String> = Vec::new();
         let mut lines = Vec::new();
 
-        for (i, (symbol, spread)) in self.pending_lines.iter().enumerate() {
+        for (i, (key_pair, spread_pair)) in self.pending_lines.iter().enumerate() {
+            
+            let step = i*5;            
+            let long_exchange_pair = format!("{}/{}", key_pair.long_market_type.long_exchange, key_pair.long_market_type.short_exchange);
+            let short_exchange_pair = format!("{}/{}", key_pair.short_market_type.long_exchange, key_pair.short_market_type.short_exchange);
+
+            let long_line = Line::new(
+                long_exchange_pair, 
+                key_pair.long_market_type.symbol.to_string(), 
+                spread_pair.long_spread, 
+                TimeFrame::One, 
+                spread_pair.timestamp * 1000
+            );
+
+            let short_line = Line::new(
+                short_exchange_pair, 
+                key_pair.short_market_type.symbol.to_string(), 
+                spread_pair.short_spread, 
+                TimeFrame::One, 
+                spread_pair.timestamp * 1000
+            );
+
+            lines.push((long_line, key_pair.clone()));
+            lines.push((short_line, key_pair.clone()));
+
             // Создаем плейсхолдеры для sql_query
-            let step = i*4;
-            let exchange_pair = format!("{}/{}", spread.long_exchange, spread.short_exchange);
-            let key_pair = KeyPair::new(spread.long_exchange, spread.short_exchange, symbol.clone());
-
-            let value = match BigDecimal::from_str(&format!("{}", spread.spread)) {
-                Ok(n) => n,
-                Err(_) => continue
-            };
-
-            let line = Line {
-                timestamp: Utc::now(),
-                exchange_pair: exchange_pair,
-                symbol: symbol.to_string(),
-                timeframe: TimeFrame::One,
-                value: value,
-            };
-            lines.push((line, key_pair));
-
-            let placeholder = format!("(${}, ${}, ${}::timeframe, ${}::numeric)", step+1, step+2, step+3, step+4);
+            let placeholder = format!("(${}, ${}, ${}, ${}::timeframe, ${}::numeric)", step+1, step+2, step+3, step+4, step+5);
             placeholders.push(placeholder);
         }
 
-        let slice = &placeholders[..placeholders.len() - 4];
-        let slq_query = format!("INSERT INTO storage.lines (exchange_pair, symbol, timeframe, value) VALUES {}", slice.join(", "));
+        let slq_query = format!("INSERT INTO storage.lines (timestamp, exchange_pair, symbol, timeframe, value) VALUES {}", placeholders.join(", "));
         if !lines.is_empty() {
             match add_new_lines(&pool, &lines, &slq_query).await {
                 Ok(_) => {
@@ -429,7 +442,8 @@ impl DataAggregator {
                     self.pending_lines.clear();
                 },
                 Err(e) => {
-                    tracing::error!("Ошибка отправки батча: {e}")
+                    tracing::error!("Ошибка отправки батча: {e}");
+                    self.pending_lines.clear();
                 }
             };
         }
