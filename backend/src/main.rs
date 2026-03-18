@@ -36,18 +36,18 @@ async fn main() {
     );
     tokio::spawn(cache_aggregator.run());
 
-    // Канал для получения данных с data aggregator
-    let (client_aggregator_watch_tx, client_aggregator_watch_rx) = watch::channel(
-        Arc::new(ClientAggregatorCmd::Init)
-    );
+    // Каналы для получения данных с data aggregator
+    let (client_aggregator_orderbook_tx, client_aggregator_orderbook_rx) = mpsc::channel::<Arc<ClientAggregatorCmd>>(32);
+    let (client_aggregator_chart_tx, client_aggregator_chart_rx) = mpsc::channel::<Arc<ClientAggregatorCmd>>(32);
 
     // Канал для приёма команд от пользователя
     let (client_aggregator_tx, client_aggregator_rx) = mpsc::channel::<ClientAggregatorCmd>(32);
 
     let client_aggregator = ClientAggregator::new(
-        client_aggregator_watch_rx,
         client_aggregator_rx,
         cache_aggregator_tx.clone(),
+        client_aggregator_orderbook_rx,
+        client_aggregator_chart_rx
     );
     tokio::spawn(client_aggregator.run());
     
@@ -57,7 +57,12 @@ async fn main() {
         cache_aggregator_tx.clone(),
         storage_pool.clone(),
     );
-    tokio::spawn(data_aggregator.run(client_aggregator_watch_tx.clone()));
+    tokio::spawn(
+        data_aggregator.run(
+            client_aggregator_orderbook_tx.clone(),
+            client_aggregator_chart_tx.clone(),
+        )
+    );
 
     tokio::spawn({
         let data_aggregator_tx = data_aggregator_tx.clone();

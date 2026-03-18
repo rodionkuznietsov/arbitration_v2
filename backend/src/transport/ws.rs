@@ -63,7 +63,7 @@ async fn handle_connection(
             OrderBookData::new()
         );
 
-        let mut interval = tokio::time::interval(Duration::from_millis(50));
+        let mut interval = tokio::time::interval(Duration::from_millis(100));
         let mut ping_interval = tokio::time::interval(Duration::from_secs(PING_DELAY));
 
         async move {
@@ -73,10 +73,28 @@ async fn handle_connection(
                         if let Some(chart) = chart_data.get_mut(&ChannelType::Chart) {
                             match market_type {
                                 MarketType::Long => {
-                                    chart.long_lines = Some(lines);
+                                    let long_lines = lines
+                                        .into_iter()
+                                        .map(|line| {
+                                            serde_json::json!({
+                                                "time": line.timestamp,
+                                                "value": line.value
+                                            })
+                                        })
+                                        .collect();
+                                    chart.long_lines = Some(long_lines);
                                 },
                                 MarketType::Short => {
-                                    chart.short_lines = Some(lines);
+                                    let short_lines = lines
+                                        .into_iter()
+                                        .map(|line| {
+                                            serde_json::json!({
+                                                "time": line.timestamp,
+                                                "value": line.value
+                                            })
+                                        })
+                                        .collect();
+                                    chart.short_lines = Some(short_lines);
                                 }
                             }
                         }
@@ -165,57 +183,57 @@ async fn handle_connection(
                             let long_lines = &data.long_lines;
                             let short_lines = &data.short_lines;
 
-                            if let (Some(long), Some(short), Some(vol), Some(line)) = (long_lines, short_lines, volume24h, update_line) {
-                                let long_lines_json: Vec<serde_json::Value> = long
-                                    .into_iter()
-                                    .map(|line| {
-                                        serde_json::json!({
-                                            "time": line.timestamp,
-                                            "value": line.value.to_string()
-                                        })
-                                    })
-                                    .collect();
+                            let mut long_lines_vec = Vec::new();
+                            let mut short_lines_vec = Vec::new();
 
-                                let short_lines_json: Vec<serde_json::Value> = short
-                                    .into_iter()
-                                    .map(|line| {
-                                        serde_json::json!({
-                                            "time": line.timestamp,
-                                            "value": line.value.to_string()
-                                        })
-                                    })
-                                    .collect();
+                            if let (Some(long_lines), Some(short_lines)) = (long_lines, short_lines) {
+                                long_lines_vec = long_lines.to_vec();
+                                short_lines_vec = short_lines.to_vec();
+                            }
 
-                                let msg = serde_json::json!({
-                                    "channel": key,
-                                    "result": {
-                                        "lines": {
-                                            "long": long_lines_json,
-                                            "short": short_lines_json,
-                                        },
-                                        "events": {
-                                            "volume24h": {
-                                                "long_vol": vol.0,
-                                                "short_vol": vol.1
-                                            },
-                                            "update_line": {
-                                                "long": {
-                                                    "time": line.2,
-                                                    "value": line.0,
-                                                },
-                                                "short": {
-                                                    "time": line.2,
-                                                    "value": line.1
-                                                },
-                                            }
-                                        }
+                            let mut long_volume = 0.0;
+                            let mut short_volume = 0.0;
+
+                            if let Some((long_vol, short_vol)) = volume24h {
+                                long_volume = long_vol;
+                                short_volume = short_vol;
+                            }
+
+                            let mut updated_line = (0.0, 0.0, 0);
+                            
+                            if let Some((long_spread, short_spread, time)) = update_line {
+                                updated_line = (long_spread, short_spread, time);
+                            }
+
+                            let msg = serde_json::json!({
+                                "channel": key,
+                                "result": {
+                                    "lines": {
+                                        "long": long_lines_vec,
+                                        "short": short_lines_vec,
                                     },
-                                    "ticker": data.ticker
-                                });
+                                    "events": {
+                                        "volume24h": {
+                                            "long_vol": long_volume,
+                                            "short_vol": short_volume
+                                        },
+                                        "update_line": {
+                                            "long": {
+                                                "time": updated_line.2,
+                                                "value": updated_line.0,
+                                            },
+                                            "short": {
+                                                "time": updated_line.2,
+                                                "value": updated_line.1
+                                            },
+                                        }
+                                    }
+                                },
+                                "ticker": data.ticker
+                            });
 
-                                if ws_sender.send(Message::Text(msg.to_string())).await.is_err() {
-                                    cancel_token.cancel();
-                                }
+                            if ws_sender.send(Message::Text(msg.to_string())).await.is_err() {
+                                cancel_token.cancel();
                             }
                         }
                     },

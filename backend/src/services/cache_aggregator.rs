@@ -61,6 +61,8 @@ impl CacheAggregator {
                                 long_deque.pop_front();
                             }
 
+                            long_deque.make_contiguous().sort_by(|x, y| x.timestamp.cmp(&y.timestamp));
+
                             let short_deque = self.cache_lines
                                 .entry(key.short_market_type)
                                 .or_insert_with(VecDeque::new);
@@ -70,6 +72,8 @@ impl CacheAggregator {
                             if short_deque.len() > MAX_LINES {
                                 short_deque.pop_front();
                             }
+
+                            short_deque.make_contiguous().sort_by(|x, y| x.timestamp.cmp(&y.timestamp));
                         }
                     },
                     CacheAggregatorCmd::RemovePair { 
@@ -90,7 +94,6 @@ impl CacheAggregator {
                         // Проверяем инициализированы ли данные по этому ключу
                         if self.initialization_keys.contains(&key.long_market_type.clone()) {
                             if let Some(lines) = self.cache_lines.get_mut(&key.long_market_type) {
-                                lines.make_contiguous().sort_by(|x, y| x.timestamp.cmp(&y.timestamp));
                                 reply.send((lines.clone(), MarketType::Long)).await.ok();
                             }
                         } else {
@@ -115,7 +118,6 @@ impl CacheAggregator {
                         // Проверяем инициализированы ли данные по этому ключу
                         if self.initialization_keys.contains(&key.short_market_type.clone()) {
                             if let Some(lines) = self.cache_lines.get_mut(&key.short_market_type) {
-                                lines.make_contiguous().sort_by(|x, y| x.timestamp.cmp(&y.timestamp));
                                 reply.send((lines.clone(), MarketType::Short)).await.ok();
                             }
                         } else {

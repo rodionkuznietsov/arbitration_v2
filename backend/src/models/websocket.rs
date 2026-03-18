@@ -1,10 +1,11 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::{sync::Arc};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use strum_macros::Display;
 use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
-use crate::models::{exchange::ExchangeType, line::{Line}, orderbook::SnapshotUi};
+use crate::models::{exchange::ExchangeType, orderbook::SnapshotUi};
 
 pub type ClientId = Uuid;
 pub type Symbol = String;
@@ -70,8 +71,8 @@ pub struct ChartData {
     pub ticker: Option<Arc<Symbol>>,
     pub volume24h: Option<(f64, f64)>,
     pub update_line: Option<(f64, f64, i64)>,
-    pub long_lines: Option<VecDeque<Line>>,
-    pub short_lines: Option<VecDeque<Line>>,
+    pub long_lines: Option<Vec<Value>>,
+    pub short_lines: Option<Vec<Value>>,
 }
 
 impl ChartData {

@@ -15,13 +15,13 @@ pub enum ClientAggregatorCmd {
         lines_tx: mpsc::Sender<(VecDeque<Line>, MarketType)>,
     },
     Use(ClientAggregatorUse),
-    Init
 }
 
 pub struct ClientAggregator {
-    watch_cmd_rx: watch::Receiver<Arc<ClientAggregatorCmd>>,
     cache_aggregator_tx: mpsc::Sender<CacheAggregatorCmd>,
     client_cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
+    orderbook_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
+    chart_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
 
     clients: HashMap<ClientId, Vec<ClientMpcsChannel>>,
     subscriptions: HashMap<ClientId, HashSet<ChannelSubscription>>,
@@ -30,14 +30,16 @@ pub struct ClientAggregator {
 
 impl ClientAggregator {
     pub fn new(
-        watch_cmd_rx: watch::Receiver<Arc<ClientAggregatorCmd>>,
         client_cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
         cache_aggregator_tx: mpsc::Sender<CacheAggregatorCmd>,
+        orderbook_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
+        chart_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
     ) -> Self {
         Self {
-            watch_cmd_rx,
             cache_aggregator_tx,
             client_cmd_rx,
+            orderbook_rx,
+            chart_rx,
 
             clients: HashMap::new(),
             subscriptions: HashMap::new(),
@@ -48,13 +50,17 @@ impl ClientAggregator {
     pub async fn run(mut self) {
         loop {
             tokio::select! {
-                Ok(_) = self.watch_cmd_rx.changed() => {
-                    let cmd = self.watch_cmd_rx.borrow().clone();
-                    self.handle_cmd(cmd).await;
-                }
-
+                biased;
                 Some(client_cmd) = self.client_cmd_rx.recv() => {
                     self.handle_cmd(Arc::new(client_cmd)).await;
+                }
+
+                Some(client_cmd) = self.chart_rx.recv() => {
+                    self.handle_cmd(client_cmd).await;
+                }
+
+                Some(client_cmd) = self.orderbook_rx.recv() => {
+                    self.handle_cmd(client_cmd).await;
                 }
             }
         }
@@ -77,7 +83,6 @@ impl ClientAggregator {
                 entry.push(ClientMpcsChannel::OrderBook(tx.clone()));
                 entry.push(ClientMpcsChannel::Lines(lines_tx.clone()));
             },
-            ClientAggregatorCmd::Init => {},
             ClientAggregatorCmd::Use (
                 use_cmd 
             ) => {

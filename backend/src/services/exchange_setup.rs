@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use async_trait::async_trait;
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::{broadcast, mpsc, oneshot};
@@ -14,6 +14,7 @@ use crate::services::data_aggregator::DataAggregatorCmd;
 use crate::services::{exchange_aggregator::{ExchangeStore, ExchangeStoreCMD}};
 
 const CHUNK_SIZE: usize = 50;
+const DATA_AGGREGATOR_DELAY: u64 = 10; // ms
 
 #[async_trait]
 pub trait ExchangeWebsocket: Send + Sync {
@@ -199,13 +200,14 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeWebsocket for ExchangeS
                         self.sender_data.send(ExchangeStoreCMD::GetQuote { symbol: symbol.clone(), reply: reply }).await.ok();
 
                         if let Ok((ask, bid)) = rx.await {
-                            self.data_aggregator_tx.clone().send(
+                            self.data_aggregator_tx.clone().send_timeout(
                                 DataAggregatorCmd::UpdateQuotes { 
                                     exchange_id: self.exchange_id,
                                     symbol: symbol.clone(),
                                     ask,
                                     bid
-                                }
+                                },
+                                Duration::from_millis(DATA_AGGREGATOR_DELAY)
                             ).await.ok();
                         }
                     },
@@ -238,12 +240,13 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeWebsocket for ExchangeS
                         }
 
                         if let Ok(volume) = rx.await {                            
-                            self.data_aggregator_tx.clone().send(
+                            self.data_aggregator_tx.clone().send_timeout(
                                 DataAggregatorCmd::UpdateVolumes { 
                                     exchange_id: self.exchange_id, 
                                     volume, 
                                     symbol: symbol
-                                }
+                                },
+                                Duration::from_millis(DATA_AGGREGATOR_DELAY)
                             ).await.ok();
                         }
                     },
@@ -273,13 +276,14 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeWebsocket for ExchangeS
                         self.sender_data.send(ExchangeStoreCMD::GetBook { symbol: symbol.clone(), reply }).await.ok();
 
                         if let Ok(snapshot) = rx.await {
-                            self.data_aggregator_tx.send(
+                            self.data_aggregator_tx.send_timeout(
                                 DataAggregatorCmd::UpdateOrderbooks { 
                                     exchange_id: self.exchange_id,
                                     snapshot_ui: snapshot,
                                     symbol,
                                     _created_at: Instant::now()
-                                }
+                                },
+                                Duration::from_millis(DATA_AGGREGATOR_DELAY)
                             ).await.ok();
                         }
                     }
