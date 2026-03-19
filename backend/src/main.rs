@@ -1,8 +1,8 @@
 use std::{sync::Arc, time::Duration};
-use tokio::sync::{mpsc, watch};
+use tokio::sync::{mpsc};
 use tracing_subscriber::EnvFilter;
 
-use crate::{services::{cache_aggregator::{CacheAggregator, CacheAggregatorCmd}, data_aggregator::{DataAggregator, DataAggregatorCmd}}, transport::client_aggregator::{ClientAggregator, ClientAggregatorCmd}};
+use crate::{services::{cache_aggregator::{CacheAggregator, CacheAggregatorCmd}, data_aggregator::{DataAggregator, DataAggregatorCmd}, manager_transmitter::{ManagerTransmitter, ManagerTransmitterCmd}}, transport::client_aggregator::{ClientAggregator, ClientAggregatorCmd}};
 
 mod exchanges;
 mod transport;
@@ -27,18 +27,25 @@ async fn main() {
         .init();
     
     let storage_pool = storage::pool::create_pool().await;
-
+        
+    let (manager_transmitter_tx, manager_transmitter_rx) = mpsc::channel::<ManagerTransmitterCmd>(32);
+        
     // Запускаем агррегаторы
     let (cache_aggregator_tx, cache_aggregator_rx) = mpsc::channel::<CacheAggregatorCmd>(1);
     let cache_aggregator = CacheAggregator::new(
         cache_aggregator_rx, 
+        manager_transmitter_tx.clone(),
         storage_pool.clone()
     );
     tokio::spawn(cache_aggregator.run());
 
     // Каналы для получения данных с data aggregator
-    let (client_aggregator_orderbook_tx, client_aggregator_orderbook_rx) = mpsc::channel::<Arc<ClientAggregatorCmd>>(32);
-    let (client_aggregator_chart_tx, client_aggregator_chart_rx) = mpsc::channel::<Arc<ClientAggregatorCmd>>(32);
+    let (client_aggregator_tx, client_aggregator_chart_rx) = mpsc::channel::<Arc<ClientAggregatorCmd>>(128);
+
+    let manager_transmitter = ManagerTransmitter::new(
+        client_aggregator_tx.clone(),
+    );
+    tokio::spawn(manager_transmitter.run(manager_transmitter_rx));
 
     // Канал для приёма команд от пользователя
     let (client_aggregator_tx, client_aggregator_rx) = mpsc::channel::<ClientAggregatorCmd>(32);
@@ -46,7 +53,6 @@ async fn main() {
     let client_aggregator = ClientAggregator::new(
         client_aggregator_rx,
         cache_aggregator_tx.clone(),
-        client_aggregator_orderbook_rx,
         client_aggregator_chart_rx
     );
     tokio::spawn(client_aggregator.run());
@@ -59,8 +65,7 @@ async fn main() {
     );
     tokio::spawn(
         data_aggregator.run(
-            client_aggregator_orderbook_tx.clone(),
-            client_aggregator_chart_tx.clone(),
+            manager_transmitter_tx.clone(),
         )
     );
 

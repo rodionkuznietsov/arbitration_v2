@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::Arc, time::{Duration, Instant}};
 use chrono::{Timelike, Utc, Duration as ChronoDuration};
 use tokio::{sync::{broadcast, mpsc}, time::{Instant as TokioInstant, interval_at}};
-use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse, KeyMarketType, KeyPair, SpreadPair}, exchange::{ExchangeType}, line::{Line, TimeFrame}, orderbook::SnapshotUi, websocket::{ChannelSubscription, ChartEvent, Symbol}}, services::cache_aggregator::CacheAggregatorCmd, storage::line_storage::add_new_lines, transport::client_aggregator::ClientAggregatorCmd};
+use crate::{models::{aggregator::{AggregatorPayload, KeyMarketType, KeyPair, SpreadPair}, exchange::ExchangeType, line::{Line, TimeFrame}, orderbook::SnapshotUi, websocket::{ChannelSubscription, ChartEvent, Symbol}}, services::{cache_aggregator::CacheAggregatorCmd, manager_transmitter::{ManagerTransmitterCmd, NotifyEvent}}, storage::line_storage::add_new_lines};
 
 const ORDERBOOK_DELAY: u64 = 50; // ms
-const CHART_DELAY: u64 = 50; // ms
+const CHART_DELAY: u64 = 150; // ms
 const SPREAD_DELAY: u64 = 150; // ms
 
 pub enum DataAggregatorCmd {
@@ -55,7 +55,6 @@ pub struct DataAggregator {
     pool: sqlx::PgPool,
 }
 
-// Исправить дефект с базой данных
 impl DataAggregator {
     pub fn new(
         aggregator_rx: mpsc::Receiver<DataAggregatorCmd>,
@@ -80,8 +79,7 @@ impl DataAggregator {
     
     pub async fn run(
         mut self, 
-        client_aggregator_orderbook_tx: mpsc::Sender<Arc<ClientAggregatorCmd>>,
-        client_aggregator_chart_tx: mpsc::Sender<Arc<ClientAggregatorCmd>>,
+        manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>,
     ) {
         // Поток для отправки orderbooks клиентам, которые подписались на них, 
         // но с конкретным токеном, а не всеми подряд
@@ -112,9 +110,7 @@ impl DataAggregator {
 
                 Ok(symbol) = markets_updated_rx.recv() => {
                     self.send_payload_to_client_aggregator(
-                        client_aggregator_orderbook_tx.clone(), 
-                        client_aggregator_chart_tx.clone(),
-                        
+                        manager_transmitter_tx.clone(),
                         spread_tx.clone(),
                         symbol.clone(),
                     ).await;
@@ -195,8 +191,7 @@ impl DataAggregator {
 
     async fn send_payload_to_client_aggregator(
         &mut self,
-        client_aggregator_orderbook_tx: mpsc::Sender<Arc<ClientAggregatorCmd>>,
-        client_aggregator_chart_tx: mpsc::Sender<Arc<ClientAggregatorCmd>>,
+        manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>,
         spread_tx: mpsc::Sender<(KeyPair, SpreadPair)>,
         symbol: Arc<Symbol>
     ) {
@@ -231,27 +226,13 @@ impl DataAggregator {
                             short_order_book: long.clone(), 
                             ticker: symbol.clone(),
                         });
-                        
-                        client_aggregator_orderbook_tx.send_timeout(
-                            Arc::new(ClientAggregatorCmd::Use(
-                                    ClientAggregatorUse::Publish { 
-                                        key: long_key,
-                                        payload: long_payload
-                                    }
-                                )),
-                                Duration::from_millis(ORDERBOOK_DELAY)
-                        ).await.ok();
 
-                        client_aggregator_orderbook_tx.send_timeout(
-                            Arc::new(ClientAggregatorCmd::Use(
-                                    ClientAggregatorUse::Publish { 
-                                        key: short_key,
-                                        payload: short_payload
-                                    }
-                                )),
-                                Duration::from_millis(ORDERBOOK_DELAY)
+                        manager_transmitter_tx.send_timeout(
+                            ManagerTransmitterCmd::Notify(
+                                NotifyEvent::Payload(long_key, long_payload, short_key, short_payload),
+                            ),
+                            Duration::from_millis(ORDERBOOK_DELAY)
                         ).await.ok();
-
                     }
 
                     let long_volume = long_data.volume24h;
@@ -286,24 +267,11 @@ impl DataAggregator {
                             ticker: symbol.clone()
                         });
 
-                        client_aggregator_chart_tx.send_timeout(
-                            Arc::new(ClientAggregatorCmd::Use(
-                                    ClientAggregatorUse::Publish { 
-                                        key: long_key,
-                                        payload: long_payload
-                                    }
-                                )),
-                                Duration::from_millis(CHART_DELAY)
-                        ).await.ok();
-
-                        client_aggregator_chart_tx.send_timeout(
-                            Arc::new(ClientAggregatorCmd::Use(
-                                    ClientAggregatorUse::Publish { 
-                                        key: short_key,
-                                        payload: short_payload
-                                    }
-                                )),
-                                Duration::from_millis(CHART_DELAY)
+                        manager_transmitter_tx.send_timeout(
+                            ManagerTransmitterCmd::Notify(
+                                NotifyEvent::Payload(long_key, long_payload, short_key, short_payload),
+                            ),
+                            Duration::from_millis(CHART_DELAY)
                         ).await.ok();
                     }
 
@@ -321,7 +289,7 @@ impl DataAggregator {
                             long_quote,
                             *short_ex,
                             short_quote,
-                            client_aggregator_chart_tx.clone()
+                            manager_transmitter_tx.clone()
                         ).await;
                     }
                 }
@@ -340,7 +308,7 @@ impl DataAggregator {
 
         short_exchange: ExchangeType,
         short_quote: Quote,
-        client_aggregator_chart_tx: mpsc::Sender<Arc<ClientAggregatorCmd>>
+        manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>
     ) {
         let mid_in_price = (short_quote.bid + long_quote.ask) / 2.0;
         let spread_in_percent = (short_quote.bid - long_quote.ask) / mid_in_price * 100.0;
@@ -382,18 +350,6 @@ impl DataAggregator {
                 ticker: symbol.clone()
             }
         );
-        
-        client_aggregator_chart_tx.send_timeout(
-            Arc::new(
-            ClientAggregatorCmd::Use(
-                    ClientAggregatorUse::Publish { 
-                        key: long_key, 
-                        payload: long_payload 
-                    }
-                )
-            ),
-            Duration::from_millis(CHART_DELAY)
-        ).await.ok();
 
         let short_key = ChannelSubscription::Chart { 
             long_exchange: short_exchange, 
@@ -411,15 +367,10 @@ impl DataAggregator {
                 ticker: symbol
             }
         );
-        
-        client_aggregator_chart_tx.send_timeout(
-            Arc::new(
-                ClientAggregatorCmd::Use(
-                    ClientAggregatorUse::Publish { 
-                        key: short_key, 
-                        payload: short_payload 
-                    }
-                )
+
+        manager_transmitter_tx.send_timeout(
+            ManagerTransmitterCmd::Notify(
+                NotifyEvent::Payload(long_key, long_payload, short_key, short_payload),
             ),
             Duration::from_millis(CHART_DELAY)
         ).await.ok();

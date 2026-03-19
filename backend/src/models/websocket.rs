@@ -1,11 +1,11 @@
-use std::{sync::Arc};
+use std::{collections::VecDeque, sync::Arc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::Display;
 use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
-use crate::models::{exchange::ExchangeType, orderbook::SnapshotUi};
+use crate::models::{exchange::ExchangeType, line::Line, orderbook::SnapshotUi};
 
 pub type ClientId = Uuid;
 pub type Symbol = String;
@@ -21,13 +21,12 @@ pub enum ClientCmd {
     UnSubscribe
 }
 
-#[derive(Display, Deserialize, Debug, Clone, Serialize)]
-#[serde(rename_all="snake_case")]
+#[derive(Display, Debug, Clone)]
 #[strum(serialize_all="snake_case")]
 pub enum ChartEvent {
     UpdateLine(f64, f64, i64),
     Volume24hr(f64, f64),
-    LinesHistory,
+    LinesHistory(VecDeque<Line>),
     UpdateHistory
 }
 

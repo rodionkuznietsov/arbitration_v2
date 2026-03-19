@@ -1,10 +1,11 @@
-use std::{collections::{HashMap, HashSet, VecDeque}};
-use tokio::sync::{mpsc};
+use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc, time::Duration};
+use tokio::sync::{Notify, broadcast, mpsc};
 use tracing::{error, info};
 
-use crate::{models::{aggregator::{KeyMarketType, KeyPair}, line::{Line, MarketType}}, storage::line_storage::get_spread_history};
+use crate::{models::{aggregator::{KeyMarketType, KeyPair}, line::{Line, MarketType}}, services::manager_transmitter::{ManagerTransmitterCmd, NotifyEvent}, storage::line_storage::get_spread_history};
 
 const MAX_LINES: usize = 100;
+const REPLY_DELAY: u64 = 10;
 
 pub enum CacheAggregatorCmd {
     AddLines {
@@ -13,7 +14,7 @@ pub enum CacheAggregatorCmd {
     RemovePair {
         key: KeyPair
     },
-    GetLinesHistory {
+    LinesHistoryUpdater {
         key: KeyPair,
         reply: mpsc::Sender<(VecDeque<Line>, MarketType)>
     }
@@ -24,12 +25,15 @@ pub struct CacheAggregator {
     initialization_keys: HashSet<KeyMarketType>,
 
     cache_aggregator_rx: mpsc::Receiver<CacheAggregatorCmd>,
+    manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>,
+
     pool: sqlx::PgPool,
 }
 
 impl CacheAggregator {
     pub fn new(
         cache_aggregator_rx: mpsc::Receiver<CacheAggregatorCmd>,
+        manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>,
         pool: sqlx::PgPool,
     ) -> Self {
         Self { 
@@ -37,7 +41,9 @@ impl CacheAggregator {
             initialization_keys: HashSet::new(),
             
             cache_aggregator_rx,
-            pool
+            manager_transmitter_tx,
+
+            pool,
         }
     }
 
@@ -75,6 +81,11 @@ impl CacheAggregator {
 
                             short_deque.make_contiguous().sort_by(|x, y| x.timestamp.cmp(&y.timestamp));
                         }
+                        self.manager_transmitter_tx.send(
+                            ManagerTransmitterCmd::Notify(
+                                NotifyEvent::LinesHistory(self.cache_lines.clone())
+                            )
+                        ).await.ok();
                     },
                     CacheAggregatorCmd::RemovePair { 
                         key
@@ -87,14 +98,14 @@ impl CacheAggregator {
                             self.initialization_keys.remove(&key.short_market_type);
                         }
                     },
-                    CacheAggregatorCmd::GetLinesHistory { 
+                    CacheAggregatorCmd::LinesHistoryUpdater {
                         key,
                         reply
                     } => {
                         // Проверяем инициализированы ли данные по этому ключу
                         if self.initialization_keys.contains(&key.long_market_type.clone()) {
                             if let Some(lines) = self.cache_lines.get_mut(&key.long_market_type) {
-                                reply.send((lines.clone(), MarketType::Long)).await.ok();
+                                reply.send_timeout((lines.clone(), MarketType::Long), Duration::from_millis(REPLY_DELAY)).await.ok();
                             }
                         } else {
                             let exchange_pair = format!("{}/{}", key.long_market_type.long_exchange, key.long_market_type.short_exchange);
@@ -111,14 +122,14 @@ impl CacheAggregator {
 
                                 self.cache_lines.insert(key.long_market_type.clone(), lines.clone());
                                 self.initialization_keys.insert(key.long_market_type);
-                                reply.send((lines, MarketType::Long)).await.ok();
+                                reply.send_timeout((lines, MarketType::Long), Duration::from_millis(REPLY_DELAY)).await.ok();
                             }
                         }
 
                         // Проверяем инициализированы ли данные по этому ключу
                         if self.initialization_keys.contains(&key.short_market_type.clone()) {
                             if let Some(lines) = self.cache_lines.get_mut(&key.short_market_type) {
-                                reply.send((lines.clone(), MarketType::Short)).await.ok();
+                                reply.send_timeout((lines.clone(), MarketType::Short), Duration::from_millis(REPLY_DELAY)).await.ok();
                             }
                         } else {
                             let exchange_pair = format!("{}/{}", key.short_market_type.long_exchange, key.short_market_type.short_exchange);
@@ -135,7 +146,7 @@ impl CacheAggregator {
 
                                 self.cache_lines.insert(key.short_market_type.clone(), lines.clone());
                                 self.initialization_keys.insert(key.short_market_type);
-                                reply.send((lines, MarketType::Short)).await.ok();
+                                reply.send_timeout((lines, MarketType::Short), Duration::from_millis(REPLY_DELAY)).await.ok();
                             }
                         }
                     },

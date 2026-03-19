@@ -1,15 +1,14 @@
-use std::{sync::Arc};
-use uuid::Uuid;
-use crate::models::{exchange::ExchangeType, orderbook::SnapshotUi, websocket::{ChannelSubscription, ChartEvent, Symbol}};
+use std::{collections::VecDeque, sync::Arc};
+use crate::models::{exchange::ExchangeType, line::Line, orderbook::SnapshotUi, websocket::{ChannelSubscription, ChartEvent, ClientId, Symbol}};
 
 pub enum ClientAggregatorUse {
     #[allow(unused)]
-    UnRegister(Uuid),
-    Subscribe(Uuid, ChannelSubscription),
+    UnRegister(ClientId),
+    Subscribe(ClientId, ChannelSubscription),
     Publish {
         key: ChannelSubscription,
         payload: Arc<AggregatorPayload>
-    }
+    },
 }
 
 #[derive(Clone, Debug)]

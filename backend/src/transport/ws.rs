@@ -36,7 +36,7 @@ async fn handle_connection(
 
     let new_id = Uuid::new_v4();
     let (tx, mut rx) = watch::channel(Arc::new(AggregatorPayload::default()));
-    let (lines_tx, mut lines_rx) = mpsc::channel::<(VecDeque<Line>, MarketType)>(1);
+    let (lines_tx, mut lines_rx) = mpsc::channel::<Arc<AggregatorPayload>>(1);
     let cancel_token = tokio_util::sync::CancellationToken::new();
 
     sender.send(
@@ -69,34 +69,35 @@ async fn handle_connection(
         async move {
             loop {
                 tokio::select! {
-                    Some((lines, market_type)) = lines_rx.recv() => {
+                    Some(payload) = lines_rx.recv() => {
                         if let Some(chart) = chart_data.get_mut(&ChannelType::Chart) {
-                            match market_type {
-                                MarketType::Long => {
-                                    let long_lines = lines
-                                        .into_iter()
-                                        .map(|line| {
-                                            serde_json::json!({
-                                                "time": line.timestamp,
-                                                "value": line.value
-                                            })
-                                        })
-                                        .collect();
-                                    chart.long_lines = Some(long_lines);
-                                },
-                                MarketType::Short => {
-                                    let short_lines = lines
-                                        .into_iter()
-                                        .map(|line| {
-                                            serde_json::json!({
-                                                "time": line.timestamp,
-                                                "value": line.value
-                                            })
-                                        })
-                                        .collect();
-                                    chart.short_lines = Some(short_lines);
-                                }
-                            }
+                            println!("{:?}", payload);
+                            // match market_type {
+                            //     MarketType::Long => {
+                            //         let long_lines = lines
+                            //             .into_iter()
+                            //             .map(|line| {
+                            //                 serde_json::json!({
+                            //                     "time": line.timestamp,
+                            //                     "value": line.value
+                            //                 })
+                            //             })
+                            //             .collect();
+                            //         chart.long_lines = Some(long_lines);
+                            //     },
+                            //     MarketType::Short => {
+                            //         let short_lines = lines
+                            //             .into_iter()
+                            //             .map(|line| {
+                            //                 serde_json::json!({
+                            //                     "time": line.timestamp,
+                            //                     "value": line.value
+                            //                 })
+                            //             })
+                            //             .collect();
+                            //         chart.short_lines = Some(short_lines);
+                            //     }
+                            // }
                         }
                     },
                     Ok(_) = rx.changed() => {

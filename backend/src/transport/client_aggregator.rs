@@ -1,18 +1,18 @@
-use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc};
+use std::{collections::{HashMap, HashSet}, sync::Arc};
 use tokio::sync::{mpsc, watch};
 use tracing::{error};
-use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse, KeyMarketType, KeyPair}, line::{Line, MarketType}, websocket::{ChannelSubscription, ClientId}}, services::cache_aggregator::CacheAggregatorCmd};
+use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse, KeyMarketType, KeyPair}, websocket::{ChannelSubscription, ClientId}}, services::cache_aggregator::CacheAggregatorCmd};
 
 pub enum ClientMpcsChannel {
     OrderBook(watch::Sender<Arc<AggregatorPayload>>),
-    Lines(mpsc::Sender<(VecDeque<Line>, MarketType)>)
+    Lines(mpsc::Sender<Arc<AggregatorPayload>>)
 }
 
 pub enum ClientAggregatorCmd {
     Register {
         client_id: ClientId,
         tx: watch::Sender<Arc<AggregatorPayload>>,
-        lines_tx: mpsc::Sender<(VecDeque<Line>, MarketType)>,
+        lines_tx: mpsc::Sender<Arc<AggregatorPayload>>,
     },
     Use(ClientAggregatorUse),
 }
@@ -20,8 +20,7 @@ pub enum ClientAggregatorCmd {
 pub struct ClientAggregator {
     cache_aggregator_tx: mpsc::Sender<CacheAggregatorCmd>,
     client_cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
-    orderbook_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
-    chart_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
+    cmd_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
 
     clients: HashMap<ClientId, Vec<ClientMpcsChannel>>,
     subscriptions: HashMap<ClientId, HashSet<ChannelSubscription>>,
@@ -32,14 +31,12 @@ impl ClientAggregator {
     pub fn new(
         client_cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
         cache_aggregator_tx: mpsc::Sender<CacheAggregatorCmd>,
-        orderbook_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
-        chart_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
+        cmd_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
     ) -> Self {
         Self {
             cache_aggregator_tx,
             client_cmd_rx,
-            orderbook_rx,
-            chart_rx,
+            cmd_rx,
 
             clients: HashMap::new(),
             subscriptions: HashMap::new(),
@@ -55,11 +52,7 @@ impl ClientAggregator {
                     self.handle_cmd(Arc::new(client_cmd)).await;
                 }
 
-                Some(client_cmd) = self.chart_rx.recv() => {
-                    self.handle_cmd(client_cmd).await;
-                }
-
-                Some(client_cmd) = self.orderbook_rx.recv() => {
+                Some(client_cmd) = self.cmd_rx.recv() => {
                     self.handle_cmd(client_cmd).await;
                 }
             }
@@ -102,42 +95,13 @@ impl ClientAggregator {
 
                         println!("Subscriptions: {:?}", self.subscriptions);
                         println!("\nSub Index: {:?}", self.sub_index);
-
-                        // Отправляем последние 100 линий клиенту
-                        match client_channel_sub {
-                            ChannelSubscription::Chart { 
-                                long_exchange, 
-                                short_exchange, 
-                                ticker 
-                            } => {
-                                if let Some(txs) = self.clients.get(&client_id) {
-                                    for tx in txs {
-                                        match tx {
-                                            ClientMpcsChannel::Lines(
-                                                channel_tx
-                                            ) => {
-                                                self.cache_aggregator_tx.send(
-                                                CacheAggregatorCmd::GetLinesHistory { 
-                                                        key: KeyPair::new(
-                                                            KeyMarketType::new(*long_exchange, *short_exchange, ticker.clone()), 
-                                                            KeyMarketType::new(*short_exchange, *long_exchange, ticker.clone()), 
-                                                        ), 
-                                                        reply: channel_tx.clone()
-                                                    }
-                                                ).await.ok();
-                                            },
-                                            _ => {}
-                                        }
-                                    }
-                                }
-                            },
-                            _ => {}
-                        }
                     },
                     ClientAggregatorUse::Publish { 
                         key,
                         payload,
                     } => {
+                        // Доделать метод для manager_transmitter
+
                         if let Some(clients_ids) = self.sub_index.get(&key) {                    
                             for client_id in clients_ids {
                                 if let Some(channels) = self.clients.get(&*client_id) {

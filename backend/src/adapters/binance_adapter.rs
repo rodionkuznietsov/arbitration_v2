@@ -3,8 +3,9 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::{exchanges::exchange_adapter::ExchangeAdapter, models::{exchange::{ExchangeType, TickerInfo}, websocket::Symbol}, services::{exchange_aggregator::ExchangeStoreCMD}};
+use crate::{exchanges::exchange_adapter::ExchangeAdapter, models::{exchange::{TickerInfo}, websocket::Symbol}, services::{exchange_aggregator::ExchangeStoreCMD}};
 
+#[allow(unused)]
 pub struct BinanceAdapter;
 
 #[async_trait::async_trait]
@@ -21,33 +22,33 @@ impl ExchangeAdapter for BinanceAdapter {
 
     async fn auth_url(
         self: Arc<Self>,
-        client: &reqwest::Client
+        _client: &reqwest::Client
     ) -> Option<url::Url> {
         todo!()
     }
 
     async fn get_api_key(
         self: Arc<Self>,
-        client: &reqwest::Client
+        _client: &reqwest::Client
     ) -> Result<String, reqwest::Error> {
         todo!()
     }
 
-    async fn get_tickers(self: Arc<Self>, client: &reqwest::Client) -> Option<Vec<TickerInfo>> {
+    async fn get_tickers(self: Arc<Self>, _client: &reqwest::Client) -> Option<Vec<TickerInfo>> {
         None
     }
     
     fn create_subscribe_messages(
         self: Arc<Self>,
-        symbol: Arc<Symbol>
+        _symbol: Arc<Symbol>
     ) -> Vec<Message> {
         todo!()
     }
 
     async fn parse_message(
         self: Arc<Self>,
-        msg: String,
-        data_aggregator_tx: mpsc::Sender<ExchangeStoreCMD>
+        _msg: String,
+        _data_aggregator_tx: mpsc::Sender<ExchangeStoreCMD>
     ) {
         
     }
