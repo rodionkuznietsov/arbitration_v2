@@ -1,8 +1,8 @@
 use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 
 use lru::LruCache;
-use tokio::sync::{broadcast, mpsc, oneshot};
-use crate::models::{orderbook::{BookEvent, Snapshot, SnapshotUi}, websocket::Symbol};
+use tokio::sync::{mpsc, oneshot, watch};
+use crate::models::{exchange::ExchangeType, exchange_aggregator::BookData, orderbook::{BookEvent, Snapshot, SnapshotUi}, websocket::Symbol};
 
 const PRICE_TICK: f64 = 900000000.0;
 
@@ -66,54 +66,50 @@ pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
     values
 }
 
-pub struct BookData {
-    pub snapshot: Option<Snapshot>,
-    pub last_price: Option<f64>,
-    pub volume24h: Option<f64>
-}
-
 pub enum ExchangeStoreCMD {
     Event(BookEvent),
     RegisterSymbol {
         symbol: Arc<Symbol>
     },
-    GetBook { 
-        symbol: Arc<Symbol>,
-        reply: oneshot::Sender<SnapshotUi> 
-    },
-    GetQuote {
-        symbol: Arc<Symbol>,
-        reply: oneshot::Sender<(f64, f64)>
-    },
-    GetVolume {
-        symbol: Arc<Symbol>,
-        reply: oneshot::Sender<f64>
+    Subscribe {
+        reply: oneshot::Sender<watch::Receiver<(Arc<Symbol>, Arc<BookData>)>>
     }
 } 
 
 pub struct ExchangeStore {
     pub market_data: LruCache<Symbol, BookData>,
     pub rx: mpsc::Receiver<ExchangeStoreCMD>,
-    pub book_updates: broadcast::Sender<String>,
+    #[allow(unused)]
+    id: ExchangeType,
+    watch_tx: watch::Sender<(Arc<Symbol>, Arc<BookData>)>,
+    watch_rx: watch::Receiver<(Arc<Symbol>, Arc<BookData>)>
 }
 
 impl ExchangeStore {
-    pub fn new(rx: mpsc::Receiver<ExchangeStoreCMD>) -> Self {
+    pub fn new(
+        rx: mpsc::Receiver<ExchangeStoreCMD>,
+        id: ExchangeType
+    ) -> Self {
         let cache_capacity = std::env::var("ORDERBOOK_CACHE_CAPACITY")
             .unwrap_or_else(|_| "1000".into())
             .parse::<usize>()
             .expect("ORDERBOOK_CACHE_CAPACITY must be a number");
 
-        let (book_updates, _) = broadcast::channel(1);
+        let market_data = LruCache::new(NonZeroUsize::new(cache_capacity).unwrap());
+        let (watch_tx, watch_rx) = watch::channel((Arc::new(Symbol::new()), Arc::new(BookData::new())));
 
         Self {
-            market_data: LruCache::new(NonZeroUsize::new(cache_capacity).unwrap()),
+            market_data,
             rx: rx,
-            book_updates, 
+            watch_tx, watch_rx,
+
+            id,
         }
     }
 
-    pub async fn set_data(mut self) {
+    pub async fn set_data(
+        mut self,
+    ) {
         let mut last_version_id = 0;
         while let Some(cmd) = self.rx.recv().await {
 
@@ -143,7 +139,6 @@ impl ExchangeStore {
                             if let Some(data) = self.market_data.get_mut(&symbol) {
                                 data.snapshot = Some(snapshot);
                             }
-                            let _ = self.book_updates.send(symbol);
                         }
                         BookEvent::Delta { 
                             symbol, 
@@ -189,6 +184,7 @@ impl ExchangeStore {
                                                 continue;
                                             }
                                             last_version_id = to_version + 1;  
+                                            let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
                                         }
                                         None => {
                                             for (price, volume) in delta.a {
@@ -214,10 +210,10 @@ impl ExchangeStore {
                                                     }
                                                 }
                                             }
+                                            let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
                                         }
                                     } 
                                 }
-                                let _ = self.book_updates.send(symbol);
                             }
                         },
                         BookEvent::TickerUpdate { 
@@ -228,60 +224,38 @@ impl ExchangeStore {
                             if let Some(data) = self.market_data.get_mut(&symbol) {
                                 data.last_price = Some(last_price);
                                 data.volume24h = Some(volume);
+                                let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
                             }
                         },
                     }
                 }
-                ExchangeStoreCMD::GetBook { 
-                    symbol, 
-                    reply 
-                } => {
-                    if let Some(data) = self.market_data.get(&symbol.to_string()) {
-                        let snapshot_ui = &data.snapshot;
-                        if let Some(snapshot) = snapshot_ui {
-                            if let Some(price) = data.last_price {
-                                reply.send(snapshot.to_ui(6, price)).ok();
-                            }
-                        }
-                    }
-                }
-                ExchangeStoreCMD::GetQuote { 
-                    symbol ,
+                ExchangeStoreCMD::Subscribe { 
                     reply
-                } => {                    
-                    if let Some(data) = self.market_data.get(&symbol.to_string()) {
-                        if let Some(snapshot) = &data.snapshot {
-                            let best_ask = snapshot.a.iter()
-                                .min_by_key(|x| x.0)
-                                .map(|(price, _)| *price as f64 / PRICE_TICK);
-
-                            let best_bid = snapshot.b.iter()
-                                .max_by_key(|x| x.0)
-                                .map(|(price, _)| *price as f64 / PRICE_TICK);
-
-                            let best_ask = match best_ask {
-                                Some(v) => v,
-                                None => 0.0
-                            };
-
-                            let best_bid = match best_bid {
-                                Some(v) => v,
-                                None => 0.0
-                            };
-
-                            reply.send((best_ask, best_bid)).ok();
-                        }
-                    }
-                },
-                ExchangeStoreCMD::GetVolume { 
-                    symbol, 
-                    reply 
                 } => {             
-                    if let Some(data) = self.market_data.get(&symbol.to_string()) {
-                        if let Some(volume) = data.volume24h {
-                            reply.send(volume).ok();
-                        }
-                    }
+                    reply.send(self.watch_rx.clone()).ok();
+                //     if let Some(data) = self.market_data.get(&symbol.to_string()) {
+                //         if let Some(snapshot) = &data.snapshot {
+                //             let best_ask = snapshot.a.iter()
+                //                 .min_by_key(|x| x.0)
+                //                 .map(|(price, _)| *price as f64 / PRICE_TICK);
+
+                //             let best_bid = snapshot.b.iter()
+                //                 .max_by_key(|x| x.0)
+                //                 .map(|(price, _)| *price as f64 / PRICE_TICK);
+
+                //             let best_ask = match best_ask {
+                //                 Some(v) => v,
+                //                 None => 0.0
+                //             };
+
+                //             let best_bid = match best_bid {
+                //                 Some(v) => v,
+                //                 None => 0.0
+                //             };
+
+                //             reply.send((best_ask, best_bid)).ok();
+                //         }
+                //     }
                 },
             }
         }

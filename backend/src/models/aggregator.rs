@@ -1,55 +1,20 @@
-use std::{collections::VecDeque, sync::Arc};
-use crate::models::{exchange::ExchangeType, line::Line, orderbook::SnapshotUi, websocket::{ChannelSubscription, ChartEvent, ClientId, Symbol}};
+use std::{sync::Arc};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use crate::{models::{exchange::ExchangeType, websocket::{ChannelSubscription, ClientId, Symbol, WsClientMessage}}, services::data_mapping::SnapshotJson};
 
 pub enum ClientAggregatorUse {
     #[allow(unused)]
     UnRegister(ClientId),
     Subscribe(ClientId, ChannelSubscription),
-    Publish {
-        key: ChannelSubscription,
-        payload: Arc<AggregatorPayload>
-    },
+    PublishJson(
+        ChannelSubscription,
+        WsClientMessage
+    )
 }
 
-#[derive(Clone, Debug)]
-pub enum AggregatorPayload {
-    OrderBook {
-        long_order_book: Arc<SnapshotUi>,
-        short_order_book: Arc<SnapshotUi>,
-        ticker: Arc<Symbol>,
-    },
-    #[allow(unused)]
-    ChartEvent {
-        event: ChartEvent,
-        ticker: Arc<Symbol>
-    }
-}
-
-impl Default for AggregatorPayload {
-    fn default() -> Self {
-        Self::OrderBook { 
-            long_order_book: Arc::new(
-                SnapshotUi { 
-                    a: Vec::new(), 
-                    b: Vec::new(), 
-                    last_price: 0.0, 
-                    timestamp: 0 
-                }
-            ), 
-            short_order_book: Arc::new(
-                SnapshotUi { 
-                    a: Vec::new(), 
-                    b: Vec::new(), 
-                    last_price: 0.0, 
-                    timestamp: 0 
-                }
-            ), 
-            ticker: Arc::new(String::from("")),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct KeyMarketType {
     pub long_exchange: ExchangeType,
     pub short_exchange: ExchangeType,
@@ -77,6 +42,7 @@ pub struct KeyPair {
 }
 
 impl KeyPair {
+    #[allow(unused)]
     pub fn new(
         long_market_type: KeyMarketType,
         short_market_type: KeyMarketType,
@@ -84,6 +50,32 @@ impl KeyPair {
         Self { 
             long_market_type, 
             short_market_type, 
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all="snake_case")]
+pub enum JsonPairData {
+    OrderBook {
+        long: SnapshotJson,
+        short: SnapshotJson,
+    },
+    LinesHistory {
+        long: Vec<Value>,
+        short: Vec<Value>
+    },
+    UpdateLine {
+        long: f64,
+        short: f64
+    },
+}
+
+impl Default for JsonPairData {
+    fn default() -> Self {
+        Self::LinesHistory { 
+            long: Vec::new(), 
+            short: Vec::new() 
         }
     }
 }

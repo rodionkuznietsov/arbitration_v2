@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::{exchanges::exchange_adapter::ExchangeAdapter, models::{exchange::{TickerInfo}, websocket::Symbol}, services::{exchange_aggregator::ExchangeStoreCMD}};
+use crate::{models::{exchange::TickerInfo, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::ExchangeStoreCMD}};
 
 #[allow(unused)]
 pub struct BinanceAdapter;

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::{models::{exchange::TickerInfo, websocket::Symbol}, services::{exchange_aggregator::ExchangeStoreCMD}};
+use crate::{models::{exchange::TickerInfo, websocket::Symbol}, services::exchange::exchange_aggregator::ExchangeStoreCMD};
 
 #[async_trait::async_trait]
 pub trait ExchangeAdapter: Send + Sync + 'static {

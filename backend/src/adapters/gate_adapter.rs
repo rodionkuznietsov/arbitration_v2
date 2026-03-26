@@ -3,7 +3,8 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::{exchanges::exchange_adapter::ExchangeAdapter, models::{exchange::{TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, Snapshot}, websocket::Symbol}, services::{exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
+use crate::{models::{exchange::{TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
+
 
 pub struct GateAdapter;
 

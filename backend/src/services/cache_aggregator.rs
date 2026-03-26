@@ -1,22 +1,16 @@
-use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc, time::Duration};
-use tokio::sync::{Notify, broadcast, mpsc};
-use tracing::{error, info};
-
-use crate::{models::{aggregator::{KeyMarketType, KeyPair}, line::{Line, MarketType}}, services::manager_transmitter::{ManagerTransmitterCmd, NotifyEvent}, storage::line_storage::get_spread_history};
+use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc};
+use tokio::sync::{mpsc};
+use crate::{models::{aggregator::{KeyMarketType, KeyPair}, line::Line}, storage::line_storage::{get_all_spread_history}};
 
 const MAX_LINES: usize = 100;
-const REPLY_DELAY: u64 = 10;
 
+#[derive(Debug)]
 pub enum CacheAggregatorCmd {
     AddLines {
         lines: Vec<(Line, KeyPair)>
     },
-    RemovePair {
-        key: KeyPair
-    },
-    LinesHistoryUpdater {
-        key: KeyPair,
-        reply: mpsc::Sender<(VecDeque<Line>, MarketType)>
+    LinesHistory {
+        reply: mpsc::Sender<HashMap<KeyMarketType, VecDeque<Line>>>
     }
 }
 
@@ -24,16 +18,13 @@ pub struct CacheAggregator {
     cache_lines: HashMap<KeyMarketType, VecDeque<Line>>,
     initialization_keys: HashSet<KeyMarketType>,
 
-    cache_aggregator_rx: mpsc::Receiver<CacheAggregatorCmd>,
-    manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>,
-
+    cache_aggregator_rx: mpsc::Receiver<Arc<CacheAggregatorCmd>>,
     pool: sqlx::PgPool,
 }
 
 impl CacheAggregator {
     pub fn new(
-        cache_aggregator_rx: mpsc::Receiver<CacheAggregatorCmd>,
-        manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>,
+        cache_aggregator_rx: mpsc::Receiver<Arc<CacheAggregatorCmd>>,
         pool: sqlx::PgPool,
     ) -> Self {
         Self { 
@@ -41,7 +32,6 @@ impl CacheAggregator {
             initialization_keys: HashSet::new(),
             
             cache_aggregator_rx,
-            manager_transmitter_tx,
 
             pool,
         }
@@ -52,13 +42,13 @@ impl CacheAggregator {
     ) {
         loop {
             if let Some(cmd) = self.cache_aggregator_rx.recv().await {
-                match cmd {
+                match cmd.as_ref() {
                     CacheAggregatorCmd::AddLines { 
                         lines
                     } => {
                         for (line, key) in lines {
                             let long_deque = self.cache_lines
-                                .entry(key.long_market_type)
+                                .entry(key.long_market_type.clone())
                                 .or_insert_with(VecDeque::new);
 
                             long_deque.push_back(line.clone());
@@ -70,10 +60,10 @@ impl CacheAggregator {
                             long_deque.make_contiguous().sort_by(|x, y| x.timestamp.cmp(&y.timestamp));
 
                             let short_deque = self.cache_lines
-                                .entry(key.short_market_type)
+                                .entry(key.short_market_type.clone())
                                 .or_insert_with(VecDeque::new);
 
-                            short_deque.push_back(line);
+                            short_deque.push_back(line.clone());
 
                             if short_deque.len() > MAX_LINES {
                                 short_deque.pop_front();
@@ -81,74 +71,32 @@ impl CacheAggregator {
 
                             short_deque.make_contiguous().sort_by(|x, y| x.timestamp.cmp(&y.timestamp));
                         }
-                        self.manager_transmitter_tx.send(
-                            ManagerTransmitterCmd::Notify(
-                                NotifyEvent::LinesHistory(self.cache_lines.clone())
-                            )
-                        ).await.ok();
                     },
-                    CacheAggregatorCmd::RemovePair { 
-                        key
-                    } => {
-                        if let Some(_) = self.cache_lines.remove(&key.long_market_type) {
-                            self.initialization_keys.remove(&key.long_market_type);
-                        }
-
-                        if let Some(_) = self.cache_lines.remove(&key.short_market_type) {
-                            self.initialization_keys.remove(&key.short_market_type);
-                        }
-                    },
-                    CacheAggregatorCmd::LinesHistoryUpdater {
-                        key,
+                    CacheAggregatorCmd::LinesHistory {
                         reply
                     } => {
-                        // Проверяем инициализированы ли данные по этому ключу
-                        if self.initialization_keys.contains(&key.long_market_type.clone()) {
-                            if let Some(lines) = self.cache_lines.get_mut(&key.long_market_type) {
-                                reply.send_timeout((lines.clone(), MarketType::Long), Duration::from_millis(REPLY_DELAY)).await.ok();
-                            }
-                        } else {
-                            let exchange_pair = format!("{}/{}", key.long_market_type.long_exchange, key.long_market_type.short_exchange);
-                            let lines = match get_spread_history(&self.pool, &key.long_market_type.symbol, &exchange_pair).await {
-                                Ok(l) => Some(l),
-                                Err(e) => {
-                                    error!("{:?} -> {e}", key.long_market_type);
-                                    None
+                        if self.initialization_keys.is_empty() {
+                            let history = get_all_spread_history(&self.pool).await;
+                            if let Ok(lines) = history {
+                                for ((long_ex, short_ex, symbol), lines) in lines {
+                                    self.cache_lines.insert(KeyMarketType { 
+                                        long_exchange: long_ex, 
+                                        short_exchange: short_ex, 
+                                        symbol: Arc::new(symbol.clone()) 
+                                    }, lines.clone());
+
+
+                                    self.initialization_keys.insert(
+                                        KeyMarketType::new(
+                                            long_ex, 
+                                            short_ex, 
+                                            Arc::new(symbol)
+                                        )
+                                    );
                                 }
-                            };
-                            
-                            if let Some(lines) = lines {
-                                info!("Инициализация данных для ключа: {:?}", key.long_market_type);
-
-                                self.cache_lines.insert(key.long_market_type.clone(), lines.clone());
-                                self.initialization_keys.insert(key.long_market_type);
-                                reply.send_timeout((lines, MarketType::Long), Duration::from_millis(REPLY_DELAY)).await.ok();
                             }
-                        }
-
-                        // Проверяем инициализированы ли данные по этому ключу
-                        if self.initialization_keys.contains(&key.short_market_type.clone()) {
-                            if let Some(lines) = self.cache_lines.get_mut(&key.short_market_type) {
-                                reply.send_timeout((lines.clone(), MarketType::Short), Duration::from_millis(REPLY_DELAY)).await.ok();
-                            }
-                        } else {
-                            let exchange_pair = format!("{}/{}", key.short_market_type.long_exchange, key.short_market_type.short_exchange);
-                            let lines = match get_spread_history(&self.pool, &key.short_market_type.symbol, &exchange_pair).await {
-                                Ok(l) => Some(l),
-                                Err(e) => {
-                                    error!("{:?} -> {e}", key.short_market_type);
-                                    None
-                                }
-                            };
-                            
-                            if let Some(lines) = lines {
-                                info!("Инициализация данных для ключа: {:?}", key.short_market_type);
-
-                                self.cache_lines.insert(key.short_market_type.clone(), lines.clone());
-                                self.initialization_keys.insert(key.short_market_type);
-                                reply.send_timeout((lines, MarketType::Short), Duration::from_millis(REPLY_DELAY)).await.ok();
-                            }
-                        }
+                        } 
+                        let _ = reply.send(self.cache_lines.clone()).await;
                     },
                 }
             }

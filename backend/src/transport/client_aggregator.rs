@@ -1,28 +1,28 @@
-use std::{collections::{HashMap, HashSet}, sync::Arc};
-use tokio::sync::{mpsc, watch};
-use tracing::{error};
-use crate::{models::{aggregator::{AggregatorPayload, ClientAggregatorUse, KeyMarketType, KeyPair}, websocket::{ChannelSubscription, ClientId}}, services::cache_aggregator::CacheAggregatorCmd};
+use std::{collections::{HashMap, HashSet}, sync::Arc, time::Duration};
+use tokio::sync::{mpsc};
+use crate::{models::{aggregator::{ClientAggregatorUse}, websocket::{ChannelSubscription, ChannelType, ClientId, WsClientMessage}}};
 
+#[derive(Debug)]
 pub enum ClientMpcsChannel {
-    OrderBook(watch::Sender<Arc<AggregatorPayload>>),
-    Lines(mpsc::Sender<Arc<AggregatorPayload>>)
+    OrderBook(mpsc::Sender<Arc<WsClientMessage>>),
+    #[allow(unused)]
+    Lines(mpsc::Sender<Arc<WsClientMessage>>)
 }
 
 pub enum ClientAggregatorCmd {
     Register {
         client_id: ClientId,
-        tx: watch::Sender<Arc<AggregatorPayload>>,
-        lines_tx: mpsc::Sender<Arc<AggregatorPayload>>,
+        tx: mpsc::Sender<Arc<WsClientMessage>>,
+        lines_tx: mpsc::Sender<Arc<WsClientMessage>>,
     },
     Use(ClientAggregatorUse),
 }
 
 pub struct ClientAggregator {
-    cache_aggregator_tx: mpsc::Sender<CacheAggregatorCmd>,
     client_cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
     cmd_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
 
-    clients: HashMap<ClientId, Vec<ClientMpcsChannel>>,
+    clients: HashMap<ClientId, HashMap<ChannelType, ClientMpcsChannel>>,
     subscriptions: HashMap<ClientId, HashSet<ChannelSubscription>>,
     sub_index: HashMap<ChannelSubscription, HashSet<ClientId>>,
 }
@@ -30,11 +30,9 @@ pub struct ClientAggregator {
 impl ClientAggregator {
     pub fn new(
         client_cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
-        cache_aggregator_tx: mpsc::Sender<CacheAggregatorCmd>,
         cmd_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
     ) -> Self {
         Self {
-            cache_aggregator_tx,
             client_cmd_rx,
             cmd_rx,
 
@@ -71,10 +69,10 @@ impl ClientAggregator {
             } => {
                 let entry = self.clients
                     .entry(*client_id)
-                    .or_insert_with(Vec::new);
+                    .or_insert_with(HashMap::new);
 
-                entry.push(ClientMpcsChannel::OrderBook(tx.clone()));
-                entry.push(ClientMpcsChannel::Lines(lines_tx.clone()));
+                entry.insert(ChannelType::OrderBook, ClientMpcsChannel::OrderBook(tx.clone()));
+                entry.insert(ChannelType::Chart, ClientMpcsChannel::Lines(lines_tx.clone()));
             },
             ClientAggregatorCmd::Use (
                 use_cmd 
@@ -96,28 +94,27 @@ impl ClientAggregator {
                         println!("Subscriptions: {:?}", self.subscriptions);
                         println!("\nSub Index: {:?}", self.sub_index);
                     },
-                    ClientAggregatorUse::Publish { 
+                    ClientAggregatorUse::PublishJson(
                         key,
-                        payload,
-                    } => {
-                        // Доделать метод для manager_transmitter
-
-                        if let Some(clients_ids) = self.sub_index.get(&key) {                    
-                            for client_id in clients_ids {
+                        msg,
+                    ) => {
+                        if let Some(client_ids) = self.sub_index.get(&key) {
+                            for client_id in client_ids {
                                 if let Some(channels) = self.clients.get(&*client_id) {
-                                    for tx in channels {
-                                        match tx {
-                                            ClientMpcsChannel::OrderBook(
-                                                channel_tx
-                                            ) => {
-                                                match channel_tx.send(payload.clone()) {
-                                                    Ok(_) => {},
-                                                    Err(e) => {
-                                                        error!("ClientAggregator: {}", e)
-                                                    } 
-                                                }
+                                    if let Some(ch) = channels.get(&msg.channel) {
+                                        match ch {
+                                            ClientMpcsChannel::OrderBook(channel_tx) => {
+                                                channel_tx.send_timeout(
+                                                    Arc::new(msg.clone()), 
+                                                    Duration::from_millis(10)
+                                                ).await.ok();
                                             },
-                                            _ => {}
+                                            ClientMpcsChannel::Lines(channel_tx) => {
+                                                channel_tx.send_timeout(
+                                                    Arc::new(msg.clone()), 
+                                                    Duration::from_millis(10)
+                                                ).await.ok();
+                                            },
                                         }
                                     }
                                 }
@@ -140,33 +137,6 @@ impl ClientAggregator {
                         for (channel_sub, clients) in self.sub_index.clone() {
                             if clients.is_empty() {
                                 self.sub_index.remove(&channel_sub);
-
-                                match channel_sub {
-                                    ChannelSubscription::Chart { 
-                                        long_exchange, 
-                                        short_exchange, 
-                                        ticker 
-                                    } => {
-                                        // Удаляем подписку в cache
-                                        self.cache_aggregator_tx.send(
-                                            CacheAggregatorCmd::RemovePair { 
-                                                key: KeyPair { 
-                                                    long_market_type: KeyMarketType { 
-                                                        long_exchange: long_exchange, 
-                                                        short_exchange: short_exchange,
-                                                        symbol: ticker.clone()
-                                                    }, 
-                                                    short_market_type: KeyMarketType { 
-                                                        long_exchange: short_exchange, 
-                                                        short_exchange: long_exchange, 
-                                                        symbol: ticker.clone()
-                                                    }, 
-                                                } 
-                                            }
-                                        ).await.ok();
-                                    },
-                                    _ => {}
-                                }
                             }
                         }
                     }

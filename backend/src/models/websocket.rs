@@ -1,11 +1,10 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::{collections::{VecDeque}, sync::Arc};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use strum_macros::Display;
 use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
-use crate::models::{exchange::ExchangeType, line::Line, orderbook::SnapshotUi};
+use crate::models::{aggregator::{JsonPairData, KeyMarketType}, exchange::ExchangeType, line::Line};
 
 pub type ClientId = Uuid;
 pub type Symbol = String;
@@ -26,7 +25,7 @@ pub enum ClientCmd {
 pub enum ChartEvent {
     UpdateLine(f64, f64, i64),
     Volume24hr(f64, f64),
-    LinesHistory(VecDeque<Line>),
+    LinesHistory(Arc<VecDeque<Line>>, Arc<VecDeque<Line>>),
     UpdateHistory
 }
 
@@ -44,14 +43,12 @@ pub enum ChannelType {
 #[strum(serialize_all="snake_case")]
 pub enum ChannelSubscription {
     OrderBook {
-        long_exchange: ExchangeType,
-        short_exchange: ExchangeType,
-        ticker: Arc<Symbol>,
+        long_market_type: KeyMarketType,
+        short_market_type: KeyMarketType,
     },
     Chart {
-        long_exchange: ExchangeType,
-        short_exchange: ExchangeType,
-        ticker: Arc<Symbol>
+        long_market_type: KeyMarketType,
+        short_market_type: KeyMarketType,
     }
 }
 
@@ -66,38 +63,48 @@ pub struct Subscription {
 }
 
 #[derive(Debug)]
-pub struct ChartData {
-    pub ticker: Option<Arc<Symbol>>,
-    pub volume24h: Option<(f64, f64)>,
-    pub update_line: Option<(f64, f64, i64)>,
-    pub long_lines: Option<Vec<Value>>,
-    pub short_lines: Option<Vec<Value>>,
+pub struct ClientData {
+    pub result: Option<Arc<WsClientMessage>>
 }
 
-impl ChartData {
+impl ClientData {
     pub fn new() -> Self {
         Self {
-            ticker: None,
-            volume24h: None, 
-            update_line: None,
-            long_lines: None,
-            short_lines: None,
+            result: None
         }
     }
 }
 
-pub struct OrderBookData {
-    pub ticker: Option<Arc<Symbol>>,
-    pub long: Option<Arc<SnapshotUi>>,
-    pub short: Option<Arc<SnapshotUi>>,
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WsClientMessage {
+    pub channel: ChannelType,
+    pub result: WsClientMsgResult,
 }
 
-impl OrderBookData {
-    pub fn new() -> Self {
-        Self {
-            ticker: None,
-            long: None, 
-            short: None
+impl Default for WsClientMessage {
+    fn default() -> Self {
+        Self { 
+            channel: ChannelType::Unknown,
+            result: WsClientMsgResult { 
+                data: Arc::new(JsonPairData::default()), 
+                symbol: Arc::new(Symbol::new())
+            } 
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WsClientMsgResult {
+    pub data: Arc<JsonPairData>,
+    pub symbol: Arc<Symbol>
+}
+
+impl Default for WsClientMsgResult {
+    fn default() -> Self {
+        Self { 
+            data: Arc::new(JsonPairData::default()), 
+            symbol: Arc::new(Symbol::new())
         }
     }
 }

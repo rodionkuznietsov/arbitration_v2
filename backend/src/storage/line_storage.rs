@@ -1,25 +1,53 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
-use crate::models::{aggregator::KeyPair, line::Line};
+use crate::models::{aggregator::KeyPair, exchange::ExchangeType, line::Line, websocket::Symbol};
 
-pub async fn get_spread_history(pool: &sqlx::PgPool, symbol: &str, exchange_pair: &str) -> Result<VecDeque<Line>, sqlx::Error> {    
-    println!("{} -> {}", symbol, exchange_pair);
+pub async fn get_all_spread_history(pool: &sqlx::PgPool) -> Result<HashMap<(ExchangeType, ExchangeType, Symbol), VecDeque<Line>>, sqlx::Error> {    
+    let mut grouped: HashMap<(ExchangeType, ExchangeType, Symbol), VecDeque<Line>> = HashMap::new();
     
-    let lines: VecDeque<Line> = sqlx::query_as::<_, Line>(
+    let lines: Vec<Line> = sqlx::query_as::<_, Line>(
         r#"
-        SELECT timestamp, exchange_pair, symbol, timeframe, value
+        SELECT timestamp, long_exchange, short_exchange, symbol, timeframe, value
         FROM storage.lines
-        WHERE symbol = $1 AND exchange_pair = $2
         ORDER BY timestamp DESC
         LIMIT 100
         "#
     )
-    .bind(symbol)
-    .bind(exchange_pair)
     .fetch_all(pool)
-    .await?.into();
+    .await?;
 
-    Ok(lines.into_iter().rev().collect())
+    for line in lines {
+        grouped
+            .entry((line.long_exchange, line.short_exchange, line.symbol.clone()))
+            .or_default()
+            .push_back(line)
+    }
+
+    Ok(grouped)
+}
+
+pub async fn get_spread_history(
+    pool: &sqlx::PgPool, 
+    symbol: &str, 
+    long_exchange: ExchangeType,
+    short_exchange: ExchangeType,
+) -> Result<VecDeque<Line>, sqlx::Error> {    
+    // let lines: VecDeque<Line> = sqlx::query_as::<_, Line>(
+    //     r#"
+    //     SELECT timestamp, long_exchange, short_exchange, symbol, timeframe, value
+    //     FROM storage.lines
+    //     WHERE symbol = $1 AND exchange_pair = $2
+    //     ORDER BY timestamp DESC
+    //     LIMIT 100
+    //     "#
+    // )
+    // .bind(symbol)
+    // .bind(long_exchange)
+    // .bind(short_exchange)
+    // .fetch_all(pool)
+    // .await?.into();
+
+    Ok(VecDeque::new())
 }
 
 pub async fn add_new_lines(
@@ -27,20 +55,21 @@ pub async fn add_new_lines(
     lines: &Vec<(Line, KeyPair)>,
     query: &str
 ) -> Result<(), sqlx::Error> {
-    let mut q = sqlx::query(
-        query
-    );
+    // let mut q = sqlx::query(
+    //     query
+    // );
 
-    for (v, _) in lines {
-        q = q
-            .bind(v.timestamp)
-            .bind(v.exchange_pair.clone())
-            .bind(v.symbol.clone())
-            .bind(v.timeframe.clone())
-            .bind(v.value.clone());
-    }
+    // for (v, _) in lines {
+    //     q = q
+    //         .bind(v.timestamp)
+    //         .bind(v.long_exchange.clone())
+    //         .bind(v.short_exchange.clone())
+    //         .bind(v.symbol.clone())
+    //         .bind(v.timeframe.clone())
+    //         .bind(v.value.clone());
+    // }
 
-    q.execute(pool).await?;
+    // q.execute(pool).await?;
 
     Ok(())
 }

@@ -4,3 +4,4 @@ pub mod exchange;
 pub mod websocket;
 pub mod aggregator;
 pub mod exchange_key;
+pub mod exchange_aggregator;
