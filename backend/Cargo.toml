@@ -35,9 +35,10 @@ lru = "0.16.3"
 async-trait = "0.1.89"
 chrono = "0.4.43"
 itertools = "0.14.0"
-ordered-float = "5.1.0"
+ordered-float = { version = "5.1.0", features=["serde"] }
 strum = "0.27"
 strum_macros = "0.27"
+get-size = { version="0.1.4", features=["derive"] }
 
 [build-dependencies]
 prost-build = "0.12"

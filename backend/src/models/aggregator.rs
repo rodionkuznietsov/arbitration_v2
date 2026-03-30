@@ -54,7 +54,16 @@ impl KeyPair {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Clone, Serialize, Debug, Hash, PartialEq, Eq)]
+pub enum JsonPairUniqueId {
+    OrderBook,
+    LinesHistory,
+    UpdateLine,
+    Volume24h,
+    Unknown,
+}
+
+#[derive(Deserialize, Serialize, Debug, Hash, PartialEq, Eq)]
 #[serde(rename_all="snake_case")]
 pub enum JsonPairData {
     OrderBook {
@@ -63,11 +72,15 @@ pub enum JsonPairData {
     },
     LinesHistory {
         long: Vec<Value>,
-        short: Vec<Value>
+        short: Vec<Value>,
     },
     UpdateLine {
-        long: f64,
-        short: f64
+        long: Value,
+        short: Value,
+    },
+    Volume24h {
+        long: Value,
+        short: Value,
     },
 }
 
@@ -75,29 +88,67 @@ impl Default for JsonPairData {
     fn default() -> Self {
         Self::LinesHistory { 
             long: Vec::new(), 
-            short: Vec::new() 
+            short: Vec::new(),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SpreadPair {
+    pub symbol: Arc<Symbol>,
+    pub long_exchange: ExchangeType,
     pub long_spread: f64,
+    pub short_exchange: ExchangeType,
     pub short_spread: f64,
     pub timestamp: i64
 }
 
 impl SpreadPair {
     pub fn new(
+        symbol: Arc<Symbol>,
+        long_exchange: ExchangeType,
         long_spread: f64,
+        short_exchange: ExchangeType,
         short_spread: f64,
         timestamp: i64,
     ) -> Self {
         Self { 
+            symbol,
+            long_exchange,
             long_spread, 
+            short_exchange,
             short_spread, 
             timestamp 
         }
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct Quote {
+    pub exchange_id: Option<ExchangeType>,
+    pub symbol: Option<Arc<Symbol>>,
+    pub bid: Option<f64>,
+    pub ask: Option<f64>,
+}
+
+impl Quote {
+    pub fn new() -> Self {
+        Self { 
+            exchange_id: None, 
+            symbol: None, 
+            bid: None, 
+            ask: None 
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct Volume {
+    #[serde(skip_serializing)]
+    pub exchange_id: ExchangeType,
+    
+    pub value: Option<f64>,
+
+    #[serde(skip_serializing)]
+    pub symbol: Arc<Symbol>
+}

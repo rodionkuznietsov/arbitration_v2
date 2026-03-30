@@ -1,4 +1,5 @@
 use std::{sync::Arc, time::Duration};
+use get_size::GetSize;
 use tokio::sync::{mpsc, oneshot};
 use crate::services::{cache_aggregator::CacheAggregatorCmd, data_aggregator::{DataAggregatorCmd}, data_mapping::DataMappingCmd, exchange::{exchange_aggregator::ExchangeStoreCMD, exchange_channel_store::ExchangeChannelStoreCmd}};
 
@@ -39,26 +40,37 @@ impl DataAccessLayer {
         tokio::spawn(self.clone().lines_from_cache_aggregator());
     }
 
-    async fn lines_from_cache_aggregator(self: Arc<Self>) {
-        let (reply_tx, mut reply_rx) = mpsc::channel(1);
-
+    async fn lines_from_cache_aggregator(self: Arc<Self>) {        
         loop {
-            self.cache_aggregator_tx.clone().send_timeout(
+            let (reply_tx, mut reply_rx) = mpsc::channel(1);
+
+            if let Some(err) = self.cache_aggregator_tx.clone().send_timeout(
                 Arc::new(
                     CacheAggregatorCmd::LinesHistory { 
-                       reply: reply_tx.clone()
+                        reply: reply_tx.clone()
                     }
                 ),
                 Duration::from_millis(LINES_DELAY)
-            ).await.ok();
+            ).await.err() {
+                tracing::error!("DataAccessLayer(LinesFromCacheAggregator) -> {err}")
+            };
 
-            if let Some(result) = reply_rx.recv().await {
-                self.data_mapping_tx.send_timeout(
-                    DataMappingCmd::LinesToJsonPair(
-                        result
-                    ),
-                    Duration::from_millis(LINES_DELAY)
-                ).await.ok();
+            let mut buffer = Vec::new();
+            let _ = reply_rx.recv_many(&mut buffer, 100).await;
+            
+            for msg in buffer.drain(..) {
+                if msg.len() > 0 {
+                    let bytes = msg.get_size();
+                    println!("{:?}", bytes);
+                    // if let Some(e) = self.data_mapping_tx.send_timeout(
+                    //     DataMappingCmd::LinesToJsonPair(
+                    //         msg
+                    //     ),
+                    //     Duration::from_millis(LINES_DELAY)
+                    // ).await.err() {
+                    //     tracing::error!("DataAccessLayer(LinesFromCacheAggregator) -> {e}; Capacity: {}", self.data_mapping_tx.capacity())
+                    // };
+                }
             }
         }
     }
@@ -71,7 +83,7 @@ impl DataAccessLayer {
             ExchangeChannelStoreCmd::GetExchangesChannel { 
                 reply: tx
             },
-            Duration::from_millis(10)
+            Duration::from_millis(100)
         ).await.ok();
         
         if let Ok(mut watch_rx) = rx.await {
@@ -104,9 +116,9 @@ impl DataAccessLayer {
                                                 symbol,
                                                 data: exchange_data
                                             }, 
-                                        Duration::from_millis(10)
+                                        Duration::from_millis(100)
                                         ).await.err() {
-                                            tracing::error!("DataAccessLayer -> {e}")
+                                            tracing::error!("DataAccessLayer(FromExchangeAggregator) -> {e}; capacity: {}", data_aggregator_tx.capacity())
                                         }
                                     }
                                 }

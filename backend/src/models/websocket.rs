@@ -1,10 +1,10 @@
-use std::{collections::{VecDeque}, sync::Arc};
+use std::{collections::{HashMap, VecDeque}, sync::Arc};
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
-use crate::models::{aggregator::{JsonPairData, KeyMarketType}, exchange::ExchangeType, line::Line};
+use crate::models::{aggregator::{JsonPairData, JsonPairUniqueId, KeyMarketType}, exchange::ExchangeType, line::Line};
 
 pub type ClientId = Uuid;
 pub type Symbol = String;
@@ -62,21 +62,21 @@ pub struct Subscription {
     pub ticker: Symbol
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ClientData {
-    pub result: Option<Arc<WsClientMessage>>
+    pub result: HashMap<JsonPairUniqueId, Arc<WsClientMessage>>
 }
 
 impl ClientData {
     pub fn new() -> Self {
         Self {
-            result: None
+            result: HashMap::new()
         }
     }
 }
 
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct WsClientMessage {
     pub channel: ChannelType,
     pub result: WsClientMsgResult,
@@ -88,23 +88,26 @@ impl Default for WsClientMessage {
             channel: ChannelType::Unknown,
             result: WsClientMsgResult { 
                 data: Arc::new(JsonPairData::default()), 
-                symbol: Arc::new(Symbol::new())
+                symbol: Arc::new(Symbol::new()),
+                unique_id: JsonPairUniqueId::Unknown
             } 
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct WsClientMsgResult {
     pub data: Arc<JsonPairData>,
-    pub symbol: Arc<Symbol>
+    pub symbol: Arc<Symbol>,
+    pub unique_id: JsonPairUniqueId,
 }
 
 impl Default for WsClientMsgResult {
     fn default() -> Self {
         Self { 
             data: Arc::new(JsonPairData::default()), 
-            symbol: Arc::new(Symbol::new())
+            symbol: Arc::new(Symbol::new()),
+            unique_id: JsonPairUniqueId::Unknown
         }
     }
 }

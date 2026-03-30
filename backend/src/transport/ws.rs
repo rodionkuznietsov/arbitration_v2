@@ -70,13 +70,15 @@ async fn handle_connection(
             loop {
                 tokio::select! {
                     Some(payload) = lines_rx.recv() => {
-                        if let Some(chart) = chart_data.get_mut(&ChannelType::Chart) {
-                            chart.result = Some(payload.clone())
+                        if let Some(data) = chart_data.get_mut(&ChannelType::Chart) {
+                            let key = &payload.result.unique_id;
+                            data.result.insert(key.clone(), payload);
                         }
                     },
                     Some(payload) = orderbook_rx.recv() => {
                         if let Some(data) = books.get_mut(&ChannelType::OrderBook) {
-                            data.result = Some(payload);
+                            let key = &payload.result.unique_id;
+                            data.result.insert(key.clone(), payload);
                         }
                     },
                     _ = cancel_token.cancelled() => {
@@ -86,7 +88,7 @@ async fn handle_connection(
                     },
                     _ = interval.tick() => {
                         for data in books.values() {
-                            if let Some(result) = &data.result {
+                            for result in data.result.values() {
                                 let msg = serde_json::to_string(result).unwrap();
 
                                 if ws_sender.send(Message::Text(msg.to_string())).await.is_err() {
@@ -96,12 +98,12 @@ async fn handle_connection(
                         }
                         
                         for data in chart_data.values() {
-                            if let Some(result) = &data.result {
+                            for result in data.result.values() {
                                 let msg = serde_json::to_string(result).unwrap();
-                                
-                                if ws_sender.send(Message::Text(msg)).await.is_err() {
+
+                                if ws_sender.send(Message::Text(msg.to_string())).await.is_err() {
                                     cancel_token.cancel();
-                                }
+                                }  
                             }
                         }
                     },

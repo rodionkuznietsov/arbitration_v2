@@ -4,7 +4,7 @@ use lru::LruCache;
 use tokio::sync::{mpsc, oneshot, watch};
 use crate::models::{exchange::ExchangeType, exchange_aggregator::BookData, orderbook::{BookEvent, Snapshot, SnapshotUi}, websocket::Symbol};
 
-const PRICE_TICK: f64 = 900000000.0;
+pub const PRICE_TICK: f64 = 900000000.0;
 
 impl Snapshot {
     pub fn to_ui(&self, 
@@ -112,7 +112,6 @@ impl ExchangeStore {
     ) {
         let mut last_version_id = 0;
         while let Some(cmd) = self.rx.recv().await {
-
             match cmd {
                 ExchangeStoreCMD::RegisterSymbol { 
                     symbol 

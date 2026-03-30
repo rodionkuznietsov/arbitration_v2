@@ -1,9 +1,18 @@
+use std::sync::Arc;
+
 use crate::models::orderbook::Snapshot;
 
 #[derive(Clone, Debug)]
 /// <b>BookData</b> хранит данные `биржи`, получаемые с Websocket
 pub struct BookData {
     pub snapshot: Option<Snapshot>,
+    pub last_price: Option<f64>,
+    pub volume24h: Option<f64>
+}
+
+#[derive(Debug)]
+pub struct BookDataWithArc {
+    pub snapshot: Option<Arc<Snapshot>>,
     pub last_price: Option<f64>,
     pub volume24h: Option<f64>
 }

@@ -1,6 +1,6 @@
 use std::{collections::{HashMap, HashSet}, sync::Arc, time::Duration};
 use tokio::sync::{mpsc};
-use crate::{models::{aggregator::{ClientAggregatorUse}, websocket::{ChannelSubscription, ChannelType, ClientId, WsClientMessage}}};
+use crate::{models::{aggregator::ClientAggregatorUse, websocket::{ChannelSubscription, ChannelType, ClientId, WsClientMessage}}, services::cache_aggregator::{CacheAggregatorCmd}};
 
 #[derive(Debug)]
 pub enum ClientMpcsChannel {
@@ -21,6 +21,7 @@ pub enum ClientAggregatorCmd {
 pub struct ClientAggregator {
     client_cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
     cmd_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
+    cache_aggregator_cmd: mpsc::Sender<Arc<CacheAggregatorCmd>>,
 
     clients: HashMap<ClientId, HashMap<ChannelType, ClientMpcsChannel>>,
     subscriptions: HashMap<ClientId, HashSet<ChannelSubscription>>,
@@ -31,10 +32,12 @@ impl ClientAggregator {
     pub fn new(
         client_cmd_rx: mpsc::Receiver<ClientAggregatorCmd>,
         cmd_rx: mpsc::Receiver<Arc<ClientAggregatorCmd>>,
+        cache_aggregator_cmd: mpsc::Sender<Arc<CacheAggregatorCmd>>,
     ) -> Self {
         Self {
             client_cmd_rx,
             cmd_rx,
+            cache_aggregator_cmd,
 
             clients: HashMap::new(),
             subscriptions: HashMap::new(),
@@ -91,8 +94,26 @@ impl ClientAggregator {
                             .or_insert_with(HashSet::new)
                             .insert(*client_id);
 
-                        println!("Subscriptions: {:?}", self.subscriptions);
-                        println!("\nSub Index: {:?}", self.sub_index);
+                        // Инизиализируем данные линий
+                        let cache_aggregator_tx = self.cache_aggregator_cmd.clone();
+                        let client_channel_sub_cl = client_channel_sub.clone();
+                        
+                        tokio::spawn(async move {
+                            match client_channel_sub_cl {
+                                ChannelSubscription::Chart { 
+                                    long_market_type, 
+                                    short_market_type: _
+                                } => {
+                                    cache_aggregator_tx.send(Arc::new(
+                                            CacheAggregatorCmd::InitAllLines { 
+                                                key: long_market_type, 
+                                            }
+                                        )
+                                    ).await.ok();
+                                },
+                                _ => {}
+                            }
+                        });
                     },
                     ClientAggregatorUse::PublishJson(
                         key,
@@ -134,11 +155,7 @@ impl ClientAggregator {
                         }
 
                         // Удаляем channel_sub из sub_index, если нет клиентов
-                        for (channel_sub, clients) in self.sub_index.clone() {
-                            if clients.is_empty() {
-                                self.sub_index.remove(&channel_sub);
-                            }
-                        }
+                        self.sub_index.retain(|_, clients| !clients.is_empty());
                     }
                 }
             }

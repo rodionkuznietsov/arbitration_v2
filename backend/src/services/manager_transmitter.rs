@@ -41,7 +41,10 @@ impl ManagerTransmitter {
         mut notify_rx: mpsc::Receiver<ManagerTransmitterCmd>,
     ) {
         loop {
-            if let Some(cmd) = notify_rx.recv().await {
+            let mut buffer = Vec::new();
+            let _ = notify_rx.recv_many(&mut buffer, 100).await;
+
+            for cmd in buffer {
                 match cmd {
                     ManagerTransmitterCmd::Notify(event) => {
                         match event {

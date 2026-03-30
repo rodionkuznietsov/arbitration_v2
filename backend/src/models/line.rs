@@ -1,9 +1,10 @@
+use get_size::GetSize;
 use serde::{Deserialize, Serialize};
 use sqlx::{Type, prelude::FromRow};
 
 use crate::models::{exchange::ExchangeType, websocket::Symbol};
 
-#[derive(Debug, Clone, FromRow)]
+#[derive(Debug, Clone, FromRow, GetSize)]
 pub struct Line {
     pub timestamp: i64,
     pub long_exchange: ExchangeType,
@@ -33,7 +34,7 @@ impl Line {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Type)]
+#[derive(Debug, Clone, Deserialize, Serialize, Type, GetSize)]
 #[sqlx(type_name="timeframe", rename_all="lowercase")]
 pub enum TimeFrame {
     #[serde(rename="1m")]
