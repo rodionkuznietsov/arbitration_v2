@@ -1,5 +1,7 @@
 use std::{collections::{HashMap, VecDeque}, sync::Arc};
 
+use sqlx::QueryBuilder;
+
 use crate::models::{exchange::ExchangeType, line::Line, websocket::Symbol};
 
 pub async fn get_spread_history(
@@ -43,23 +45,26 @@ pub async fn get_spread_history(
 pub async fn add_new_lines(
     pool: &sqlx::PgPool, 
     lines: &Vec<(Line, (ExchangeType, ExchangeType, Arc<Symbol>))>,
-    query: &str
 ) -> Result<(), sqlx::Error> {
-    let mut q = sqlx::query(
-        query
+    let mut builder = QueryBuilder::new(
+        "INSERT INTO storage.lines (timestamp, long_exchange, short_exchange, symbol, timeframe, value) "
     );
 
-    for (line, (_, _, symbol)) in lines {
-        q = q
-            .bind(line.timestamp)
-            .bind(line.long_exchange.clone())
-            .bind(line.short_exchange.clone())
-            .bind(symbol.to_string())
-            .bind(line.timeframe.clone())
-            .bind(line.value.clone());
+    for chunk in lines.chunks(1000) {
+        builder.push_values(chunk.iter(), |mut b, (line, (_, _, symbol))| {
+            b.push_bind(line.timestamp)
+                .push_bind(line.long_exchange)
+                .push_bind(line.short_exchange)
+                .push_bind(symbol.to_string())
+                .push_bind(line.timeframe.clone())
+                .push_bind(line.value);
+        });
     }
 
-    q.execute(pool).await?;
+    let q = builder.build();
+    let result = q.execute(pool).await?;
 
+    tracing::info!("Вставленные rows: {}; expected: {}", result.rows_affected(), lines.len());
+    
     Ok(())
 }

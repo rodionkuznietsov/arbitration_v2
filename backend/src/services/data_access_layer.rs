@@ -1,9 +1,6 @@
 use std::{sync::Arc, time::Duration};
-use get_size::GetSize;
 use tokio::sync::{mpsc, oneshot};
 use crate::services::{cache_aggregator::CacheAggregatorCmd, data_aggregator::{DataAggregatorCmd}, data_mapping::DataMappingCmd, exchange::{exchange_aggregator::ExchangeStoreCMD, exchange_channel_store::ExchangeChannelStoreCmd}};
-
-const LINES_DELAY: u64 = 100;
 
 /// Извлекает конкретные данные из:
 /// 
@@ -41,36 +38,19 @@ impl DataAccessLayer {
     }
 
     async fn lines_from_cache_aggregator(self: Arc<Self>) {        
-        loop {
-            let (reply_tx, mut reply_rx) = mpsc::channel(1);
-
-            if let Some(err) = self.cache_aggregator_tx.clone().send_timeout(
-                Arc::new(
-                    CacheAggregatorCmd::LinesHistory { 
-                        reply: reply_tx.clone()
-                    }
-                ),
-                Duration::from_millis(LINES_DELAY)
-            ).await.err() {
-                tracing::error!("DataAccessLayer(LinesFromCacheAggregator) -> {err}")
-            };
-
-            let mut buffer = Vec::new();
-            let _ = reply_rx.recv_many(&mut buffer, 100).await;
-            
-            for msg in buffer.drain(..) {
-                if msg.len() > 0 {
-                    let bytes = msg.get_size();
-                    println!("{:?}", bytes);
-                    // if let Some(e) = self.data_mapping_tx.send_timeout(
-                    //     DataMappingCmd::LinesToJsonPair(
-                    //         msg
-                    //     ),
-                    //     Duration::from_millis(LINES_DELAY)
-                    // ).await.err() {
-                    //     tracing::error!("DataAccessLayer(LinesFromCacheAggregator) -> {e}; Capacity: {}", self.data_mapping_tx.capacity())
-                    // };
-                }
+        let (tx, mut rx) = mpsc::channel(1);
+        
+        self.cache_aggregator_tx.send(Arc::new(
+            CacheAggregatorCmd::Subscribe { reply: tx }
+        )).await.ok();
+        
+        if let Some(mut watch_rx) = rx.recv().await {
+            while let Ok(_) = watch_rx.changed().await {
+                let data = watch_rx.borrow().clone();
+                self.data_mapping_tx.send_timeout(
+                    DataMappingCmd::LinesFromDataAccessLayer(data), 
+                    Duration::from_millis(100)
+                ).await.ok();
             }
         }
     }

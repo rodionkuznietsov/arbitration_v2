@@ -1,6 +1,6 @@
 use std::{collections::{HashMap, HashSet}, sync::Arc, time::Duration};
 use tokio::sync::{mpsc};
-use crate::{models::{aggregator::ClientAggregatorUse, websocket::{ChannelSubscription, ChannelType, ClientId, WsClientMessage}}, services::cache_aggregator::{CacheAggregatorCmd}};
+use crate::{models::{aggregator::{ClientAggregatorUse, JsonPairUniqueId}, websocket::{ChannelSubscription, ChannelType, ClientId, WsClientMessage}}, services::cache_aggregator::CacheAggregatorCmd};
 
 #[derive(Debug)]
 pub enum ClientMpcsChannel {

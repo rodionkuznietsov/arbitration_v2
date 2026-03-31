@@ -1,16 +1,16 @@
-use std::{collections::{HashMap, VecDeque}, sync::Arc, time::Duration};
-
+use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc, time::Duration};
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::{RwLock, mpsc};
 
-use crate::{models::{aggregator::{JsonPairData, JsonPairUniqueId, KeyMarketType, SpreadPair, Volume}, exchange::ExchangeType, line::{self, Line}, orderbook::Snapshot, websocket::{ChannelSubscription, ChannelType, Symbol, WsClientMessage, WsClientMsgResult}}, services::manager_transmitter::{ManagerTransmitterCmd, NotifyEvent}};
+use crate::{models::{aggregator::{JsonPairData, JsonPairUniqueId, KeyMarketType, SpreadPair, Volume}, exchange::ExchangeType, line::{Line}, orderbook::Snapshot, websocket::{ChannelSubscription, ChannelType, Symbol, WsClientMessage, WsClientMsgResult}}, services::manager_transmitter::{ManagerTransmitterCmd, NotifyEvent}};
 
 pub enum DataMappingCmd {
     #[allow(unused)]
     /// Это команда приводит `lines` в формат JSON и соединяет попарно (`Long Lines & Short Lines`)
+    LinesFromDataAccessLayer(Arc<RwLock<Arc<HashMap<(ExchangeType, ExchangeType), HashMap<Arc<Symbol>, Arc<RwLock<VecDeque<Line>>>>>>>>),
     LinesToJsonPair(Arc<RwLock<VecDeque<Line>>>, Arc<RwLock<VecDeque<Line>>>, Arc<Symbol>, ExchangeType, ExchangeType),
     LinesFromDbToJsonPair(HashMap<(ExchangeType, ExchangeType, Arc<Symbol>), VecDeque<Line>>),
     /// Это команда приводит `ExchangesData` в формат JSON и соединяет попарно (`Long data & Short data`)
@@ -54,6 +54,96 @@ impl DataMapping {
                 
                 for cmd in data.drain(..) {
                     match cmd {
+                        DataMappingCmd::LinesFromDataAccessLayer(
+                            data
+                        ) => {
+                            let lines = data.read().await;
+                            for (i, ((long_exchange, _), data)) in lines.iter().enumerate() {
+                                for ((short_long_exchange, _), short_data) in lines.iter().skip(i+1) {
+                                    for (symbol, long_vec) in data {
+                                        for (short_symbol, short_vec) in short_data {
+                                            let long_vec = long_vec.read().await;
+                                            let short_vec = short_vec.read().await;
+
+                                            if symbol == short_symbol {
+                                                let long_json_lines = self.lines_to_json(&long_vec);
+                                                let short_json_lines = self.lines_to_json(&short_vec);
+
+                                                let msg = WsClientMessage {
+                                                    channel: ChannelType::Chart,
+                                                    result: WsClientMsgResult {
+                                                        data: JsonPairData::LinesHistory { 
+                                                            long: long_json_lines.clone(), 
+                                                            short: short_json_lines.clone()
+                                                        }.into(),
+                                                        symbol: symbol.clone(),
+                                                        unique_id: JsonPairUniqueId::LinesHistory
+                                                    }
+                                                }; 
+
+                                                let channel_key = ChannelSubscription::Chart { 
+                                                    long_market_type: KeyMarketType { 
+                                                        long_exchange: *long_exchange, 
+                                                        short_exchange: *short_long_exchange, 
+                                                        symbol: symbol.clone()
+                                                    }, 
+                                                    short_market_type: KeyMarketType { 
+                                                        long_exchange: *short_long_exchange, 
+                                                        short_exchange: *long_exchange, 
+                                                        symbol: symbol.clone()
+                                                    }, 
+                                                };
+
+                                                self.manager_transmitter_tx.send_timeout(
+                                                    ManagerTransmitterCmd::Notify(
+                                                        NotifyEvent::PayloadJson(
+                                                            channel_key,
+                                                            msg
+                                                        )
+                                                    ), 
+                                                Duration::from_millis(10)
+                                                ).await.ok();
+
+                                                let msg_2 = WsClientMessage {
+                                                    channel: ChannelType::Chart,
+                                                    result: WsClientMsgResult {
+                                                        data: JsonPairData::LinesHistory { 
+                                                            long: short_json_lines.clone(), 
+                                                            short: long_json_lines.clone()
+                                                        }.into(),
+                                                        symbol: symbol.clone(),
+                                                        unique_id: JsonPairUniqueId::LinesHistory
+                                                    }
+                                                }; 
+
+                                                let channel_key_2 = ChannelSubscription::Chart { 
+                                                    long_market_type: KeyMarketType { 
+                                                        long_exchange: *short_long_exchange, 
+                                                        short_exchange: *long_exchange, 
+                                                        symbol: symbol.clone()
+                                                    }, 
+                                                    short_market_type: KeyMarketType { 
+                                                        long_exchange: *long_exchange, 
+                                                        short_exchange: *short_long_exchange, 
+                                                        symbol: symbol.clone()
+                                                    }, 
+                                                };
+
+                                                self.manager_transmitter_tx.send_timeout(
+                                                    ManagerTransmitterCmd::Notify(
+                                                        NotifyEvent::PayloadJson(
+                                                            channel_key_2,
+                                                            msg_2
+                                                        )
+                                                    ), 
+                                                Duration::from_millis(10)
+                                                ).await.ok();                                                
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
                         DataMappingCmd::LinesToJsonPair(
                             long_data,
                             short_data,
@@ -531,8 +621,12 @@ impl DataMapping {
         &self,
         map: &VecDeque<Line>
     ) -> Vec<Value> {
+        let mut seen = HashSet::new();
+        
         map
             .into_iter()
+            .filter(|line| seen.insert(line.timestamp))
+            .sorted_by_key(|l| l.timestamp)
             .map(|line| {
                 serde_json::json!({
                     "time": line.timestamp,

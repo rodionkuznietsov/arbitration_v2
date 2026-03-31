@@ -1,5 +1,5 @@
 use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc};
-use tokio::sync::{Mutex, RwLock, mpsc};
+use tokio::sync::{RwLock, mpsc, watch};
 use crate::{models::{aggregator::KeyMarketType, exchange::ExchangeType, line::Line, websocket::Symbol}, services::data_mapping::DataMappingCmd, storage::line_storage::{get_spread_history}};
 
 const MAX_LINES: usize = 100;
@@ -9,8 +9,8 @@ pub enum CacheAggregatorCmd {
     AddLines {
         lines: Vec<(Line, (ExchangeType, ExchangeType, Arc<std::string::String>))>
     },
-    LinesHistory {
-        reply: mpsc::Sender<HashMap<(ExchangeType, Arc<Symbol>), VecDeque<Line>>>
+    Subscribe {
+        reply: mpsc::Sender<watch::Receiver<Arc<RwLock<Arc<HashMap<(ExchangeType, ExchangeType), HashMap<Arc<Symbol>, Arc<RwLock<VecDeque<Line>>>>>>>>>>
     },
     InitAllLines {
         key: KeyMarketType,
@@ -18,11 +18,13 @@ pub enum CacheAggregatorCmd {
 }
 
 pub struct CacheAggregator {
-    cache_lines: Arc<Mutex<Arc<HashMap<(ExchangeType, ExchangeType), HashMap<Arc<Symbol>, Arc<RwLock<VecDeque<Line>>>>>>>>,
+    cache_lines: Arc<RwLock<Arc<HashMap<(ExchangeType, ExchangeType), HashMap<Arc<Symbol>, Arc<RwLock<VecDeque<Line>>>>>>>>,
     initialization_keys: HashSet<KeyMarketType>,
 
     cache_aggregator_rx: mpsc::Receiver<Arc<CacheAggregatorCmd>>,
     data_mapping_tx: mpsc::Sender<DataMappingCmd>,
+    watch_tx: watch::Sender<Arc<RwLock<Arc<HashMap<(ExchangeType, ExchangeType), HashMap<Arc<Symbol>, Arc<RwLock<VecDeque<Line>>>>>>>>>,
+    watch_rx: watch::Receiver<Arc<RwLock<Arc<HashMap<(ExchangeType, ExchangeType), HashMap<Arc<Symbol>, Arc<RwLock<VecDeque<Line>>>>>>>>>,
 
     pool: sqlx::PgPool,
 }
@@ -34,12 +36,17 @@ impl CacheAggregator {
 
         pool: sqlx::PgPool,
     ) -> Self {
+        let (watch_tx, watch_rx) = watch::channel(Arc::new(RwLock::new(Arc::new(HashMap::new()))));
+        
         Self { 
-            cache_lines: Arc::new(Mutex::new(Arc::new(HashMap::new()))),
+            cache_lines: Arc::new(RwLock::new(Arc::new(HashMap::new()))),
             initialization_keys: HashSet::new(),
             
             cache_aggregator_rx,
             data_mapping_tx,
+
+            watch_tx, 
+            watch_rx,
 
             pool,
         }
@@ -53,7 +60,7 @@ impl CacheAggregator {
                 CacheAggregatorCmd::AddLines { 
                     lines
                 } => {
-                    let mut lock = self.cache_lines.lock().await;
+                    let mut lock = self.cache_lines.write().await;
                     let mut new_map = (*lock).as_ref().clone();
 
                     for (line, (long_exchange, short_exchange, symbol)) in lines.into_iter() {                        
@@ -67,11 +74,10 @@ impl CacheAggregator {
 
                         let mut dq = deque.write().await;
 
-                        let pos = dq
-                            .iter()
-                            .position(|l| l.timestamp > line.timestamp)
+                        dq.retain(|el| el.timestamp != line.timestamp);
+                        
+                        let pos = dq.iter().position(|l| l.timestamp >= line.timestamp)
                             .unwrap_or(dq.len());
-
                         dq.insert(pos, line.clone());
 
                         if dq.len() > MAX_LINES {
@@ -80,32 +86,14 @@ impl CacheAggregator {
                     }
 
                     *lock = Arc::new(new_map);
+                    if let Some(err) = self.watch_tx.send(self.cache_lines.clone()).err() {
+                        tracing::error!("CacheAggregator(CacheAggregatorCmd::AddLines) -> {err}")
+                    }
                 },
-                CacheAggregatorCmd::LinesHistory {
+                CacheAggregatorCmd::Subscribe {
                     reply
                 } => {
-                    // if self.initialization_keys.is_empty() {
-                    //     let history = get_all_spread_history(&self.pool).await;
-                    //     if let Ok(lines) = history {
-                    //         for ((long_ex, short_ex, symbol), lines) in lines {
-                    //             self.cache_lines.insert(KeyMarketType { 
-                    //                 long_exchange: long_ex, 
-                    //                 short_exchange: short_ex, 
-                    //                 symbol: Arc::new(symbol.clone()) 
-                    //             }, lines.clone());
-
-
-                    //             self.initialization_keys.insert(
-                    //                 KeyMarketType::new(
-                    //                     long_ex, 
-                    //                     short_ex, 
-                    //                     Arc::new(symbol)
-                    //                 )
-                    //             );
-                    //         }
-                    //     }
-                    // } 
-                    // let _ = reply.send(self.cache_lines.clone()).await;
+                   let _ = reply.send(self.watch_rx.clone()).await;
                 },
                 CacheAggregatorCmd::InitAllLines { 
                     key,
@@ -117,10 +105,10 @@ impl CacheAggregator {
                                 self.data_mapping_tx.send(DataMappingCmd::LinesFromDbToJsonPair(lines.clone())).await.ok();
                                 self.initialization_keys.insert(key.clone());
                                 
-                                let mut lock = self.cache_lines.lock().await;
+                                let mut lock = self.cache_lines.write().await;
                                 let mut new_map = (*lock).as_ref().clone();
                                 
-                                if let Some(lines) = lines.get(&(key.long_exchange, key.short_exchange, key.symbol.clone())) {
+                                if let (Some(lines), Some(short_lines)) = (lines.get(&(key.long_exchange, key.short_exchange, key.symbol.clone())), lines.get(&(key.short_exchange, key.long_exchange, key.symbol.clone()))) {
                                     for line in lines {
                                         let map = new_map
                                             .entry((key.long_exchange, key.short_exchange))
@@ -132,12 +120,25 @@ impl CacheAggregator {
 
                                         let mut dq = deque.write().await;
                                     
-                                        let pos = dq
-                                            .iter()
-                                            .position(|l| l.timestamp > line.timestamp)
-                                            .unwrap_or(dq.len());
+                                        dq.push_back(line.clone());
 
-                                        dq.insert(pos, line.clone());
+                                        if dq.len() > MAX_LINES {
+                                            dq.pop_front();
+                                        }
+                                    }
+
+                                    for line in short_lines {
+                                        let map = new_map
+                                            .entry((key.short_exchange, key.long_exchange))
+                                            .or_insert_with(HashMap::new);
+
+                                        let deque = map
+                                            .entry(key.symbol.clone())
+                                            .or_insert_with(|| Arc::new(RwLock::new(VecDeque::new())));
+
+                                        let mut dq = deque.write().await;
+                                    
+                                        dq.push_back(line.clone());
 
                                         if dq.len() > MAX_LINES {
                                             dq.pop_front();
@@ -148,7 +149,7 @@ impl CacheAggregator {
                             }
                         }
                     } else {
-                        let cache_lines = self.cache_lines.lock().await.clone();
+                        let cache_lines = self.cache_lines.write().await.clone();
                         if let (
                             Some(long_map), 
                             Some(short_map), 

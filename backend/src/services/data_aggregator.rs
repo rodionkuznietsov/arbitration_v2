@@ -1,8 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::{Duration}};
 use chrono::{Timelike, Utc, Duration as ChronoDuration};
-use serde::{Deserialize, Serialize};
 use tokio::{sync::{mpsc}, time::{Instant as TokioInstant, interval_at}};
-use crate::{models::{aggregator::{KeyPair, Quote, SpreadPair, Volume}, exchange::ExchangeType, exchange_aggregator::{BookData, BookDataWithArc}, line::{Line, TimeFrame}, orderbook::Snapshot, websocket::Symbol}, services::{cache_aggregator::CacheAggregatorCmd, data_mapping::DataMappingCmd, exchange::exchange_aggregator::PRICE_TICK}, storage::line_storage::add_new_lines};
+use crate::{models::{aggregator::{Quote, SpreadPair, Volume}, exchange::ExchangeType, exchange_aggregator::{BookData, BookDataWithArc}, line::{Line, TimeFrame}, orderbook::Snapshot, websocket::Symbol}, services::{cache_aggregator::CacheAggregatorCmd, data_mapping::DataMappingCmd, exchange::exchange_aggregator::PRICE_TICK}, storage::line_storage::add_new_lines};
 
 pub enum DataAggregatorCmd {
     MarketRegister {
@@ -304,12 +303,9 @@ impl DataAggregator {
     ) {
         let pool = self.pool.clone();
         
-        let mut placeholders: Vec<String> = Vec::new();
         let mut lines = Vec::new();
 
-        for (i, ((ex_id, symbol), spread)) in self.pending_lines.iter().enumerate() {
-            let step = i*6;            
-
+        for ((_, symbol), spread) in self.pending_lines.iter() {
             let long_line = Line::new(
                 spread.long_exchange, 
                 spread.short_exchange, 
@@ -331,21 +327,19 @@ impl DataAggregator {
             );
 
             lines.push((short_line, (spread.short_exchange, spread.long_exchange, symbol.clone())));
-
-            // Создаем плейсхолдеры для sql_query
-            let placeholder = format!("(${}, ${}, ${}, ${}, ${}::timeframe, ${}::numeric)", step+1, step+2, step+3, step+4, step+5, step+6);
-            placeholders.push(placeholder);
         }
 
-        let slq_query = format!("INSERT INTO storage.lines (timestamp, long_exchange, short_exchange, symbol, timeframe, value) VALUES {}", placeholders.join(", "));
         if !lines.is_empty() {
-            match add_new_lines(&pool, &lines, &slq_query).await {
+            match add_new_lines(&pool, &lines).await {
                 Ok(_) => {
-                    if let Some(err) = self.cache_aggregator_tx.send(
+                    let cache_aggregator_tx = self.cache_aggregator_tx.clone();
+                    if let Some(err) = cache_aggregator_tx.send_timeout(
                         Arc::new(CacheAggregatorCmd::AddLines { lines }), 
+                        Duration::from_millis(100)
                     ).await.err() {
                         tracing::error!("DataAggregator(DbWriter) -> {err}")
                     } 
+                    
                     self.pending_lines.clear();
                     tracing::info!("Данные отправлены");
                 },

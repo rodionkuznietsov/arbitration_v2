@@ -5,7 +5,7 @@ use tokio_tungstenite::{accept_async, tungstenite::Message};
 use tracing::info;
 use uuid::Uuid;
 
-use crate::{models::{aggregator::{ClientAggregatorUse, KeyMarketType}, websocket::{ChannelSubscription, ChannelType, ClientCmd, ClientData, Subscription, WsClientMessage}}, transport::client_aggregator::ClientAggregatorCmd};
+use crate::{models::{aggregator::{ClientAggregatorUse, JsonPairUniqueId, KeyMarketType}, websocket::{ChannelSubscription, ChannelType, ClientCmd, ClientData, Subscription, WsClientMessage}}, transport::client_aggregator::ClientAggregatorCmd};
 
 const PING_DELAY: u64 = 20; // в секундах
 const WEBSOCKET_NAME: &'static str = "ArbitrationWebsocket";
@@ -70,6 +70,9 @@ async fn handle_connection(
             loop {
                 tokio::select! {
                     Some(payload) = lines_rx.recv() => {
+                        if payload.result.unique_id == JsonPairUniqueId::LinesHistory {
+                            println!("{:#?}", payload);
+                        }
                         if let Some(data) = chart_data.get_mut(&ChannelType::Chart) {
                             let key = &payload.result.unique_id;
                             data.result.insert(key.clone(), payload);
