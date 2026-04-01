@@ -20,6 +20,26 @@
             <input class="form_input" type="text" name="" id="kucoin" placeholder="Api Key">
         </div>
 
+        <div>
+            <label for="binance">Binance</label>
+            <input class="form_input" type="text" name="" id="binance" placeholder="Api Key">
+        </div>
+
+        <div>
+            <label for="lbank">LBank</label>
+            <input class="form_input" type="text" name="" id="lbank" placeholder="Api Key">
+        </div>
+
+        <div>
+            <label for="binx">BinX</label>
+            <input class="form_input" type="text" name="" id="binx" placeholder="Api Key">
+        </div>
+
+        <div>
+            <label for="mexc">Mexc</label>
+            <input class="form_input" type="text" name="" id="mexc" placeholder="Api Key">
+        </div>
+
         <input class="default-btn" type="button" value="Сохранить">
     </form>
 </template>
