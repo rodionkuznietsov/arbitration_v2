@@ -9,7 +9,7 @@
 <template>
     <div class="header">
         <div class="title">Насстройка бирж</div>
-        <div class="warning">!!! Внимание не показывайте эту страницу никому !!!</div>
+        <div class="warning">!!! Рекомендуем эту страницу никому не показывать. !!!</div>
     </div>
     <form action="" id="form_column">
         <div>
