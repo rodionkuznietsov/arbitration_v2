@@ -1,0 +1,57 @@
+<template>
+    <div class="header">
+        <div class="title">Насстройка бирж</div>
+        <div class="warning">!!! Внимание не показывайте эту страницу никому !!!</div>
+    </div>
+    <form action="" id="form_column">
+        <div>
+            <label for="bybit">Bybit</label>
+            <input class="form_input" type="text" name="" id="bybit" placeholder="Api Key">
+            <input class="form_input" type="text" name="" id="bybit" placeholder="Api Secret">
+        </div>
+
+        <div>
+            <label for="gate">Gate</label>
+            <input class="form_input" type="text" name="" id="gate" placeholder="Api Key">
+        </div>
+
+        <div>
+            <label for="kucoin">KuCoin</label>
+            <input class="form_input" type="text" name="" id="kucoin" placeholder="Api Key">
+        </div>
+
+        <input class="default-btn" type="button" value="Сохранить">
+    </form>
+</template>
+
+<style scoped>
+    .header {
+        padding: var(--default-padding);
+        font-size: var(--default-font-size);
+    }
+
+    .title {
+        color: var(--default-font-color);
+    }
+
+    .warning {
+        color: #ff7300;
+        font-size: 12px;
+    }
+
+    #form_column {
+        display: flex;
+        flex-direction: column;
+        gap: var(--default-gap);
+        padding: var(--default-padding);
+    }
+
+    .save-btn {
+        padding: var(--default-padding);
+        outline: none;
+        font-size: var(--default-font-size);
+        color: var(--default-font-color);
+        background-color: var(--default-input-bg);
+        cursor: pointer;
+    }
+</style>

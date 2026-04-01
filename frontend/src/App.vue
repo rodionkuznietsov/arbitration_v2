@@ -37,7 +37,7 @@
     --default-padding: 8px;
     --default-icon-size: 16px;
     --default-border-radius: 8px;
-    --default-input-color: DFDFDF80;
+    --default-input-color: #DFDFDF80;
     --default-chart-ticker-color: #DFDFDF80;
     --default-font: "Noto Sans", sans-serif;
     --default-input-bg: #DFDFDF80;
@@ -114,17 +114,18 @@
     gap: 10px;
   }
 
-  #start, #stop {
+  .default-btn {
     flex: 1;
-    padding: var(--default-padding);
-    border: none;
-    color: var(--default-font-color);
-    border-radius: var(--default-border-radius);
     font-size: var(--default-font-size);
     transition: all 0.25s;
+    padding: var(--default-padding);
+    color: var(--default-font-color);
+    border-radius: var(--default-border-radius);
+    border: none;
+    outline: none;
   }
 
-  #start:hover, #stop:hover {
+  .default-btn:hover {
     filter: opacity(75%);
     cursor: pointer;
     transition: all 0.25s;

@@ -1,7 +1,7 @@
 <script setup>
     import { ref, onMounted, onUnmounted } from 'vue'
     import promptImg from '../assets/icons/prompt.svg'
-import { useUserState } from '@/stores/user_state'
+    import { useUserState } from '@/stores/user_state'
         
     const isVisible = ref(false)
     const insideTooltip = ref({x: 0.0, y: 0.0})

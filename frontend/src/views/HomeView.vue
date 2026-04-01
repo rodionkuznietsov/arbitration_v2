@@ -132,8 +132,8 @@
 
     <footer id="footer">
         <div id="run_buttons">
-          <button id="start" @click="start">Старт</button>
-          <button id="stop" @click="stop">Стоп</button>
+          <button class="default-btn" id="start" @click="start">Старт</button>
+          <button class="default-btn" id="stop" @click="stop">Стоп</button>
         </div>
 
       <OrderBook ref="orderBook"/>

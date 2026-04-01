@@ -56,53 +56,36 @@
 
     onActivated(() => {
         unsubscribe = ws.subscribe(userStateStore.ticker, 'chart', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                                                            
-            const lines = result?.lines
-            if (lines) {
-                const long = lines.long
 
-                const tempLongHistory = long ? long.map(line => ({
-                    time: Math.floor(new Date(line.time).getTime() / 1000),
-                    value: parseFloat(line.value)
-                })) : {}
+            const tempLongHistory = result.data.lines_history ? result.data.lines_history.long.map(line => ({
+                time: Math.floor(new Date(line.time).getTime()),
+                value: parseFloat(line.value)
+            })) : {}
 
-                const short = lines.short
-                const tempShortHistory = short ? short.map(line => ({
-                    time: Math.floor(new Date(line.time).getTime() / 1000),
-                    value: parseFloat(line.value)
-                })) : {}
-                chartStore.linesLongHistory = tempLongHistory
-                chartStore.linesShortHistory = tempShortHistory 
-            }
+            const tempShortHistory = result.data.lines_history ? result.data.lines_history.short.map(line => ({
+                time: Math.floor(new Date(line.time).getTime()),
+                value: parseFloat(line.value)
+            })) : {}
 
-            const events = result?.events
-            if (events) {            
-                const volume24h = events.volume24h
-                if (volume24h) {
-                    chartStore.longVolume24hr = chartStore.volume24hrFormat(volume24h.long_vol)
-                    chartStore.shortVolume24hr = chartStore.volume24hrFormat(volume24h.short_vol)
-                }
-                
-                const updateLine = events.update_line
-                if (updateLine) {
-                    const long = updateLine.long
-                    const long_time = long?.time
-                    const short = updateLine.short
-                    const short_time = short?.time
+            chartStore.linesLongHistory = tempLongHistory
+            chartStore.linesShortHistory = tempShortHistory 
 
-                    if (long_time) {
-                        chartStore.lastLongLine = {
-                            time: Math.floor(new Date(long.time).getTime()),
-                            value: parseFloat(long.value)
-                        }
-                    }
+            const update_long_value = result.data.update_line ? {
+                time: Math.floor(new Date(result.data.update_line.long.time).getTime()),
+                value: parseFloat(result.data.update_line.long.value)
+            } : {}
 
-                    if (short_time) {
-                        chartStore.lastShortLine = {
-                            time: Math.floor(new Date(short.time).getTime()),
-                            value: parseFloat(short.value)
-                        }
-                    }
-                }
+            const update_short_value = result.data.update_line ? {
+                time: Math.floor(new Date(result.data.update_line.short.time).getTime()),
+                value: parseFloat(result.data.update_line.short.value)
+            } : {}
+            
+            chartStore.lastLongLine = update_long_value
+            chartStore.lastShortLine = update_short_value
+
+            if (result.data.volume24h) {
+                chartStore.longVolume24hr = chartStore.volume24hrFormat(result.data.volume24h.long.value)
+                chartStore.shortVolume24hr = chartStore.volume24hrFormat(result.data.volume24h.short.value)
             }
         })
 
@@ -244,25 +227,29 @@
             watch(
                 (lastLongValue, lastShortValue), 
                 () => {
-                    inSpreadSeries.update(chartStore.lastLongLine)
-                    inPriceLine.applyOptions({
-                        price: lastLongValue.value.value,
-                    })   
-                    chart.timeScale().scrollToRealTime()
+                    if (chartStore.lastLongLine.time) {
+                        inSpreadSeries.update(chartStore.lastLongLine)
+                        inPriceLine.applyOptions({
+                            price: lastLongValue.value.value,
+                            color: '#2EBD85'
+                        })
+                        chart.timeScale().scrollToRealTime()
+                    }
 
-                    outSpreadSeries.update(chartStore.lastShortLine)
-                    outPriceLine.applyOptions({
-                        price: lastShortValue.value.value,
-                        color: '#F6465D'
-                    })
-                    chart.timeScale().scrollToRealTime()
+                    if (chartStore.lastShortLine.time) {
+                        outSpreadSeries.update(chartStore.lastShortLine)
+                        outPriceLine.applyOptions({
+                            price: lastShortValue.value.value,
+                            color: '#F6465D'
+                        })
+                        chart.timeScale().scrollToRealTime()
+                    }
                 }
             )
 
             watch(
                 () => [chartStore.linesLongHistory.length, chartStore.linesShortHistory.length],
                 ([longLen, shortLen]) => {
-                    console.log(longLen, shortLen)
                     if (longLen > 0 && shortLen > 0) {
                         inSpreadSeries.setData(chartStore.linesLongHistory)
                         outSpreadSeries.setData(chartStore.linesShortHistory)

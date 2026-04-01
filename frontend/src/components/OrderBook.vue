@@ -13,7 +13,8 @@
     function start() {
         const data = userState.get_data()
 
-        unsubscribe = ws.subscribe(data.ticker.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (msg) => {            
+        unsubscribe = ws.subscribe(data.ticker.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (result) => {            
+        
             orderBookStore.updateHeader(
                 data.ticker,
                 data.longExchange, 
@@ -22,7 +23,7 @@
                 data.shortOrderType
             )
 
-            orderBookStore.updateData(msg.order_book)
+            orderBookStore.updateData(result.data.order_book)
             isVisible.value = "display: block;"
         })
     }

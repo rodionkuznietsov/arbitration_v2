@@ -65,46 +65,34 @@ export const useOrderBookStore = defineStore('orderbook', {
             })
         },
 
-        updateData(books) {
-            this.longLastPrice = books.long?.last_price
-            this.longFirstAskPrice = books.long?.a?.at(-1)?.[0];
-            this.longFirstBidPrice = books.long?.b?.[0]?.[0];
+        updateData(result) {
+            this.longLastPrice = result.long?.last_price
+            this.longFirstAskPrice = result.long?.asks?.at(-1).price;
+            this.longFirstBidPrice = result.long?.bids?.[0]?.price;
 
-            if (books.long?.a) {
+            if (result.long?.asks) {
                 this.longAsks.length = 0
-                this.longAsks.push(...books.long.a.map(x => ({
-                    price: x[0],
-                    volume: x[1],
-                })))
+                this.longAsks = result.long.asks
             }
 
-            if (books.long?.b) {
+            if (result.long?.bids) {
                 this.longBids.length = 0
-                this.longBids.push(...books.long.b.map(x => ({
-                    price: x[0],
-                    volume: x[1],
-                })))
+                this.longBids = result.long.bids
             }
 
-            if (books.short?.a) {
+            if (result.short?.asks) {
                 this.shortAsks.length = 0
-                this.shortAsks.push(...books.short.a.map(x => ({
-                    price: x[0],
-                    volume: x[1],
-                })))
+                this.shortAsks = result.short.asks
             }
 
-            if (books.short?.b) {
+            if (result.short?.bids) {
                 this.shortBids.length = 0
-                this.shortBids.push(...books.short.b.map(x => ({
-                    price: x[0],
-                    volume: x[1],
-                })))
+                this.shortBids = result.short.bids
             }
 
-            this.shortLastPrice = books.short?.last_price
-            this.shortFirstAskPrice = books.short?.a?.at(-1)?.[0];
-            this.shortFirstBidPrice = books.short?.b?.[0]?.[0];
+            this.shortLastPrice = result.short?.last_price
+            this.shortFirstAskPrice = result.short?.asks?.at(-1)?.price;
+            this.shortFirstBidPrice = result.short?.bids?.[0]?.price;
         },
 
         clearValues() {

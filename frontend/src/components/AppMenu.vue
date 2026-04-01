@@ -22,6 +22,12 @@
                     <img src="../assets/icons/logs.svg" alt="">
                     <span>История</span>
                 </div>
+                <div id="menu_element">
+                    <router-link class="router-link" to="/client_keys">
+                        <img src="../assets/icons/key.svg" alt="">
+                        <span>Ключи</span>
+                    </router-link>
+                </div>
             </div>  
         </div>
     </div>

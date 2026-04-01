@@ -27,8 +27,9 @@ export const useWebsocketStore = defineStore('websocket', {
                 this.socket.onmessage = (event) => {
                     const msg = JSON.parse(event.data)
                     const result = msg.result
+                    const symbol = result.symbol
 
-                    const key = `${msg.channel}:${msg.ticker}`
+                    const key = `${msg.channel}:${symbol}`
                     const listeners = this.channels.get(key)
                     
                     if (!listeners) {
