@@ -50,7 +50,7 @@
         justify-content: center;
         width: 100%;
         background-color: var(--basic-Bg);
-        margin: 0 45px;
+        margin: 0 30px;
         border-radius: 15px;
     }
 
