@@ -9,6 +9,8 @@ export const useUserState = defineStore('userState', {
         shortOrderType: null,
         currentStatus: 'offline',
         botWorking: false,
+        bybit_api_key: null,
+        bybit_api_secret: null
     }),
 
     actions: {
