@@ -45,6 +45,7 @@
     --chart-title-font-color: #DFDFDF80;
     --footer-margin-bottom: 20px;
     --default-gap: 10px;
+    --default-margin-bottom: 20px;
   }
  
   #form {
@@ -129,6 +130,10 @@
     filter: opacity(75%);
     cursor: pointer;
     transition: all 0.25s;
+  }
+
+  .default-button-margin {
+    margin-bottom: var(--default-margin-bottom);
   }
 
   #start {

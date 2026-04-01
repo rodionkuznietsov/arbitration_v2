@@ -40,7 +40,7 @@
             <input class="form_input" type="text" name="" id="lbank" placeholder="Api Key">
         </div>
 
-        <input class="default-btn" type="button" value="Сохранить">
+        <input class="default-btn default-button-margin" type="button" value="Сохранить">
     </form>
 </template>
 
@@ -64,14 +64,5 @@
         flex-direction: column;
         gap: var(--default-gap);
         padding: var(--default-padding);
-    }
-
-    .save-btn {
-        padding: var(--default-padding);
-        outline: none;
-        font-size: var(--default-font-size);
-        color: var(--default-font-color);
-        background-color: var(--default-input-bg);
-        cursor: pointer;
     }
 </style>
