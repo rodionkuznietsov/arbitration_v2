@@ -70,9 +70,6 @@ async fn handle_connection(
             loop {
                 tokio::select! {
                     Some(payload) = lines_rx.recv() => {
-                        if payload.result.unique_id == JsonPairUniqueId::LinesHistory {
-                            println!("{:#?}", payload);
-                        }
                         if let Some(data) = chart_data.get_mut(&ChannelType::Chart) {
                             let key = &payload.result.unique_id;
                             data.result.insert(key.clone(), payload);
