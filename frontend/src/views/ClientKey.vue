@@ -1,9 +1,5 @@
 <script setup>
-    function updateKey(key) {
-        if (key != "") {
-            console.log(key.target.value)
-        }
-    }
+
 </script>
 
 <template>
@@ -14,7 +10,7 @@
     <form action="" id="form_column">
         <div>
             <label for="bybit">Bybit</label>
-            <input class="form_input" type="text" name="" id="bybit" placeholder="Api Key" @input="updateKey">
+            <input class="form_input" type="text" name="" id="bybit" placeholder="Api Key">
             <input class="form_input" type="text" name="" id="bybit" placeholder="Api Secret">
         </div>
 
