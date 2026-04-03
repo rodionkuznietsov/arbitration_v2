@@ -17,6 +17,24 @@
 
 <script setup>
   import AppMenu from './components/AppMenu.vue';
+
+  const tg = window.Telegram.WebApp;
+
+  const response = await fetch('http://localhost:8000/auth/telegram', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ 
+      initData: tg.initData
+    })
+  })
+
+  const data = await response.json();
+  console.log(data);
+
+  tg.expand();
+
 </script>
 
 <style>
