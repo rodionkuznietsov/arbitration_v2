@@ -1,5 +1,25 @@
 <script setup>
+import { ref } from 'vue';
 
+
+    const key = ref('')
+
+    const submitForm = async () => {
+        try {
+            const formData = new FormData()
+            formData.append('key', key.value)
+
+            const response = await fetch('http://127.0.0.1:8000/user/update', {
+                method: 'POST',
+                body: formData
+            })
+
+            const result = await response.json()
+            console.log(result)
+        } catch(err) {
+            console.log("Ошибка:", err)
+        }
+    }
 </script>
 
 <template>
@@ -7,10 +27,10 @@
         <div class="title">Насстройка бирж</div>
         <div class="warning">!!! Рекомендуем эту страницу никому не показывать. !!!</div>
     </div>
-    <form action="" id="form_column">
+    <form @submit.prevent="submitForm" id="form_column">
         <div>
             <label for="bybit">Bybit</label>
-            <input class="form_input" type="text" name="" id="bybit" placeholder="Api Key">
+            <input v-model="key" class="form_input" type="text" name="key" id="bybit" placeholder="Api Key">
             <input class="form_input" type="text" name="" id="bybit" placeholder="Api Secret">
         </div>
 
@@ -50,7 +70,7 @@
             <input class="form_input" type="text" name="" id="bybit" placeholder="Api Secret">
         </div>
 
-        <input class="default-btn default-button-margin" type="button" value="Сохранить">
+        <input class="default-btn default-button-margin" type="submit" value="Сохранить">
     </form>
 </template>
 
