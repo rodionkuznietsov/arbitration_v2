@@ -10,7 +10,7 @@ app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://192.168.179.78:8080"],
+    allow_origins=["http://192.168.179.78:8080", "https://unfarming-untethered-flynn.ngrok-free.dev"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
