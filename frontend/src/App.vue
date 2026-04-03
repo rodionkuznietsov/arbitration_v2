@@ -16,25 +16,32 @@
 </template>
 
 <script setup>
-  import AppMenu from './components/AppMenu.vue';
+  import { onMounted } from 'vue';
+import AppMenu from './components/AppMenu.vue';
 
-  const tg = window.Telegram.WebApp;
+  onMounted(async () => {
+    if (!window.Telegram) {
+      console.log('Не в Telegram WebApp')
+      return
+    }
+    
+    const tg = window.Telegram.WebApp;
 
-  const response = await fetch('https://unfarming-untethered-flynn.ngrok-free.dev:8000/auth/telegram', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ 
-      initData: tg.initData
+    const response = await fetch('https://unfarming-untethered-flynn.ngrok-free.dev/auth/telegram', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        initData: tg.initData
+      })
     })
-  })
 
-  const data = await response.json();
-  console.log(data);
+    const data = await response.json();
+    console.log(data);
 
-  tg.expand();
-
+    tg.expand();
+  });
 </script>
 
 <style>
