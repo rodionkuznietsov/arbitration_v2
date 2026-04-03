@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, HTTPException
 
 router = APIRouter()
 
-@router.post("/auth/telegram")
+@router.post("/telegram")
 async def auth_telegram(request: Request):
     data = await request.json()
     init_data = data.get("initData")
@@ -12,8 +12,8 @@ async def auth_telegram(request: Request):
     
     print("Received Telegram auth data:", init_data)
 
-    # return {
-    #     "status": 200,
-    #     "message": "Login successful",
-    #     "token": "fake-jwt-token"
-    # }   
+    return {
+        "status": 200,
+        "message": "Login successful",
+        "token": "fake-jwt-token"
+    }   

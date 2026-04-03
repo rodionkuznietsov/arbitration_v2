@@ -8,8 +8,9 @@ import { ref } from 'vue';
         try {
             const formData = new FormData()
             formData.append('key', key.value)
+            console.log(key.value)
 
-            const response = await fetch('http://127.0.0.1:8000/user/update', {
+            const response = await fetch('https://unfarming-untethered-flynn.ngrok-free.dev/api/user/update', {
                 method: 'POST',
                 body: formData
             })

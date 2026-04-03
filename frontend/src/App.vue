@@ -20,14 +20,14 @@
 import AppMenu from './components/AppMenu.vue';
 
   onMounted(async () => {
-    if (!window.Telegram) {
-      console.log('Не в Telegram WebApp')
-      return
-    }
+    // if (!window.Telegram) {
+    //   console.log('Не в Telegram WebApp')
+    //   return
+    // }
     
     const tg = window.Telegram.WebApp;
 
-    const response = await fetch('https://unfarming-untethered-flynn.ngrok-free.dev/auth/telegram', {
+    const response = await fetch('https://unfarming-untethered-flynn.ngrok-free.dev/api/auth/telegram', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

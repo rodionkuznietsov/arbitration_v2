@@ -30,7 +30,7 @@
     }
 
     async function start() {
-      await ws.connect("ws://localhost:9000/ws")
+      await ws.connect("wss://unfarming-untethered-flynn.ngrok-free.dev/ws")
 
       if (ws.socket.readyState == 3) {
         userState.changeStatus('warning')
