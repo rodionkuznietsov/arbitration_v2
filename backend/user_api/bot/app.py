@@ -9,7 +9,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(
             text="Open",
-            web_app=WebAppInfo(url="https://unfarming-untethered-flynn.ngrok-free.dev/")
+            web_app=WebAppInfo(url="https://arbitration-v2.vercel.app/")
         )]
     ])
 

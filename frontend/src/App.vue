@@ -20,7 +20,7 @@
 
   const tg = window.Telegram.WebApp;
 
-  const response = await fetch('http://localhost:8000/auth/telegram', {
+  const response = await fetch('https://unfarming-untethered-flynn.ngrok-free.dev:8000/auth/telegram', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
