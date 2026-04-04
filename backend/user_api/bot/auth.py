@@ -1,7 +1,8 @@
-import re
+import json
 from urllib.parse import unquote
 
 from fastapi import APIRouter, Request, HTTPException
+from db import database
 from bot.app import BOT_TOKEN
 import hashlib
 import hmac
@@ -19,6 +20,12 @@ async def auth_telegram(request: Request):
     is_valid = await verify_init_data(init_data)
     if not is_valid:
         raise HTTPException(status_code=401, detail="Invalid initData")
+
+    parsed_data = {k: unquote(v) for k, v in [s.split('=', 1) for s in init_data.split('&')]}
+    user = json.loads(parsed_data.get("user", "{}"))
+    await database.connect()
+    await database.add_user(user)
+    await database.close()
 
     return {
         "status": 200,
