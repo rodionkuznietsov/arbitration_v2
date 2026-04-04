@@ -1,1 +1,4 @@
-/target
+/rust_bot/target
+/rust_bot/.env
+/user_api/.venv
+/user_api/.env
