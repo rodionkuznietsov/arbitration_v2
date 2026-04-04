@@ -1,7 +1,5 @@
 <script setup>
-import { ref } from 'vue';
-
-
+    import { ref } from 'vue';
     const key = ref('')
 
     const submitForm = async () => {
@@ -24,7 +22,7 @@ import { ref } from 'vue';
 </script>
 
 <template>
-    <div class="header">
+    <div class="view_header">
         <div class="title">Насстройка бирж</div>
         <div class="warning">!!! Рекомендуем эту страницу никому не показывать. !!!</div>
     </div>
@@ -76,15 +74,6 @@ import { ref } from 'vue';
 </template>
 
 <style scoped>
-    .header {
-        padding: var(--default-padding);
-        font-size: var(--default-font-size);
-    }
-
-    .title {
-        color: var(--default-font-color);
-    }
-
     .warning {
         color: #ff7300;
         font-size: 12px;
@@ -95,5 +84,6 @@ import { ref } from 'vue';
         flex-direction: column;
         gap: var(--default-gap);
         padding: var(--default-padding);
+        margin-bottom: var(--footer-margin-bottom);
     }
 </style>

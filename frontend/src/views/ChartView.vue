@@ -7,6 +7,7 @@
     import { computed, effectScope, onActivated, onDeactivated, ref, watch } from 'vue';
     import exchangeIconTrue from '../assets/icons/exchange_true.svg'
     import exchangeIconFalse from '../assets/icons/exchange_false.svg'
+import { volumeFormatter } from '@/utils/formatters';
 
     const userStateStore = useUserState()
     const orderBookStore = useOrderBookStore()
@@ -84,8 +85,8 @@
             chartStore.lastShortLine = update_short_value
 
             if (result.data.volume24h) {
-                chartStore.longVolume24hr = chartStore.volume24hrFormat(result.data.volume24h.long.value)
-                chartStore.shortVolume24hr = chartStore.volume24hrFormat(result.data.volume24h.short.value)
+                chartStore.longVolume24hr = volumeFormatter(result.data.volume24h.long.value)
+                chartStore.shortVolume24hr = volumeFormatter(result.data.volume24h.short.value)
             }
         })
 
@@ -118,7 +119,7 @@
         chart = createChart(container.value, chartOptions);
         
         legend = document.createElement('div')
-        legend.style = `position: absolute; left: 10px; top: 100px; z-index: 10000; font-size: 14px;`
+        legend.style = `position: absolute; left: 10px; top: 178px; z-index: 10000; font-size: 14px;`
         legend.style.color = '#1f1f1f'
         legend.style.userSelect = 'none'
         legend.style.pointerEvents = 'none'
@@ -340,7 +341,7 @@
         position: relative;
         left: 50px;
         margin-right: 50px;
-        bottom: 50px;
+        bottom: 123px;
     }
 
     .chart-container {
@@ -464,7 +465,7 @@
         justify-content: center;
         height: 85vh;
         top: 55px;
-        z-index: 1000000000;
+        z-index: 10;
         position: fixed;
         border-right: 1px solid var(--color-chart-border-bottom);
         background-color: var(--basic-Bg);

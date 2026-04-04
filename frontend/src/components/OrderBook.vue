@@ -3,8 +3,10 @@
     import { useUserState } from '@/stores/user_state';
     import { useWebsocketStore } from '@/stores/websocket';
     import { ref, defineExpose } from 'vue';
+    import { volumeFormatter, formatCurrency } from '@/utils/formatters';
 
     const isVisible = ref("display: none;")
+    const loading = ref("display: none;")
     const userState = useUserState()
     const orderBookStore = useOrderBookStore()
     const ws = useWebsocketStore()
@@ -13,8 +15,9 @@
     function start() {
         const data = userState.get_data()
 
+        loading.value = "display: block;"
+
         unsubscribe = ws.subscribe(data.ticker.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (result) => {            
-        
             orderBookStore.updateHeader(
                 data.ticker,
                 data.longExchange, 
@@ -25,43 +28,19 @@
 
             orderBookStore.updateData(result.data.order_book)
             isVisible.value = "display: block;"
+            loading.value = "display: none;"
         })
     }
 
     function stop() {
         isVisible.value = "display: none;"
+        loading.value = "display: none;"
         userState.clearValues()
         orderBookStore.clearValues()
         if (unsubscribe) {
             unsubscribe()
         }
     }
-
-    function formatCurrency(value) {
-        if (typeof value != 'number') {
-            return value;
-        }
-
-        return new Intl.NumberFormat(
-            "en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 10,
-            }
-        ).format(value)
-    }
-
-    function formatVolume(value) {
-        if (typeof value != 'number') {
-            return value;
-        }
-
-        return new Intl.NumberFormat(
-            "en-US", {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 2,
-            }
-        ).format(value)
-    }   
 
     function getFillPercentAsk(value, method) {
         const source = method == 'long' ? orderBookStore.longAsks : orderBookStore.shortAsks
@@ -81,6 +60,9 @@
 <template>
     <div class="order_book_title">Книги ордеров</div>
     <div id="stakan">
+        <div class="loading_div" :style="loading">
+            <img class="loading" src="../assets/gifs/loading_books.gif">
+        </div>
         <div id="order_book" :style="isVisible">
             <div id="exchange_name">
                 <div class="with_img">
@@ -98,7 +80,7 @@
                     <tr v-for="ask in orderBookStore.longAsks" :key="ask.price" class="ask_row">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
                         <td class="sell_label volume-bar">
-                            <span class="volume-value">{{ formatVolume(ask.price *  ask.volume) }}</span>
+                            <span class="volume-value">{{ volumeFormatter(ask.price *  ask.volume) }}</span>
                             <div class="bar" :style="{ 'width': getFillPercentAsk(ask, 'long') + '%'}" style="background-color: var(--color-error-opacity-0_15); right: 0%; top: 0px;"></div>
                         </td>
                     </tr>
@@ -114,7 +96,7 @@
                     <tr v-for="bid in orderBookStore.longBids" :key="bid.price" class="bid_row">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
                         <td class="buy_label volume-bar">
-                            <span class="volume-value">{{ formatVolume(bid.price *  bid.volume) }}</span>
+                            <span class="volume-value">{{ volumeFormatter(bid.price *  bid.volume) }}</span>
                             <div class="bar" :style="{ 'width': getFillPercentBid(bid, 'long') + '%'}" style="background-color: var(--color-success-opacity-0_15); right: 0%; top: 0px;"></div>
                         </td>
                     </tr>
@@ -139,7 +121,7 @@
                     <tr v-for="ask in orderBookStore.shortAsks" :key="ask.price" class="ask_row">
                         <td class="sell_label"> {{ formatCurrency(ask.price) }} </td>
                         <td class="sell_label volume-bar">
-                            <span class="volume-value">{{ formatVolume(ask.price *  ask.volume) }}</span>
+                            <span class="volume-value">{{ volumeFormatter(ask.price *  ask.volume) }}</span>
                             <div class="bar" :style="{ 'width': getFillPercentAsk(ask, 'short') + '%'}" style="background-color: var(--color-error-opacity-0_15); right: 0%; top: 0px;"></div>
                         </td>
                     </tr>
@@ -155,7 +137,7 @@
                     <tr v-for="bid in orderBookStore.shortBids" :key="bid.price" class="bid_row">
                         <td class="buy_label"> {{ formatCurrency(bid.price) }} </td>
                         <td class="buy_label volume-bar">
-                            <span class="volume-value">{{ formatVolume(bid.price *  bid.volume) }}</span>
+                            <span class="volume-value">{{ volumeFormatter(bid.price *  bid.volume) }}</span>
                             <div class="bar" :style="{ 'width': getFillPercentBid(bid, 'short') + '%'}" style="background-color: var(--color-success-opacity-0_15); right: 0%; top: 0px;"></div>
                         </td>
                     </tr>
@@ -166,6 +148,28 @@
 </template>
 
 <style scoped>
+    .loading_div {
+        position: absolute;
+        box-sizing: content-box;
+        left: 50%;
+        transform: translate(-50%, 0%);
+    }
+
+    .loading {
+        width: 250px;
+        height: 250px;
+        object-fit: contain;
+        background: transparent;
+        background-color: transparent;
+        pointer-events: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+        -webkit-user-drag: none;
+        -webkit-tap-highlight-color: transparent;
+        box-sizing: content-box;
+    }
+
     .order_book_title {
         text-align: center;
         margin-top: 10px;
@@ -277,5 +281,6 @@
         display: flex;
         justify-content: center;
         gap: 5px;
+        align-items: center;
     }
 </style>

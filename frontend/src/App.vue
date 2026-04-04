@@ -4,7 +4,6 @@
       <keep-alive>
         <component 
           :is="Component"
-          
         />
       </keep-alive>
     </router-view>
@@ -50,7 +49,7 @@
   @import url('https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Vollkorn+SC:wght@400;600;700;900&display=swap');
 
   :root {
-    --basic-Bg: rgb(255, 255, 255);
+    --basic-Bg: #ffffff;
     --color-input-border: #b7bcc4;
     --color-chart-border-bottom: #dfdede;
     --color-popup: #333B47;
@@ -69,10 +68,32 @@
     --default-font: "Noto Sans", sans-serif;
     --default-input-bg: #DFDFDF80;
     --default-orderbook-bg: #DFDFDF80;
+    --default-logs-bg: #DFDFDF80;
     --chart-title-font-color: #DFDFDF80;
-    --footer-margin-bottom: 20px;
+    --footer-margin-bottom: 50px;
     --default-gap: 10px;
     --default-margin-bottom: 20px;
+    --default-bottom-px: 10px;
+
+    /* AppMenu */
+    --router-link-font-size: 16px;
+    --wrapper-margin-right-left-px: 20px;
+  }
+
+  .scroll {
+    height: 100vh;
+    overflow: auto;
+    padding: var(--default-padding);
+    box-sizing: border-box;
+  }
+
+  .view_header {
+      padding: var(--default-padding);
+      font-size: var(--default-font-size);
+  }
+
+  .title {
+      color: var(--default-font-color);
   }
  
   #form {
@@ -180,6 +201,13 @@
     font-family: var(--default-font);
     font-weight: 400;
     font-style: normal;
+  }
+
+  .icon_svg {
+    width: var(--default-icon-size);
+    height: var(--default-icon-size);
+    pointer-events: none;
+    user-select: none;
   }
 
   body {

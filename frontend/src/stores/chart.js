@@ -44,24 +44,6 @@ export const useChartStore = defineStore('chart', {
         },
     }),
     actions: {
-        volume24hrFormat(value) {
-            if (value >= 1_000_000_000) {
-                return (Math.floor(value / 1_000_000_000 * 100) / 100) + 'B';
-            }
-
-            if (value >= 1_000_000) {
-                return (Math.floor(value / 1_000_000 * 100) / 100) + 'M';
-            }
-
-            if (value >= 1_000) {
-                return (Math.floor(value / 1_000 * 100) / 100) + 'K';
-            }
-
-            if (value >= 0) {
-                return (Math.floor(value / 0 * 100) / 100) + '$';
-            }
-        },
-
         priceFormat(value) {
             return new Intl.NumberFormat(
                 "en-US", {
