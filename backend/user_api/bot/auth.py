@@ -1,4 +1,10 @@
+import re
+from urllib.parse import unquote
+
 from fastapi import APIRouter, Request, HTTPException
+from bot.app import BOT_TOKEN
+import hashlib
+import hmac
 
 router = APIRouter()
 
@@ -9,11 +15,23 @@ async def auth_telegram(request: Request):
 
     if not init_data:
         raise HTTPException(status_code=400, detail="Missing initData")
-    
-    print("Received Telegram auth data:", init_data)
+
+    is_valid = await verify_init_data(init_data)
+    if not is_valid:
+        raise HTTPException(status_code=401, detail="Invalid initData")
 
     return {
         "status": 200,
         "message": "Login successful",
         "token": "fake-jwt-token"
     }   
+
+async def verify_init_data(init_data: str):    
+    vals = {k: unquote(v) for k, v in [s.split('=', 1) for s in init_data.split('&')]}
+    data_check_string = '\n'.join(f"{k}={v}" for k, v in sorted(vals.items()) if k != 'hash')
+
+    secret_key = hmac.new("WebAppData".encode(), BOT_TOKEN.encode(), hashlib.sha256).digest()
+    h = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256)
+
+    is_valid = h.hexdigest() == vals.get('hash')
+    return is_valid

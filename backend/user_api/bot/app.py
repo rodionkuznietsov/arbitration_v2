@@ -1,8 +1,12 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Перенести ключ бота в переменные окружения для безопасности
-BOT_TOKEN = "8354712003:AAEHnEqFC5Aj7bguPIi53aUI7L62yaD79T0"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

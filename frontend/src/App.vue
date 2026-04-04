@@ -17,31 +17,33 @@
 
 <script setup>
   import { onMounted } from 'vue';
-import AppMenu from './components/AppMenu.vue';
+  import AppMenu from './components/AppMenu.vue';
 
-  onMounted(async () => {
-    // if (!window.Telegram) {
-    //   console.log('Не в Telegram WebApp')
-    //   return
-    // }
-    
-    const tg = window.Telegram.WebApp;
+  onMounted(() => {
+    // Авторизация в Telegram Web App
+    if (window.Telegram && window.Telegram.WebApp) {
+      const tg = window.Telegram.WebApp;
+      tg.ready();
 
-    const response = await fetch('https://unfarming-untethered-flynn.ngrok-free.dev/api/auth/telegram', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        initData: tg.initData
-      })
-    })
-
-    const data = await response.json();
-    console.log(data);
-
-    tg.expand();
+      if (!tg.initDataUnsafe || !tg.initDataUnsafe.user || !tg.initDataUnsafe.user.id) {
+        alert("Please open this app in Telegram.");
+        return
+      } else {
+        fetch('https://unfarming-untethered-flynn.ngrok-free.dev/api/auth/telegram', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+              initData: tg.initData
+          })
+        })
+      }
+    } else {
+      alert("Telegram Web App is not available.");
+    }
   });
+
 </script>
 
 <style>
