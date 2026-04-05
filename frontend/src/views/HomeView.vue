@@ -1,5 +1,5 @@
 <script setup>
-    import {ref } from 'vue'
+    import {onMounted, ref } from 'vue'
     import FormCombobox from '../components/FormCombobox.vue';
     import OrderBook from '../components/OrderBook.vue';
     import AppHeader from '../components/AppHeader.vue'
@@ -11,16 +11,25 @@
     const ws = useWebsocketStore()
     const userState = useUserState()
 
-    const exchanges = ["Bybit", "Binance", "KuCoin", "BinX", "Mexc", "Gate", "Lbank"]
+    const longExchange = ref("Нет доступных бирж")
+    const shortExchange = ref("Нет доступных бирж")
+    
+    const exchanges = ref(null)
+    onMounted(async () => {
+      const response = await fetch('https://unfarming-untethered-flynn.ngrok-free.dev/api/exchanges/available')
+      const data = await response.json()
+      exchanges.value = data.exchanges.map(exchange => exchange.name)
+      longExchange.value = exchanges.value[0]
+      shortExchange.value = exchanges.value[1]
+    })
+
     const market_types = ["Спот", "Фьючерс"]
 
     const orderBook = ref(null)
     const orderBookStore = useOrderBookStore()
 
     // Данные с полей
-    const longExchange = ref("Binance")
     const longOrderType = ref("Спот")
-    const shortExchange = ref("Bybit")
     const shortOrderType = ref("Спот")
     const ticker = ref("BTC")
     const chartStore = useChartStore()

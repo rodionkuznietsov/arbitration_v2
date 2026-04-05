@@ -9,4 +9,10 @@ CREATE TABLE IF NOT EXISTS user_exchanges (
     exchange_name VARCHAR(255) NOT NULL,
     api_key VARCHAR(255) NOT NULL,
     api_secret VARCHAR(255) NOT NULL
-)
+);
+
+CREATE TABLE IF NOT EXISTS exchanges (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    is_available BOOLEAN NOT NULL DEFAULT TRUE
+);

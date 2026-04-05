@@ -16,6 +16,7 @@ pub enum ExchangeType {
     KuCoin,
     BinX,
     Mexc,
+    #[serde(rename="gate.io")]
     Gate,
     LBank,
     Unknown

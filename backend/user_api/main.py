@@ -1,7 +1,7 @@
 import asyncio
 from pathlib import Path
 
-from fastapi import FastAPI, Form, WebSocket
+from fastapi import FastAPI, WebSocket
 import websockets
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -9,11 +9,13 @@ import structlog
 
 log = structlog.get_logger()
 
-from bot.auth import router as auth_router
-from bot.app import app as bot_app
+from src.routers.tg_bot.auth import router as auth_router
+from src import tg_bot_app
+
+from src.routers import exchange_router, refresh_exchanges_availability
+from src.routers import user_router
 
 app = FastAPI()
-app.include_router(auth_router, prefix="/api/auth")
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,35 +25,22 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+app.include_router(user_router, prefix="/api/user")
+app.include_router(auth_router, prefix="/api/auth")
+app.include_router(exchange_router, prefix="/api/exchanges")
+
 @app.on_event("startup")
 async def startup():
-    await bot_app.initialize()
-    await bot_app.start()
-    asyncio.create_task(bot_app.updater.start_polling())
+    await tg_bot_app.initialize()
+    await tg_bot_app.start()
+    asyncio.create_task(tg_bot_app.updater.start_polling())
+    asyncio.create_task(refresh_exchanges_availability())
 
 @app.on_event("shutdown")
 async def shutdown():
-    await bot_app.stop()
+    await tg_bot_app.stop()
 
-@app.post("/api/user/update")
-async def update_exchanges_keys(
-    key: str = Form(...)
-):
-    return {
-        "status": 200,
-        "message": f"{key} added to user: 1",
-    }
-
-@app.get("/api/user/exchanges_keys")
-async def get_exchanges_keys():
-    return {
-        "user": "Vitik1",
-        "keys": {
-            "api_key": "xxx",
-            "api_secret": "xxx",
-        } 
-    }
-
+app.include_router(exchange_router, prefix="/api/exchanges")
 
 @app.websocket("/ws")
 async def websocket_proxy(websocket: WebSocket):
@@ -73,10 +62,3 @@ async def websocket_proxy(websocket: WebSocket):
 
 frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
 app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
-
-# @app.get("/", include_in_schema=False)
-# async def root():
-#     return { 
-#         "status": 200,
-#         "version": 1
-#     }   

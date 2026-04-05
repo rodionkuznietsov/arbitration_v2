@@ -2,14 +2,14 @@ import json
 from urllib.parse import unquote
 
 from fastapi import APIRouter, Request, HTTPException
-from db import database
-from bot.app import BOT_TOKEN
+from ...db import database
+from ...tg_bot.app import BOT_TOKEN
 import hashlib
 import hmac
 
 router = APIRouter()
 
-@router.post("/telegram")
+@router.post("/telegram", tags=["telegram bot auth"])
 async def auth_telegram(request: Request):
     data = await request.json()
     init_data = data.get("initData")

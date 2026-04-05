@@ -41,7 +41,7 @@ export const useOrderBookStore = defineStore('orderbook', {
             this.ticker = ticker
 
             this.longExchange = longEx
-            this.longExchangeLogo = `../assets/icons/${this.longExchange.toLowerCase()}_logo.svg`
+            this.longExchangeLogo = `../assets/icons/${this.longExchange.toLowerCase().replace(".", "_")}_logo.svg`
             this.longOrderType = longOrderType
             this.longArrow = computed(() => {
                 if (this.longLastPrice == this.longFirstAskPrice) {
@@ -53,7 +53,7 @@ export const useOrderBookStore = defineStore('orderbook', {
             })
 
             this.shortExchange = shortEx
-            this.shortExchangeLogo = `../assets/icons/${this.shortExchange.toLowerCase()}_logo.svg`
+            this.shortExchangeLogo = `../assets/icons/${this.shortExchange.toLowerCase().replace(".", "_")}_logo.svg`
             this.shortOrderType = shortOrderType
             this.shortArrow = computed(() => {
                 if (this.shortLastPrice == this.shortFirstAskPrice) {

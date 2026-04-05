@@ -1,0 +1,1 @@
+from .tg_bot.app import app as tg_bot_app
