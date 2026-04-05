@@ -27,6 +27,8 @@ async def auth_telegram(request: Request):
     await database.add_user(user)
     await database.close()
 
+    # Здесь создаём JWT токен для пользователя
+
     return {
         "status": 200,
         "message": "Login successful",

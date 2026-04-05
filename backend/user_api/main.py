@@ -5,6 +5,9 @@ from fastapi import FastAPI, Form, WebSocket
 import websockets
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import structlog
+
+log = structlog.get_logger()
 
 from bot.auth import router as auth_router
 from bot.app import app as bot_app
@@ -30,13 +33,6 @@ async def startup():
 async def shutdown():
     await bot_app.stop()
 
-# @app.get("/", include_in_schema=False)
-# async def root():
-#     return { 
-#         "status": 200,
-#         "version": 1
-#     }   
-
 @app.post("/api/user/update")
 async def update_exchanges_keys(
     key: str = Form(...)
@@ -59,17 +55,28 @@ async def get_exchanges_keys():
 
 @app.websocket("/ws")
 async def websocket_proxy(websocket: WebSocket):
-    await websocket.accept()
-    async with websockets.connect("ws://localhost:9000/ws") as ws_rust:
-        async def forward_to_rust():
-            async for msg in websocket.iter_text():
-                await ws_rust.send(msg)
+    try:
+        await websocket.accept()
+        async with websockets.connect("ws://localhost:9000/ws") as ws_rust:
+            async def forward_to_rust():
+                async for msg in websocket.iter_text():
+                    await ws_rust.send(msg)
 
-        async def forward_to_client():
-            async for msg in ws_rust:
-                await websocket.send_text(msg)
+            async def forward_to_client():
+                async for msg in ws_rust:
+                    if websocket.client_state.value == 1:  # WebSocketState.CONNECTED
+                        await websocket.send_text(msg)
 
-        await asyncio.gather(forward_to_rust(), forward_to_client())
+            await asyncio.gather(forward_to_rust(), forward_to_client())
+    except RuntimeError as _:
+        log.error("WebsocketProxy -> Нельзя отправить сообщение, соединение закрыто")
 
 frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
 app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
+
+# @app.get("/", include_in_schema=False)
+# async def root():
+#     return { 
+#         "status": 200,
+#         "version": 1
+#     }   

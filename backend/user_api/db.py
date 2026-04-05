@@ -1,6 +1,9 @@
 import asyncpg
 from dotenv import load_dotenv
 import os
+import structlog
+
+log = structlog.get_logger()
 
 load_dotenv()
 
@@ -12,16 +15,16 @@ class AsyncDatabase:
 
     async def connect(self):
         self.conn = await asyncpg.connect(DATABASE_URL)
-        print("Connected to the database.")
+        log.info("Connected to the database.")
 
     async def close(self):
         if self.conn:
             await self.conn.close()
-            print("Database connection closed.")
+            log.info("Database connection closed.")
 
     async def add_user(self, user_data: dict):
         if await self.__check_user_exists__(user_data.get("id")):
-            print(f"Пользователь {user_data.get('id')} уже существует в базе данных.")
+            log.info(f"Пользователь {user_data.get('id')} уже существует в базе данных.")
             return
         
         # Добавляем пользователя в базу данных 
@@ -29,7 +32,7 @@ class AsyncDatabase:
             "INSERT INTO users (tg_user_id) VALUES ($1)",
             user_data.get("id")
         )
-        print(f"Пользователь {user_data.get('id')} добавлен в базу данных.")
+        log.info(f"Пользователь {user_data.get('id')} добавлен в базу данных.")
 
     async def __check_user_exists__(self, user_id: int) -> bool:
         result = await self.conn.fetchrow(

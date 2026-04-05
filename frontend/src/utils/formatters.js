@@ -12,7 +12,8 @@ export function volumeFormatter(value) {
     }
 
     if (value >= 0) {
-        return (Math.floor(value / 0 * 100) / 100) + '$';
+        console.log('Value is less than 1000, returning as is: ' + value);
+        return (Math.floor(value / 100 * 100) / 100) + '$';
     }
 }
 
