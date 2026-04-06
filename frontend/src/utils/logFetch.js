@@ -17,7 +17,7 @@ export async function logBotEvent(event, data) {
 
 export async function getBotLogs(tg_user_id) {
     try {
-        const response = await fetch(`${API_URL}/get/logs/tg_user_id=${tg_user_id}`);
+        const response = await fetch(`${API_URL}/get/logs/${tg_user_id}`);
         if (!response.ok) {
             console.log("Ошибка сервера:", response.status, response.statusText);
             return null

@@ -30,14 +30,34 @@
 <template>
     <div class="page">
         <div class="scroll">
-            <div class="view_header">
+            <div class="view_header" style="
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            ">
                 <div class="title">Моя история</div>
+                <div class="default-btn filter_btn">Фильтры</div>
             </div>
             <div class="logs">
-                <div class="log" v-for="(v, index) in logs" :key="index">
-                    <div>{{ index }}</div>
-                    <div class="log-event">{{ v.event }}</div>
-                    <div class="log-timestamp">{{ new Date(v.timestamp * 1000).toLocaleDateString() }} {{ new Date(v.timestamp * 1000).toLocaleTimeString() }}</div>
+                <div class="log-table" v-for="(v, index) in logs" :key="index">
+                    <div style="padding: 8px;">
+                    {{ 
+                        new Date(v.timestamp * 1000)
+                            .toLocaleDateString(
+                                'ru-Ru', {
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric'
+                                }
+                            ) 
+                    }} </div>
+                    <div class="log-table-element">ID: {{ index + 1 }}</div>
+                    <div class="log-table-element">Событие: {{ v.event.toUpperCase() }}</div>
+                    <div class="log-table-element">Тикер: {{ v.symbol.toUpperCase() }}USDT</div>
+                    <div class="log-table-element">Лонг биржа: {{ v.long_exchange }}</div>
+                    <div class="log-table-element">Шорт биржа: {{ v.short_exchange }}</div>
+                    <div class="log-table-element">Время: {{ new Date(v.timestamp * 1000).toLocaleTimeString() }}</div>
                 </div>
             </div>
         </div>
@@ -45,26 +65,34 @@
 </template>
 
 <style scoped>
+    .filter_btn {
+        flex: 0;
+    }
+
     .logs {
         margin-bottom: var(--default-margin-bottom);
     }
 
-    .log-description {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        margin-top: var(--default-margin-top);
-    }
-
-    .log {
-        display: flex;
-        flex-direction: column;
-        background-color: var(--default-logs-bg);
+    .log-table {
         border-radius: var(--default-border-radius);
-        padding: var(--default-padding);
         width: 100%;
         box-sizing: border-box;
-        margin: 0 0 10px;
+        text-transform: capitalize;
+        table-layout: fixed;
+        border-collapse: collapse;
+        text-align: left;
+        background-color: var(--log-table-bg-color);
+    }
+
+    .log-table-element {
+        color: var(--default-font-color);
+        white-space: nowrap;
+        word-break: break-word;
+        overflow: auto;
+        text-overflow: clip;
+        padding: 8px;
+        background-color: #fff;
+        margin: 0 0 5px;
     }
 
 </style>

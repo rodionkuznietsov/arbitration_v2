@@ -74,7 +74,6 @@
     --default-font: "Noto Sans", sans-serif;
     --default-input-bg: #DFDFDF80;
     --default-orderbook-bg: #DFDFDF80;
-    --default-logs-bg: #DFDFDF80;
     --footer-margin-bottom: 50px;
     --default-gap: 10px;
     --default-margin-bottom: 60px;
@@ -97,6 +96,9 @@
     /* Latest Best Spread */
     --latest-best-spread-table-bg-color: #fb7b4d;
     --latest-best-spread-table-header-bg-color: #DFDFDF80;
+
+    /* Logs */
+    --log-table-bg-color: #DFDFDF80;
   }
 
   .page {

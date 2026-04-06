@@ -22,7 +22,14 @@ async def add_log(data: UserLogSchema):
     await database.add_log(data)
     await database.close()
 
-    log_event = {"tg_user_id": data.data.tg_user_id, "event": data.event, "timestamp": data.timestamp}
+    log_event = {
+        "tg_user_id": data.data.tg_user_id, 
+        "event": data.event, 
+        "symbol": data.data.symbol,
+        "long_exchange": data.data.long_exchange,
+        "short_exchange": data.data.short_exchange,
+        "timestamp": data.timestamp
+    }
     await log_deque.put(log_event)
 
     return ResultSchema(
@@ -58,7 +65,7 @@ async def clear_all_logs():
         message="Таблица была очищена"
     )
 
-@router.get("/get/logs/{tg_user_id}", response_model=ResultSchema)
+@router.get("/get/logs/{tg_user_id}", response_model=ResultSchema, tags=["logs"])
 async def get_logs(tg_user_id: int):
     await database.connect()
     logs = await database.get_user_logs(tg_user_id)
