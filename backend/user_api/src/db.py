@@ -1,4 +1,5 @@
 from time import time
+from typing import Optional
 
 import asyncpg
 from dotenv import load_dotenv
@@ -14,8 +15,7 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 class AsyncDatabase:
-    def __init__(self):
-        self.conn = None
+    conn: Optional[asyncpg.Connection] = None
 
     async def connect(self):
         self.conn = await asyncpg.connect(DATABASE_URL)
@@ -28,7 +28,7 @@ class AsyncDatabase:
 
     async def add_user(self, user_data: dict):
         if await self.__check_user_exists__(user_data.get("id")):
-            log.info(f"Пользователь {user_data.get('id')} уже существует в базе данных.")
+            log.warning(f"Пользователь {user_data.get('id')} уже существует в базе данных.")
             return 
         
         # Добавляем пользователя в базу данных 
@@ -53,7 +53,7 @@ class AsyncDatabase:
 
     async def add_exchange(self, exchange_name: str, is_available: bool) -> bool:
         if await self.__check_exchange_exists__(exchange_name):
-            log.info(f"Биржа {exchange_name} уже существует в базе данных.")
+            log.warning(f"Биржа {exchange_name} уже существует в базе данных.")
             return False
 
         await self.conn.execute(
@@ -65,13 +65,14 @@ class AsyncDatabase:
     
     async def update_exchange_availability(self, exchange_name: str, is_available: bool) -> bool:
         if not await self.__check_exchange_exists__(exchange_name):
-            log.info(f"Биржа {exchange_name} не существует в базе данных.")
+            log.warning(f"Биржа {exchange_name} не существует в базе данных.")
             return False
 
         await self.conn.execute(
             "UPDATE exchanges SET is_available = $1 WHERE name = $2",
             is_available, exchange_name
         )
+
         log.info(f"Статус доступности биржи {exchange_name} обновлен в базе данных.")
         return True
     
@@ -91,7 +92,7 @@ class AsyncDatabase:
             "INSERT INTO user_logs (event, tg_user_id, symbol, long_exchange, short_exchange, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
             data.event, data.data.tg_user_id, data.data.symbol, data.data.long_exchange, data.data.short_exchange, data.timestamp
         )
-        log.warning(f"Лог {data.event} успешно был добавлен для пользователя с id: {data.data.tg_user_id}.")
+        log.info(f"Лог {data.event} успешно был добавлен для пользователя с id: {data.data.tg_user_id}.")
 
     async def __check_log_exists__(self, timestamp, tg_user_id):
         result = await self.conn.fetchrow(
