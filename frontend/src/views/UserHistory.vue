@@ -1,24 +1,26 @@
 <template>
-    <div class="scroll">
-        <div class="view_header">
-            <div class="title">Моя история</div>
-        </div>
-        <div class="logs">
-            <div class="log-year">Год 2026</div>
-            <div class="log">
-                <div class="log-content">
-                    <div class="log-title">
-                        <i>4 Апреля в 23:15:23 -> Запуск бота с тикером: BTCUSDT</i>
-                    </div>
-                    <div class="log-description">
-                        <div>
-                            <i>Gate - Спот (Лонг)</i>
+    <div class="page">
+        <div class="scroll">
+            <div class="view_header">
+                <div class="title">Моя история</div>
+            </div>
+            <div class="logs">
+                <div class="log-year">Год 2026</div>
+                <div class="log">
+                    <div class="log-content">
+                        <div class="log-title">
+                            <i>4 Апреля в 23:15:23 -> Запуск бота с тикером: BTCUSDT</i>
                         </div>
-                        <div>
-                            <i>Bybit - Спот (Шорт)</i>
+                        <div class="log-description">
+                            <div>
+                                <i>Gate - Спот (Лонг)</i>
+                            </div>
+                            <div>
+                                <i>Bybit - Спот (Шорт)</i>
+                            </div>
                         </div>
+                        <div class="log-status">Успешно</div>
                     </div>
-                    <div class="log-status">Успешно</div>
                 </div>
             </div>
         </div>

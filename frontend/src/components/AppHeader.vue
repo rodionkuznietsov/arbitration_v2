@@ -37,12 +37,8 @@ import { useUserState } from '@/stores/user_state';
 <style scoped>
   #header {
     display: flex;
-    margin-bottom: 5px;
     align-items: center;
     justify-content: space-between;
-    top: 0;
-    left: 0;
-    right: 0;
     padding: var(--default-padding);
   }
   

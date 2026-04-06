@@ -4,6 +4,7 @@ import Home from "../views/HomeView.vue";
 import Chart from "../views/ChartView.vue";
 import ClientKey from "../views/ClientKey.vue";
 import UserHistory from "../views/UserHistory.vue";
+import LatestBestSpread from "@/views/LatestBestSpread.vue";
 
 const routes = [
     {
@@ -25,6 +26,11 @@ const routes = [
         name: "user_history",
         component: UserHistory,
     },
+    {
+        path: "/latest_best_spreads",
+        name: "latest_best_spreads",
+        component: LatestBestSpread
+    }
 ];
 
 const router = createRouter({

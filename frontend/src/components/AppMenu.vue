@@ -58,7 +58,7 @@
         display: flex;
         position: fixed;
         bottom: var(--default-bottom-px);
-        background-color: var(--basic-Bg);
+        background-color: var(--app_menu-bg-color);
         z-index: 10;
         right: var(--wrapper-margin-right-left-px);
         left: var(--wrapper-margin-right-left-px);

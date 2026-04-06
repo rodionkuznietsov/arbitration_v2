@@ -1,11 +1,12 @@
-from fastapi import APIRouter
+from enum import Enum
+
+from fastapi import APIRouter, HTTPException
 import asyncio
 
 from ..db import database
 from ..db_schemas.exchange import ExchangeSchema
 from ..db_schemas.result import ResultSchema
-
-exchange_cache = []
+from ..cache import exchange_cache
 
 router = APIRouter()
 @router.get("/available", tags=["exchanges"])
@@ -31,11 +32,7 @@ async def add_exchange(exchange_data: ExchangeSchema):
     exchange_cache = await get_available_exchanges()  # Обновляем кэш после добавления новой биржи
 
     if not added:
-        return ResultSchema(
-            status_code=400,
-            success=False,
-            message=f"Биржа {exchange_data.name} уже существует в базе данных."
-        )
+        raise HTTPException(status_code=400, detail="Биржа Binance уже существует в базе данных.")
     
     return ResultSchema(
         status_code=200,
@@ -66,6 +63,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
 
 async def refresh_exchanges_availability():
     global exchange_cache
+    global ExchangeEnum
     while True:
         exchange_cache = await get_available_exchanges()
         await asyncio.sleep(60)  # Обновляем кэш каждые 60 секунд

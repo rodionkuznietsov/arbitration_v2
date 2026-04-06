@@ -8,7 +8,7 @@
       </keep-alive>
     </router-view>
 
-    <footer id="footer">
+    <footer id="footer" v-if="authStore.success">
       <AppMenu />
     </footer>
   </div>
@@ -17,29 +17,37 @@
 <script setup>
   import { onMounted } from 'vue';
   import AppMenu from './components/AppMenu.vue';
+  import { useAuthStore } from './stores/auth';
+  
+  const authStore = useAuthStore()
 
-  onMounted(() => {
+  onMounted(async () => {
     // Авторизация в Telegram Web App
     if (window.Telegram && window.Telegram.WebApp) {
       const tg = window.Telegram.WebApp;
-      tg.ready();
+      try {
+        tg.ready();
 
-      if (!tg.initDataUnsafe || !tg.initDataUnsafe.user || !tg.initDataUnsafe.user.id) {
-        alert("Please open this app in Telegram.");
-        return
-      } else {
-        fetch('https://unfarming-untethered-flynn.ngrok-free.dev/api/auth/telegram', {
+        const response = await fetch('https://unfarming-untethered-flynn.ngrok-free.dev/api/telegram/bot/auth', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-              initData: tg.initData
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData: tg.initData })
         })
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Неизвестная ошибка")
+        }
+
+        const data = await response.json()
+        authStore.data = data
+        authStore.success = data.success
+      } catch(err) {
+        console.error(err);
+        tg.showAlert("Ошибка при авторизации", () => {
+          console.log("Пользователь закрыл alert")
+        });
       }
-    } else {
-      alert("Telegram Web App is not available.");
     }
   });
 
@@ -51,7 +59,6 @@
   :root {
     --basic-Bg: #ffffff;
     --color-input-border: #b7bcc4;
-    --color-chart-border-bottom: #dfdede;
     --color-popup: #333B47;
     --color-success: #16C784;
     --color-success-opacity-0_15: hsl(157 61% 46% / 0.15);
@@ -59,7 +66,6 @@
     --color-error-opacity-0_15: hsl(352 91% 62% / 0.15);
     --default-font-color: #1f1f1f;
     --default-font-size: 16px;
-    --chart-button-font-size: 10px;
     --default-padding: 8px;
     --default-icon-size: 16px;
     --default-border-radius: 8px;
@@ -69,22 +75,46 @@
     --default-input-bg: #DFDFDF80;
     --default-orderbook-bg: #DFDFDF80;
     --default-logs-bg: #DFDFDF80;
-    --chart-title-font-color: #DFDFDF80;
     --footer-margin-bottom: 50px;
     --default-gap: 10px;
-    --default-margin-bottom: 20px;
+    --default-margin-bottom: 60px;
     --default-bottom-px: 10px;
 
     /* AppMenu */
     --router-link-font-size: 16px;
     --wrapper-margin-right-left-px: 20px;
+    --app_menu-bg-color: #DFDFDF80;
+
+    /* Chart */
+    --color-chart-border-left-menu-right: #dfdede;
+    --chart-button-font-size: 10px;
+    --chart-title-font-color: #DFDFDF80;
+    --chart-padding-left-menu-px: 8px;
+    --chart-bg-left-menu-color: #DFDFDF80;
+    --chart-bg-header-color: #DFDFDF80;
+    --color-chart-header-border-bottom: #dfdede;
+
+    /* Latest Best Spread */
+    --latest-best-spread-table-bg-color: #fb7b4d;
+    --latest-best-spread-table-header-bg-color: #DFDFDF80;
+  }
+
+  .page {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .scroll {
-    height: 100vh;
-    overflow: auto;
     padding: var(--default-padding);
     box-sizing: border-box;
+    margin-bottom: var(--default-margin-bottom);
   }
 
   .view_header {
@@ -184,11 +214,11 @@
     margin-bottom: var(--default-margin-bottom);
   }
 
-  #start {
+  #start, .long {
     background-color: var(--color-success);
   } 
 
-  #stop {
+  #stop, .short {
     background-color: var(--color-error);
   } 
 
@@ -197,7 +227,6 @@
     -moz-osx-font-smoothing: grayscale;
     text-align: left;
     color: var(--default-font-color);
-    position: relative;
     font-family: var(--default-font);
     font-weight: 400;
     font-style: normal;
@@ -210,8 +239,28 @@
     user-select: none;
   }
 
+  .icon_svg:hover {
+    cursor: pointer;
+  }
+
+  .svg_margin {
+    margin-right: 10px;
+  }
+
+  .span-text {
+    color: var(--default-font-color);
+    text-transform: capitalize;
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
   body {
     background-color: var(--basic-Bg);
-    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 </style>

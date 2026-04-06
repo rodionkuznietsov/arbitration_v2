@@ -4,18 +4,24 @@
     import { useWebsocketStore } from '@/stores/websocket';
     import { ref, defineExpose } from 'vue';
     import { volumeFormatter, formatCurrency } from '@/utils/formatters';
+import { useAuthStore } from '@/stores/auth';
+import { logBotEvent } from '@/utils/logFetch';
 
     const isVisible = ref("display: none;")
     const loading = ref("display: none;")
+
+    const authStore = useAuthStore()
+
     const userState = useUserState()
+
     const orderBookStore = useOrderBookStore()
     const ws = useWebsocketStore()
+
     let unsubscribe
 
     function start() {
-        const data = userState.get_data()
-
         loading.value = "display: block;"
+        const data = userState.get_data()
 
         unsubscribe = ws.subscribe(data.ticker.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (result) => {            
             orderBookStore.updateHeader(
@@ -30,15 +36,31 @@
             isVisible.value = "display: block;"
             loading.value = "display: none;"
         })
+
+        // Сохраняем лог о старте бота в базу данных
+        logBotEvent("bot_start", {
+            symbol: data.ticker,
+            tg_user_id: authStore.data.message.tg_user_id,
+            long_exchange: data.longExchange,
+            short_exchange: data.shortExchange
+        })
     }
 
     function stop() {
+        const data = userState.get_data()
         isVisible.value = "display: none;"
         loading.value = "display: none;"
         userState.clearValues()
         orderBookStore.clearValues()
         if (unsubscribe) {
             unsubscribe()
+
+            logBotEvent("bot_stop", {
+                symbol: data.ticker,
+                tg_user_id: authStore.data.message.tg_user_id,
+                long_exchange: data.longExchange,
+                short_exchange: data.shortExchange
+            })
         }
     }
 
@@ -61,7 +83,7 @@
     <div class="order_book_title">Книги ордеров</div>
     <div id="stakan">
         <div class="loading_div" :style="loading">
-            <img class="loading" src="../assets/gifs/loading_books.gif">
+            <img class="loading" src="../assets/img/loading_books.png" draggable="false">
         </div>
         <div id="order_book" :style="isVisible">
             <div id="exchange_name">
@@ -150,9 +172,16 @@
 <style scoped>
     .loading_div {
         position: absolute;
-        box-sizing: content-box;
-        left: 50%;
-        transform: translate(-50%, 0%);
+        box-sizing: border-box;
+    }
+
+    .loading_div img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        pointer-events: none;
+        user-select: none;
+        margin-bottom: var(--default-margin-bottom);
     }
 
     .loading {
@@ -197,6 +226,7 @@
         display: flex;
         gap: 10px;
         margin-top: 10px;
+        margin-bottom: var(--default-margin-bottom);
     }
 
     #order_book {
