@@ -1,3 +1,32 @@
+<script setup>
+    import { useAuthStore } from '@/stores/auth';
+    import { API_URL, getBotLogs } from '@/utils/logFetch';
+    import { onMounted, ref } from 'vue';
+
+    const authStore = useAuthStore()
+
+    let logs = ref([])
+        
+    onMounted(async () => {
+        const logsHistory = await getBotLogs(authStore.tg_user_id)
+        logs.value = logsHistory
+        
+        // Подписываемся на получение новых логов
+        const es = new EventSource(`${API_URL}/subscribe/logs/${authStore.tg_user_id}`)
+
+        es.onmessage = (event) => {
+            const newLog = JSON.parse(event.data)
+            logs.value.push(newLog)
+            logs.value.sort((a, b) => b.timestamp - a.timestamp) // DESC
+        }
+
+        es.onerror = (err) => {
+            console.error("SSE ошибка", err);
+            es.close(); // или повторное соединение через setTimeout
+        };
+    })
+</script>
+
 <template>
     <div class="page">
         <div class="scroll">
@@ -5,22 +34,10 @@
                 <div class="title">Моя история</div>
             </div>
             <div class="logs">
-                <div class="log-year">Год 2026</div>
-                <div class="log">
-                    <div class="log-content">
-                        <div class="log-title">
-                            <i>4 Апреля в 23:15:23 -> Запуск бота с тикером: BTCUSDT</i>
-                        </div>
-                        <div class="log-description">
-                            <div>
-                                <i>Gate - Спот (Лонг)</i>
-                            </div>
-                            <div>
-                                <i>Bybit - Спот (Шорт)</i>
-                            </div>
-                        </div>
-                        <div class="log-status">Успешно</div>
-                    </div>
+                <div class="log" v-for="(v, index) in logs" :key="index">
+                    <div>{{ index }}</div>
+                    <div class="log-event">{{ v.event }}</div>
+                    <div class="log-timestamp">{{ new Date(v.timestamp * 1000).toLocaleDateString() }} {{ new Date(v.timestamp * 1000).toLocaleTimeString() }}</div>
                 </div>
             </div>
         </div>
@@ -47,11 +64,7 @@
         padding: var(--default-padding);
         width: 100%;
         box-sizing: border-box;
+        margin: 0 0 10px;
     }
 
-    .log-title {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-    }
 </style>

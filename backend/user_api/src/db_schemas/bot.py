@@ -19,3 +19,6 @@ class UserLogSchema(BaseModel):
     event: EventTypeEnum
     data: LogDataSchema
     timestamp: int
+
+class UserTelegramId(BaseModel):
+    tg_user_id: int

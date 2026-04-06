@@ -20,9 +20,8 @@ import { logBotEvent } from '@/utils/logFetch';
     let unsubscribe
 
     function start() {
-        loading.value = "display: block;"
         const data = userState.get_data()
-
+        loading.value = "display: block;"
         unsubscribe = ws.subscribe(data.ticker.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (result) => {            
             orderBookStore.updateHeader(
                 data.ticker,
@@ -40,7 +39,7 @@ import { logBotEvent } from '@/utils/logFetch';
         // Сохраняем лог о старте бота в базу данных
         logBotEvent("bot_start", {
             symbol: data.ticker,
-            tg_user_id: authStore.data.message.tg_user_id,
+            tg_user_id: authStore.tg_user_id,
             long_exchange: data.longExchange,
             short_exchange: data.shortExchange
         })
@@ -57,7 +56,7 @@ import { logBotEvent } from '@/utils/logFetch';
 
             logBotEvent("bot_stop", {
                 symbol: data.ticker,
-                tg_user_id: authStore.data.message.tg_user_id,
+                tg_user_id: authStore.tg_user_id,
                 long_exchange: data.longExchange,
                 short_exchange: data.shortExchange
             })

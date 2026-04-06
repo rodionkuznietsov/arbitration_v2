@@ -36,11 +36,11 @@
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.detail || "Неизвестная ошибка")
+          throw new Error(errorData.message || "Неизвестная ошибка")
         }
 
         const data = await response.json()
-        authStore.data = data
+        authStore.tg_user_id = data.message.tg_user_id
         authStore.success = data.success
       } catch(err) {
         console.error(err);

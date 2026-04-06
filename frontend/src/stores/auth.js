@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 
 export const useAuthStore = defineStore('authStore', {
     state: () => ({
-        data: null,
-        success: false
+        tg_user_id: 708748005,
+        success: true
     })
 })

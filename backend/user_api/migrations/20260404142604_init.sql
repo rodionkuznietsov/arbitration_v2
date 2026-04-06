@@ -12,13 +12,14 @@ CREATE TABLE IF NOT EXISTS user_exchanges (
 );
 
 CREATE TABLE IF NOT EXISTS user_logs (
+    id SERIAL,
     tg_user_id BIGINT NOT NULL REFERENCES users(tg_user_id) ON DELETE CASCADE,
     event VARCHAR(255) NOT NULL,
     symbol VARCHAR(255) NOT NULL,
     long_exchange VARCHAR(255) NOT NULL,
     short_exchange VARCHAR(255) NOT NULL,
     timestamp BIGINT NOT NULL,
-    PRIMARY KEY (timestamp, tg_user_id, event)
+    PRIMARY KEY (id, timestamp, tg_user_id, event)
 );
 
 CREATE TABLE IF NOT EXISTS exchanges (

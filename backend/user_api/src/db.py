@@ -92,13 +92,39 @@ class AsyncDatabase:
             "INSERT INTO user_logs (event, tg_user_id, symbol, long_exchange, short_exchange, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
             data.event, data.data.tg_user_id, data.data.symbol, data.data.long_exchange, data.data.short_exchange, data.timestamp
         )
-        log.info(f"Лог {data.event} успешно был добавлен для пользователя с id: {data.data.tg_user_id}.")
+        log.info(f"Лог: {data.event.title()}, успешно был добавлен для пользователя с id: {data.data.tg_user_id}.")
 
     async def __check_log_exists__(self, timestamp, tg_user_id):
-        result = await self.conn.fetchrow(
-            "SELECT timestamp FROM user_logs WHERE timestamp = $1 AND tg_user_id = $2",
-            timestamp, tg_user_id
-        )
+        if timestamp is not None:
+            result = await self.conn.fetchrow(
+                "SELECT timestamp FROM user_logs WHERE timestamp = $1 AND tg_user_id = $2",
+                timestamp, tg_user_id
+            )
+        else:
+            result = await self.conn.fetchrow(
+                "SELECT timestamp FROM user_logs WHERE tg_user_id = $1",
+                tg_user_id
+            )
+
         return result is not None
+
+    async def get_user_logs(self, tg_user_id: int):
+        if not await self.__check_log_exists__(None, tg_user_id):
+            log.warning(f"Не удалось найти логов для пользователя с id: {tg_user_id}")
+            return
+        
+        result = await self.conn.fetch(
+            "SELECT * FROM user_logs WHERE tg_user_id = $1 ORDER BY timestamp DESC",
+            tg_user_id
+        )
+
+        list_of_dicts = [dict(record) for record in result]
+        return list_of_dicts
+
+    async def clear_table_user_logs(self):
+        await self.conn.execute(
+            "TRUNCATE TABLE user_logs"
+        )
+        log.info("Таблица: user_logs, была очищена.")
 
 database = AsyncDatabase()
