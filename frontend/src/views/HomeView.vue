@@ -27,10 +27,10 @@
 
         userState.exchanges = data.exchanges
         longExchange.value = userState.exchanges[0] ? userState.exchanges[0].name : longExchange.value
-        shortExchange.value = userState.exchanges[1] ? userState.exchanges[1].name : userState.exchanges[0].name
+        shortExchange.value = userState.exchanges[1] ? userState.exchanges[1].name : longExchange.value
       } catch(err) {
         if (tgStore.tgObject) {
-          tgStore.tgObject.showAlert(err, () => {
+          tgStore.tgObject.showAlert("Системный сбой. Пожайлуйста сообщите об этом в службу поддержки.", () => {
             console.log("")
           })
         }
