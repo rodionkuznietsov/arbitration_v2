@@ -1,2 +1,2 @@
-export const WEBSOCKET_URL = "wss://arbitration.loca.lt/ws"
-export const API_URL = "https://arbitration.loca.lt/api"
+export const WEBSOCKET_URL = "wss://arbitrage-bot.xyz/ws"
+export const API_URL = "https://arbitrage-bot.xyz/api"
