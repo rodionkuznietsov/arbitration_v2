@@ -26,7 +26,7 @@
         const data = await response.json()
 
         userState.exchanges = data.exchanges
-        longExchange.value = userState.exchanges[0].name
+        longExchange.value = userState.exchanges[0] ? userState.exchanges[0].name : longExchange.value
         shortExchange.value = userState.exchanges[1] ? userState.exchanges[1].name : userState.exchanges[0].name
       } catch(err) {
         if (tgStore.tgObject) {
