@@ -1,5 +1,5 @@
 fastapi[standard]
 structlog
 python-telegram-bot
-jwt
+PyJWT
 asyncpg
