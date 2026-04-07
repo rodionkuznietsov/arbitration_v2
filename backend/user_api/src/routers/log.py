@@ -1,36 +1,42 @@
 import asyncio
 import json
+from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 import structlog
 
-from ..db_schemas.bot import UserTelegramId
+import jwt
+from jwt.exceptions import InvalidTokenError, InvalidSubjectError
+
+from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 
 from ..db import database
-from ..db_schemas import LogMessageSchema, ResultSchema, UserLogSchema
-from ..cache import log_deque
+from ..schemas import LogMessageSchema, ResultSchema, UserLogSchema
+from ..cache import event_deque
 
 log = structlog.get_logger()
 router = APIRouter()
 
 @router.post("/add/log", response_model=ResultSchema, tags=["logs"])
-async def add_log(data: UserLogSchema):
+async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_scheme)], ):
     global log_deque
 
-    await database.connect()
-    await database.add_log(data)
-    await database.close()
+    tg_user_id = int(authothicate(token))
+    await database.add_log(tg_user_id, data)
 
     log_event = {
-        "tg_user_id": data.data.tg_user_id, 
-        "event": data.event, 
-        "symbol": data.data.symbol,
-        "long_exchange": data.data.long_exchange,
-        "short_exchange": data.data.short_exchange,
-        "timestamp": data.timestamp
+        "type": "log",
+        "tg_user_id": tg_user_id, 
+        "timestamp": data.timestamp,
+        "payload": {
+            "event": data.event, 
+            "symbol": f"{data.data.symbol.upper()}USDT",
+            "long_exchange": data.data.long_exchange,
+            "short_exchange": data.data.short_exchange,
+        }
     }
-    await log_deque.put(log_event)
+    await event_deque.put(log_event)
 
     return ResultSchema(
         status_code=200,
@@ -38,26 +44,9 @@ async def add_log(data: UserLogSchema):
         message="Лог был добавлен"
     )
 
-async def log_streamer(tg_user_id: int):
-    global log_deque
-
-    while True:
-        try:
-            log_event = await log_deque.get()
-            if log_event["tg_user_id"] == tg_user_id:
-                yield f"data: { json.dumps(log_event)}\n\n"
-        except asyncio.TimeoutError:
-            yield f"data: keep-alive\n\n"
-
-@router.get("/subscribe/logs/{tg_user_id}", response_model=ResultSchema, tags=["logs"])
-async def get_new_log(tg_user_id: int):
-    return StreamingResponse(log_streamer(tg_user_id), media_type="text/event-stream")
-
 @router.delete("/clear/logs", response_model=ResultSchema, tags=["logs"])
 async def clear_all_logs():
-    await database.connect()
     await database.clear_table_user_logs()
-    await database.close()
 
     return ResultSchema(
         status_code=200,
@@ -65,17 +54,15 @@ async def clear_all_logs():
         message="Таблица была очищена"
     )
 
-@router.get("/get/logs/{tg_user_id}", response_model=ResultSchema, tags=["logs"])
-async def get_logs(tg_user_id: int):
-    await database.connect()
+@router.get("/get/logs/", response_model=ResultSchema, tags=["logs"])
+async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
+    tg_user_id = int(authothicate(token))
     logs = await database.get_user_logs(tg_user_id)
-    await database.close()
 
     if not logs:
-        return ResultSchema(
+        raise HTTPException(
             status_code=404,
-            success=False,
-            message="История логов не была найдена"
+            detail="Не удалось найти логов"
         )
 
     return ResultSchema(
@@ -85,3 +72,25 @@ async def get_logs(tg_user_id: int):
             logs=logs
         )
     )
+
+def authothicate(token):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Не удалось проверить учетные данные",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
+
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+    except InvalidSubjectError as e:
+        log.error(f"JWT TYPE ERROR: {e}")
+        raise credentials_exception
+    except InvalidTokenError as e:
+        log.error(f"JWT TYPE ERROR: {e}")
+        raise credentials_exception
+
+    tg_user_id = payload.get('sub')
+    if tg_user_id is None:
+        raise credentials_exception
+    
+    return tg_user_id

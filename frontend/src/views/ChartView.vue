@@ -88,6 +88,7 @@
         }
         
         chartStore.chart = createChart(container.value, chartOptions);
+        alert(JSON.stringify(chartStore.chart))
         
         chartStore.legend = document.createElement('div')
         chartStore.legend.style = `
@@ -127,8 +128,8 @@
         window.addEventListener('resize', () => {
             if (chartStore.chart) {
                 chartStore.chart.resize(
-                    window.innerWidth - 75,
-                    window.innerHeight - 17
+                    window.innerWidth,
+                    window.innerHeight
                 )
                 chartStore.chart.timeScale().fitContent()
             }
@@ -144,12 +145,10 @@
             stopVolumeWatch()
         }
 
-        if (chartStore.finished) {
-            if (unsubscribe) {
-                unsubscribe()
-                unsubscribe = null
-            }
-        } 
+        if (unsubscribe) {
+            unsubscribe()
+            unsubscribe = null
+        }
 
         if (chartStore.chart) {
             chartStore.chart.remove();

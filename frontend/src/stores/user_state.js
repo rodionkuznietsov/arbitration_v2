@@ -3,6 +3,9 @@ import { defineStore } from "pinia";
 export const useUserState = defineStore('userState', {
     state: () => ({
         ticker: null,
+        logs: [],
+        exchanges: {},
+
         longExchange: null,
         shortExchange: null,
         longOrderType: null,

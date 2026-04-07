@@ -1,39 +1,48 @@
 from enum import Enum
+import time
 
 from fastapi import APIRouter, HTTPException
 import asyncio
 
 from ..db import database
-from ..db_schemas.exchange import ExchangeSchema
-from ..db_schemas.result import ResultSchema
-from ..cache import exchange_cache
+from ..schemas.exchange import ExchangeSchema
+from ..schemas.result import ResultSchema
+from ..cache import event_deque
 
 router = APIRouter()
 @router.get("/available", tags=["exchanges"])
 async def get_exchanges():
-    global exchange_cache
+    exchanges = await get_available_exchanges()
     return {
         "status": 200,
-        "exchanges": exchange_cache
+        "exchanges": exchanges
     }
 
 async def get_available_exchanges():
-    await database.connect()
     exchanges = await database.get_available_exchanges()
-    await database.close()
     return exchanges
 
 @router.post("/add_exchange", response_model=ResultSchema, tags=["exchanges"])
 async def add_exchange(exchange_data: ExchangeSchema):
     global exchange_cache
-    await database.connect()
     added = await database.add_exchange(exchange_data.name, exchange_data.is_available)
-    await database.close()
-    exchange_cache = await get_available_exchanges()  # Обновляем кэш после добавления новой биржи
 
     if not added:
-        raise HTTPException(status_code=400, detail="Биржа Binance уже существует в базе данных.")
+        raise HTTPException(status_code=400, detail=f"Биржа {exchange_data.name} уже существует в базе данных.")
+
+    exchange_event = {
+        "type": "exchange",
+        "tg_user_id": "all", 
+        "timestamp": time.time(),
+        "payload": {
+            "event": "add_exchange", 
+            "exchange_name": exchange_data.name,
+            "is_available": exchange_data.is_available
+        }
+    }
     
+    await event_deque.put(exchange_event)
+
     return ResultSchema(
         status_code=200,
         success=True,
@@ -43,9 +52,7 @@ async def add_exchange(exchange_data: ExchangeSchema):
 @router.put("/update_exchange_availability", response_model=ResultSchema, tags=["exchanges"])
 async def update_exchange_availability(exchange_data: ExchangeSchema):
     global exchange_cache
-    await database.connect()
     updated = await database.update_exchange_availability(exchange_data.name, exchange_data.is_available)
-    await database.close()
     if not updated:
         return ResultSchema(
             status_code=404,
@@ -53,17 +60,22 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
             message=f"Биржа {exchange_data.name} не существует в базе данных."
         )
     
-    exchange_cache = await get_available_exchanges()  # Обновляем кэш после изменения статуса доступности
+    exchange_event = {
+        "type": "exchange",
+        "tg_user_id": "all", 
+        "timestamp": time.time(),
+        "payload": {
+            "event": "update_exchange", 
+            "exchange_name": exchange_data.name,
+            "is_available": exchange_data.is_available
+        }
+    }
+    
+    await event_deque.put(exchange_event)
+
     return ResultSchema(
         status_code=200,
         success=True,
         message=f"Статус доступности биржи {exchange_data.name} обновлен в базе данных."
     )
     
-
-async def refresh_exchanges_availability():
-    global exchange_cache
-    global ExchangeEnum
-    while True:
-        exchange_cache = await get_available_exchanges()
-        await asyncio.sleep(60)  # Обновляем кэш каждые 60 секунд

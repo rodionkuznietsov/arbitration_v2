@@ -1,29 +1,15 @@
 <script setup>
     import { useAuthStore } from '@/stores/auth';
-    import { API_URL, getBotLogs } from '@/utils/logFetch';
-    import { onMounted, ref } from 'vue';
+    import { useUserState } from '@/stores/user_state';
+    import { getBotLogs } from '@/utils/logFetch';
+    import { onMounted } from 'vue';
 
     const authStore = useAuthStore()
+    const userStateStore = useUserState()
 
-    let logs = ref([])
-        
     onMounted(async () => {
-        const logsHistory = await getBotLogs(authStore.tg_user_id)
-        logs.value = logsHistory
-        
-        // Подписываемся на получение новых логов
-        const es = new EventSource(`${API_URL}/subscribe/logs/${authStore.tg_user_id}`)
-
-        es.onmessage = (event) => {
-            const newLog = JSON.parse(event.data)
-            logs.value.push(newLog)
-            logs.value.sort((a, b) => b.timestamp - a.timestamp) // DESC
-        }
-
-        es.onerror = (err) => {
-            console.error("SSE ошибка", err);
-            es.close(); // или повторное соединение через setTimeout
-        };
+        const logsHistory = await getBotLogs(authStore.token)
+        userStateStore.logs = logsHistory
     })
 </script>
 
@@ -40,7 +26,7 @@
                 <div class="default-btn filter_btn">Фильтры</div>
             </div>
             <div class="logs">
-                <div class="log-table" v-for="(v, index) in logs" :key="index">
+                <div class="log-table" v-for="(v, index) in userStateStore.logs" :key="index">
                     <div style="padding: 8px;">
                     {{ 
                         new Date(v.timestamp * 1000)
@@ -53,8 +39,8 @@
                             ) 
                     }} </div>
                     <div class="log-table-element">ID: {{ index + 1 }}</div>
-                    <div class="log-table-element">Событие: {{ v.event.toUpperCase() }}</div>
-                    <div class="log-table-element">Тикер: {{ v.symbol.toUpperCase() }}USDT</div>
+                    <div class="log-table-element">Событие: <span class="bold-text">{{ v.event.toUpperCase() }}</span></div>
+                    <div class="log-table-element">Тикер: {{ v.symbol.toUpperCase() }}</div>
                     <div class="log-table-element">Лонг биржа: {{ v.long_exchange }}</div>
                     <div class="log-table-element">Шорт биржа: {{ v.short_exchange }}</div>
                     <div class="log-table-element">Время: {{ new Date(v.timestamp * 1000).toLocaleTimeString() }}</div>
@@ -93,6 +79,10 @@
         padding: 8px;
         background-color: #fff;
         margin: 0 0 5px;
+    }
+
+    .bold-text {
+        font-weight: 700;
     }
 
 </style>

@@ -4,14 +4,13 @@
     import { useWebsocketStore } from '@/stores/websocket';
     import { ref, defineExpose } from 'vue';
     import { volumeFormatter, formatCurrency } from '@/utils/formatters';
-import { useAuthStore } from '@/stores/auth';
-import { logBotEvent } from '@/utils/logFetch';
+    import { useAuthStore } from '@/stores/auth';
+    import { logBotEvent } from '@/utils/logFetch';
 
     const isVisible = ref("display: none;")
     const loading = ref("display: none;")
 
     const authStore = useAuthStore()
-
     const userState = useUserState()
 
     const orderBookStore = useOrderBookStore()
@@ -37,12 +36,14 @@ import { logBotEvent } from '@/utils/logFetch';
         })
 
         // Сохраняем лог о старте бота в базу данных
-        logBotEvent("bot_start", {
-            symbol: data.ticker,
-            tg_user_id: authStore.tg_user_id,
-            long_exchange: data.longExchange,
-            short_exchange: data.shortExchange
-        })
+        logBotEvent(
+            "bot_start", {
+                symbol: data.ticker,
+                long_exchange: data.longExchange,
+                short_exchange: data.shortExchange
+            },
+            authStore.token
+        )
     }
 
     function stop() {
@@ -54,12 +55,14 @@ import { logBotEvent } from '@/utils/logFetch';
         if (unsubscribe) {
             unsubscribe()
 
-            logBotEvent("bot_stop", {
-                symbol: data.ticker,
-                tg_user_id: authStore.tg_user_id,
-                long_exchange: data.longExchange,
-                short_exchange: data.shortExchange
-            })
+            logBotEvent(
+                "bot_stop", {
+                    symbol: data.ticker,
+                    long_exchange: data.longExchange,
+                    short_exchange: data.shortExchange
+                },
+                authStore.token
+            )
         }
     }
 

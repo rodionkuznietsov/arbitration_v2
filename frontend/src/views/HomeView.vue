@@ -9,22 +9,32 @@
     import { useOrderBookStore } from '@/stores/orderbook';
     import { useAuthStore } from '@/stores/auth';
     import AuthError from '@/components/AuthError.vue';
+    import { API_URL, WEBSOCKET_URL } from '@/config';
+    import { useTgStore } from '@/stores/tg';
 
     const authStore = useAuthStore()
     const ws = useWebsocketStore()
     const userState = useUserState()
+    const tgStore = useTgStore()
 
     const longExchange = ref("Нет доступных бирж")
     const shortExchange = ref("Нет доступных бирж")
     
-    const exchanges = ref(null)
-    
     onMounted(async () => {
-      const response = await fetch('https://unfarming-untethered-flynn.ngrok-free.dev/api/exchanges/available')
-      const data = await response.json()
-      exchanges.value = data.exchanges.map(exchange => exchange.name)
-      longExchange.value = exchanges.value[0]
-      shortExchange.value = exchanges.value[1]
+      try {
+        const response = await fetch(`${API_URL}/exchanges/available`)
+        const data = await response.json()
+
+        userState.exchanges = data.exchanges
+        longExchange.value = userState.exchanges[0].name
+        shortExchange.value = userState.exchanges[1] ? userState.exchanges[1].name : userState.exchanges[0].name
+      } catch(err) {
+        if (tgStore.tgObject) {
+          tgStore.tgObject.showAlert(err, () => {
+            console.log("")
+          })
+        }
+      }
     })
 
     const market_types = ["Спот", "Фьючерс"]
@@ -43,7 +53,7 @@
     }
 
     async function start() {
-      await ws.connect("wss://unfarming-untethered-flynn.ngrok-free.dev/ws")
+      await ws.connect(`${WEBSOCKET_URL}`)
 
       if (ws.socket.readyState == 3) {
         userState.changeStatus('warning')
@@ -106,7 +116,7 @@
                 <label for="order" id="form_label">Лонг:</label>
                 <img src="../assets/icons/up.svg" alt="" draggable="false">
               </div>
-              <FormCombobox v-model="longExchange" :options="exchanges"/>
+              <FormCombobox v-model="longExchange" :options="userState.exchanges.map(c => c.name)"/>
             </div>
 
             <div class="form-group">
@@ -130,7 +140,7 @@
                 <label for="order" id="form_label">Шорт:</label>
                 <img class="img_reverse" src="../assets/icons/up.svg" alt="" draggable="false">
               </div>
-              <FormCombobox v-model="shortExchange" :options="exchanges"/>
+              <FormCombobox v-model="shortExchange" :options="userState.exchanges.map(c => c.name)"/>
             </div>
 
             <div class="form-group">

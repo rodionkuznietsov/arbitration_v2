@@ -13,13 +13,13 @@ import structlog
 
 log = structlog.get_logger()
 
-from src.db_schemas import ResultSchema
-from src.routers.tg_bot.auth import router as auth_router
+from src.schemas import ResultSchema
+from src.routers.tg_bot.auth import database, router as auth_router
 from src.routers import log_router
 from src import tg_bot_app
 
-from src.routers import exchange_router, refresh_exchanges_availability
-from src.routers import user_router
+from src.routers import exchange_router
+from src.routers import user_router, events_router
 
 app = FastAPI()
 
@@ -45,17 +45,20 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 app.include_router(user_router, prefix="/api/user")
 app.include_router(auth_router, prefix="/api/telegram/bot")
 app.include_router(log_router, prefix="/api/user/bot")
+app.include_router(events_router, prefix="/api")
 app.include_router(exchange_router, prefix="/api/exchanges")
 
 @app.on_event("startup")
 async def startup():
+    await database.connect(min_size=10, max_size=100)
+    
     await tg_bot_app.initialize()
     await tg_bot_app.start()
     asyncio.create_task(tg_bot_app.updater.start_polling())
-    asyncio.create_task(refresh_exchanges_availability())
 
 @app.on_event("shutdown")
 async def shutdown():
+    await database.close()
     await tg_bot_app.stop()
 
 app.include_router(exchange_router, prefix="/api/exchanges")

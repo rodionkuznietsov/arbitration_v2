@@ -1,3 +1,4 @@
+from datetime import timedelta
 import json
 from urllib.parse import unquote
 
@@ -7,7 +8,10 @@ import hashlib
 import hmac
 import time
 
-from ...db_schemas import ResultSchema, MessageSchema
+from ...jwt_func import ACCESS_TOKEN_EXPIRE_MINUTES
+from src import create_access_token
+
+from ...schemas import ResultSchema, TokenSchema, MessageSchema
 from ...db import database
 from ...tg_bot.app import BOT_TOKEN
 
@@ -17,6 +21,7 @@ router = APIRouter()
 
 @router.post("/auth", tags=["telegram bot"])
 async def auth_telegram(request: Request):
+    
     data = await request.json()
     init_data = data.get("initData")
 
@@ -34,16 +39,23 @@ async def auth_telegram(request: Request):
         raise HTTPException(status_code=403, detail="Истёк срок годности")
 
     user = json.loads(parsed_data.get("user", "{}"))
-    
-    await database.connect()
+
     await database.add_user(user)
-    await database.close()
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": f"{user.get('id')}"}, expires_delta=access_token_expires
+    )
 
     return ResultSchema(
         status_code=200,
         success=True,
         message=MessageSchema(
-            tg_user_id=user.get("id")
+            tg_user_id=user.get('id'),
+            token_data=TokenSchema(
+                access_token=access_token,
+                token_type='bearer'
+            )
         )
     )
 

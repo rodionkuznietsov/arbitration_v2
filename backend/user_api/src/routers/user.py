@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Form
+from typing import Annotated
+
+from fastapi import APIRouter, Form, Depends
+from ..jwt_func import oauth2_scheme
 
 router = APIRouter()
 
@@ -12,7 +15,9 @@ async def update_exchanges_keys(
     }
 
 @router.get("/api/user/exchanges_keys", tags=["user"])
-async def get_exchanges_keys():
+async def get_exchanges_keys(
+    token: Annotated[str, Depends(oauth2_scheme)]
+):
     return {
         "user": "Vitik1",
         "keys": {

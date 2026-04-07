@@ -1,4 +1,2 @@
 import asyncio
-
-exchange_cache = []
-log_deque = asyncio.Queue()
+event_deque = asyncio.Queue()
