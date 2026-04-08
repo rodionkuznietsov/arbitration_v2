@@ -2,6 +2,9 @@ import { defineStore } from "pinia";
 
 export const useUserState = defineStore('userState', {
     state: () => ({        
+        // Параметры для данных из backend 
+        isBotRunning: false,
+        
         ticker: null,
         logs: [],
         exchanges: {},
@@ -11,7 +14,6 @@ export const useUserState = defineStore('userState', {
         longOrderType: null,
         shortOrderType: null,
         currentStatus: 'offline',
-        isBotRunning: false,
         bybit_api_key: null,
         bybit_api_secret: null
     }),

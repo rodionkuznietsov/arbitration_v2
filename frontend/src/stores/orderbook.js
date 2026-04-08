@@ -3,7 +3,7 @@ import { computed } from "vue";
 
 export const useOrderBookStore = defineStore('orderbook', {
     state: () => ({
-        ticker: null,
+        symbol: null,
 
         longExchange: null,
         longExchangeLogo: null, 

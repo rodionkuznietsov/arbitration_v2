@@ -22,9 +22,11 @@
   import { useUserState } from './stores/user_state';
   import { useTgStore } from './stores/tg';
   import { useHomeStore } from './stores/home';
+import { useOrderBookStore } from './stores/orderbook';
   
   const authStore = useAuthStore()
   const userStateStore = useUserState()
+  const orderBookStore = useOrderBookStore()
   const tgStore = useTgStore()
   const homeStore = useHomeStore()
 
@@ -60,7 +62,14 @@
           const event_data = JSON.parse(event.data)
           if (event_data.type == "log") {
             try {
+              // Устанавлияем необходимые данные
               userStateStore.isBotRunning = event_data.payload.is_bot_running
+
+              if (userStateStore.isBotRunning) {
+                orderBookStore.ticker = event_data.payload.symbol
+                orderBookStore.longExchange = event_data.payload.longExchange
+                orderBookStore.shortExchange = event_data.payload.shortExchange
+              }
 
               userStateStore.logs.push({
                 event: event_data.payload.event,
