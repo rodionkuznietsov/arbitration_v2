@@ -1,5 +1,4 @@
-import asyncio
-import json
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,7 +7,7 @@ import structlog
 import jwt
 from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
-from ..schemas import EventTypeEnum
+from ..schemas import EventTypeEnum, AppStatusEnum
 
 from .events import push_to_subscribes
 
@@ -38,7 +37,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             "longOrderType": data.data.longOrderType,
             "shortExchange": data.data.shortExchange,
             "shortOrderType": data.data.shortOrderType,
-            "status": 'offline',
+            "status": AppStatusEnum.Offline,
             "isBotRunning": False
         }
     }
@@ -47,7 +46,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
         case EventTypeEnum.BotStart:
             log.info(f"{EventTypeEnum.BotStart}")
             event_data["payload"]["isBotRunning"] = True
-            event_data["payload"]["status"] = "online"
+            event_data["payload"]["status"] = AppStatusEnum.Online
 
     # Пушим на все устройства новое собитие
     await push_to_subscribes(event_data, tg_user_id)

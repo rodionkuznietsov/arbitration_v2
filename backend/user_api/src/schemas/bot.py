@@ -11,8 +11,12 @@ class EventTypeEnum(str, Enum):
     BotStop = "bot_stop"
 
 class OrderTypeEnum(str, Enum):
-    Spot = "спот",
+    Spot = "спот"
     Futures = "фьючерс"
+
+class AppStatusEnum(str, Enum):
+    Online = "online",
+    Offline = "offline"
 
 class LogDataSchema(BaseModel):
     symbol: str
