@@ -9,13 +9,12 @@ import structlog
 import jwt
 from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
-from backend.user_api.src.routers.events import push_to_subscribes
+from .events import push_to_subscribes
 
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 
 from ..db import database
 from ..schemas import LogMessageSchema, ResultSchema, UserLogSchema
-from ..cache import event_deque
 
 log = structlog.get_logger()
 router = APIRouter()
