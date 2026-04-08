@@ -1,14 +1,11 @@
 import asyncio
-from pathlib import Path
 from urllib.request import Request
 
-from fastapi import FastAPI, WebSocket, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
-import websockets
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 import structlog
 
 log = structlog.get_logger()
@@ -24,8 +21,8 @@ from src.routers import user_router, events_router
 app = FastAPI(
     title="Arbitrage-Bot Api",
     version="Beta 0.0.5",
-    openapi_url="/api/openapi.json",
-    docs_url='/api/docs'
+    openapi_url="/openapi.json",
+    docs_url='/docs'
 )
 
 app.add_middleware(
@@ -55,11 +52,11 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         ))
     )
 
-app.include_router(user_router, prefix="/api/user")
-app.include_router(auth_router, prefix="/api/telegram/bot")
-app.include_router(log_router, prefix="/api/user/bot")
-app.include_router(events_router, prefix='/api')
-app.include_router(exchange_router, prefix="/api/exchanges")
+app.include_router(user_router, prefix="/user")
+app.include_router(auth_router, prefix="/telegram/bot")
+app.include_router(log_router, prefix="/user/bot")
+app.include_router(events_router)
+app.include_router(exchange_router, prefix="/exchanges")
 
 @app.on_event("startup")
 async def startup():
@@ -74,4 +71,4 @@ async def shutdown():
     await database.close()
     await tg_bot_app.stop()
 
-app.include_router(exchange_router, prefix="/api/exchanges")
+app.include_router(exchange_router, prefix="/exchanges")
