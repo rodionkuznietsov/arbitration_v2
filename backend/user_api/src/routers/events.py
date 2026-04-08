@@ -26,11 +26,13 @@ async def subscribe_events(tg_user_id: int):
         q = asyncio.Queue()
         subscribes[tg_user_id] = q
     
-    return StreamingResponse(
-        event_streamer(q), 
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
-    )
+        subscribes[tg_user_id]["stream"] = StreamingResponse(
+            event_streamer(q), 
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        )
+
+    return subscribes[tg_user_id]["stream"]
 
 async def push_to_subscribes(event_data):
     print(len(subscribes))
