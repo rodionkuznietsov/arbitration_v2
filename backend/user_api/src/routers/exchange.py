@@ -1,8 +1,6 @@
-from enum import Enum
 import time
 
 from fastapi import APIRouter, HTTPException
-import asyncio
 
 from ..db import database
 from ..schemas.exchange import ExchangeSchema

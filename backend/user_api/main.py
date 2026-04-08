@@ -50,11 +50,11 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         ))
     )
 
-app.include_router(user_router, prefix="/api/user")
-app.include_router(auth_router, prefix="/api/telegram/bot")
-app.include_router(log_router, prefix="/api/user/bot")
-app.include_router(events_router, prefix="/api")
-app.include_router(exchange_router, prefix="/api/exchanges")
+app.include_router(user_router, prefix="/user")
+app.include_router(auth_router, prefix="/telegram/bot")
+app.include_router(log_router, prefix="/user/bot")
+app.include_router(events_router)
+app.include_router(exchange_router, prefix="/exchanges")
 
 @app.on_event("startup")
 async def startup():
@@ -69,7 +69,4 @@ async def shutdown():
     await database.close()
     await tg_bot_app.stop()
 
-app.include_router(exchange_router, prefix="/api/exchanges")
-
-frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
-app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
+app.include_router(exchange_router, prefix="/exchanges")
