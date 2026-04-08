@@ -36,12 +36,14 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             "symbol": f"{data.data.symbol.upper()}USDT",
             "long_exchange": data.data.long_exchange,
             "short_exchange": data.data.short_exchange,
+            "is_bot_running": False
         }
     }
     
     match data.event:
         case EventTypeEnum.BotStart:
             log.info(f"{EventTypeEnum.BotStart}")
+            event_data["payload"]["is_bot_running"] = True
 
     # Пушим на все устройства новое собитие
     await push_to_subscribes(event_data, tg_user_id)
