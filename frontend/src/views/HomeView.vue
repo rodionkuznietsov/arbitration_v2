@@ -61,8 +61,6 @@
         userStore.symbol, 
         homeStore.longExchange, 
         homeStore.shortExchange,
-        "Спот",
-        "Спот",
       )
       chartStore.finished = false
 

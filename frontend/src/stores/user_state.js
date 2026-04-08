@@ -23,14 +23,10 @@ export const useUserState = defineStore('userState', {
             symbol, 
             longExchange,
             shortExchange,
-            longOrderType,
-            shortOrderType,
         ) {
             this.symbol = symbol.toLowerCase()
             this.longExchange = longExchange.toLowerCase()
             this.shortExchange = shortExchange.toLowerCase()
-            this.longOrderType = longOrderType.toLowerCase()
-            this.shortOrderType = shortOrderType.toLowerCase()
         },
 
         changeStatus(status) {
