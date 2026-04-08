@@ -22,8 +22,9 @@ async def event_streamer(data: asyncio.Queue):
  
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
-    q = asyncio.Queue()
-    subscribes[tg_user_id] = q
+    if not tg_user_id in subscribes:
+        q = asyncio.Queue()
+        subscribes[tg_user_id] = q
     
     return StreamingResponse(
         event_streamer(q), 
