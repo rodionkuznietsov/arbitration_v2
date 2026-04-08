@@ -2,12 +2,14 @@
     import { useOrderBookStore } from '@/stores/orderbook';
     import { useUserState } from '@/stores/user_state';
     import { useWebsocketStore } from '@/stores/websocket';
-    import { ref, defineExpose } from 'vue';
+    import { ref, defineExpose, computed } from 'vue';
     import { volumeFormatter, formatCurrency } from '@/utils/formatters';
     import { useAuthStore } from '@/stores/auth';
     import { logBotEvent } from '@/utils/logFetch';
 
-    const isVisible = ref("display: none;")
+    const isVisible = computed(() => {
+        return userState.isBotRunning ? 'display: block;' : "display: none;"
+    })
     const loading = ref("display: none;")
 
     const authStore = useAuthStore()
@@ -31,7 +33,7 @@
             )
 
             orderBookStore.updateData(result.data.order_book)
-            isVisible.value = "display: block;"
+            // isVisible.value = "display: block;"
             loading.value = "display: none;"
         })
 
