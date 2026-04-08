@@ -47,4 +47,7 @@ async def push_to_subscribes(event_data):
     print(event_data.get("payload").get("event"))
     for queues in subscribes.values():
         for queue in queues:
-            await queue.put(event_data)
+            try:
+                queue.put_nowait(event_data)
+            except asyncio.QueueFull:
+                pass
