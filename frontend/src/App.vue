@@ -102,6 +102,7 @@
                   })
                 }
 
+                tg.showAlert(`Len: ${userStateStore.exchanges.length}`)
                 if (userStateStore.exchanges.length > 1) {
                   homeStore.longExchange = userStateStore.exchanges[1].name
                   homeStore.shortExchange = userStateStore.exchanges[0].name
