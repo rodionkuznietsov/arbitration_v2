@@ -3,6 +3,7 @@
     import { useUserState } from '@/stores/user_state';
     import { getBotLogs } from '@/utils/logFetch';
     import { onMounted } from 'vue';
+    import FixedTransactions from '@/components/history/FixedTransactions.vue'
 
     const authStore = useAuthStore()
     const userStateStore = useUserState()
@@ -25,6 +26,7 @@
                 <div class="title">Моя история</div>
                 <div class="default-btn filter_btn">Фильтры</div>
             </div>
+            <FixedTransactions />
             <div class="logs">
                 <div class="log-table" v-for="(v, index) in userStateStore.logs" :key="index">
                     <div style="padding: 8px;">

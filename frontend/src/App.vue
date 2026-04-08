@@ -207,6 +207,30 @@
       font-size: var(--default-font-size);
   }
 
+  #status {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  #status_circle {
+    width: var(--default-icon-size);
+    height: var(--default-icon-size);
+    border-radius: 50%;
+  }
+
+  @keyframes GlitchAnimation {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  .online {
+    background-color: var(--color-success);
+    animation-name: GlitchAnimation;
+    animation-duration: 1.6s;
+    animation-iteration-count:  infinite;
+  }
+
   .title {
       color: var(--default-font-color);
   }
