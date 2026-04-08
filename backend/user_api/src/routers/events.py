@@ -33,4 +33,4 @@ async def subscribe_events(tg_user_id: int):
 
 async def push_to_subscribes(event_data):
     for q in subscribes:
-        print(q, event_data)
+        await q.put(event_data)
