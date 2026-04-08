@@ -74,19 +74,15 @@
         chartStore.shortExchangeLogo = orderBookStore.shortExchangeLogo
       }, 50)
 
-      userState.changeStatus('online')
       chartStore.longExchange = userState.longExchange
       chartStore.shortExchange = userState.shortExchange
     }    
     
     async function stop() {
-      userState.changeStatus('offline')
-
       await new Promise(resolve => {
         ws.disconnect()
         resolve()
       })
-      userState.botWorking = false
       orderBook.value.stop() 
       orderBookStore.clearValues()
       chartStore.finished = true

@@ -4,8 +4,8 @@ export const useUserState = defineStore('userState', {
     state: () => ({        
         // Параметры для данных из backend 
         isBotRunning: false,
+        symbol: null,
         
-        ticker: null,
         logs: [],
         exchanges: {},
 
@@ -20,13 +20,13 @@ export const useUserState = defineStore('userState', {
 
     actions: {
         set_data(
-            ticker, 
+            symbol, 
             longExchange,
             shortExchange,
             longOrderType,
             shortOrderType,
         ) {
-            this.ticker = ticker.toLowerCase()
+            this.symbol = symbol.toLowerCase()
             this.longExchange = longExchange.toLowerCase()
             this.shortExchange = shortExchange.toLowerCase()
             this.longOrderType = longOrderType.toLowerCase()
@@ -39,7 +39,7 @@ export const useUserState = defineStore('userState', {
 
         get_data() {
             return {
-                ticker: this.ticker,
+                symbol: this.symbol,
                 longExchange: this.longExchange,
                 shortExchange: this.shortExchange,
                 longOrderType: this.longOrderType,
@@ -48,7 +48,7 @@ export const useUserState = defineStore('userState', {
         },
 
         clearValues() {
-            this.ticker = null
+            this.symbol = null
             this.currentStatus = 'offline'
 
             this.longExchange = null
