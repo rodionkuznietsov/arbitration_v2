@@ -25,9 +25,9 @@ class AsyncDatabase:
                     min_size=min_size,
                     max_size=max_size
                 )
+            log.info("Connected to the database.")
         except Exception as e:
             log.error(f"AsyncDatabase -> {e}")
-        log.info("Connected to the database.")
 
     async def close(self):
         if self.pool:
