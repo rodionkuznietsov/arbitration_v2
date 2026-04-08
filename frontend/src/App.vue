@@ -56,6 +56,9 @@ import { useTgStore } from './stores/tg';
 
         es.onmessage = (event) => {
           const event_data = JSON.parse(event.data)
+          tg.showAlert(JSON.stringify(event.data), () => {
+            console.log("")
+          })
           if (event_data.type == "log") {
             try {
               userStateStore.logs.push({
