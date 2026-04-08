@@ -32,13 +32,13 @@ export const useOrderBookStore = defineStore('orderbook', {
 
     actions: {
         updateHeader(
-            ticker, 
+            symbol, 
             longEx, 
             longOrderType,
             shortEx,
             shortOrderType
         ) {
-            this.ticker = ticker
+            this.symbol = symbol
 
             this.longExchange = longEx
             this.longExchangeLogo = `../assets/icons/${this.longExchange.toLowerCase().replace(".", "_")}_logo.svg`
@@ -96,7 +96,7 @@ export const useOrderBookStore = defineStore('orderbook', {
         },
 
         clearValues() {
-            this.ticker = null
+            this.symbol = null
 
             this.longExchange = null
             this.longArrow = null

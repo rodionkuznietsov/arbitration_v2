@@ -62,13 +62,17 @@ import { useOrderBookStore } from './stores/orderbook';
           const event_data = JSON.parse(event.data)
           if (event_data.type == "log") {
             try {
-              // Устанавлияем необходимые данные
               userStateStore.isBotRunning = event_data.payload.isBotRunning
 
+              // Устанавливаем валидные данные для отображения стакана
               if (userStateStore.isBotRunning) {
-                orderBookStore.ticker = event_data.payload.symbol
-                orderBookStore.longExchange = event_data.payload.longExchange
-                orderBookStore.shortExchange = event_data.payload.shortExchange
+                orderBookStore.updateHeader(
+                  event_data.payload.symbol,
+                  event_data.payload.longExchange,
+                  event_data.payload.longOrderType,
+                  event_data.payload.shortExchange,
+                  event_data.payload.shortOrderType
+                )
               }
 
               userStateStore.logs.push({
