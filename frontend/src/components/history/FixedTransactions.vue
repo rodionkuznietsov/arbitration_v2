@@ -29,6 +29,7 @@
         box-sizing: border-box;
         text-align: center;
         table-layout: fixed;
+        font-size: 14px;
     }
 
     .active-order-table td {
