@@ -41,7 +41,7 @@ async def add_exchange(exchange_data: ExchangeSchema):
         }
     }
     
-    push_to_subscribes(event_data)
+    await push_to_subscribes(event_data)
 
     return ResultSchema(
         status_code=200,
@@ -71,7 +71,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         }
     }
     
-    push_to_subscribes(event_data)
+    await push_to_subscribes(event_data)
 
     return ResultSchema(
         status_code=200,
