@@ -11,7 +11,7 @@ router = APIRouter()
 
 log: structlog.PrintLogger = structlog.get_logger()
 
-async def event_streamer(data: asyncio.Queue):
+async def event_streamer(data: asyncio.Queue, tg_user_id):
     while True:
         try:
             event = await data.get()
@@ -19,21 +19,24 @@ async def event_streamer(data: asyncio.Queue):
         except asyncio.TimeoutError as e:
             log.error(f"EventSender: {e}")
             yield f"data: keep-alive\n\n"
+        finally:
+            subscribes[tg_user_id].remove(data)
  
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
-    if not tg_user_id in subscribes:
-        q = asyncio.Queue()
-        subscribes[tg_user_id]["queue"] = q
-        subscribes[tg_user_id]["stream"] = StreamingResponse(
-            event_streamer(q), 
-            media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
-        )
+    if not subscribes[tg_user_id]:
+        subscribes[tg_user_id] = []
 
-    return subscribes[tg_user_id]["stream"]
+    q = asyncio.Queue()
+    subscribes[tg_user_id].append(q)
+    
+    return StreamingResponse(
+        event_streamer(q), 
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
 
 async def push_to_subscribes(event_data):
     print(len(subscribes))
     for q in subscribes.values():
-        await q["queue"].put(event_data)
+        await q.put(event_data)
