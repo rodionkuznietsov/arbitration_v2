@@ -108,7 +108,7 @@
             </div>
 
             <div class="form-group">
-              <FormCombobox v-model="chartStore.longOrderType" :options="market_types"/>
+              <FormCombobox v-model="userStore.longOrderType" :options="market_types"/>
             </div>
 
             <div class="form-group">
@@ -132,7 +132,7 @@
             </div>
 
             <div class="form-group">
-              <FormCombobox v-model="chartStore.shortOrderType" :options="market_types"/>
+              <FormCombobox v-model="userStore.shortOrderType" :options="market_types"/>
             </div>
 
             <div class="form-group">
