@@ -106,6 +106,10 @@ import { useTgStore } from './stores/tg';
           }
         }
 
+        es.onerror = (event) => {
+          tg.showAlert(`Error: ${JSON.stringify(event.data)}`)
+        }
+
       } catch(err) {
         console.error(err);
         tg.showAlert("Ошибка при авторизации", () => {
