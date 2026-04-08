@@ -41,7 +41,9 @@
             "bot_start", {
                 symbol: data.ticker,
                 long_exchange: data.longExchange,
-                short_exchange: data.shortExchange
+                longOrderType: data.longOrderType,
+                short_exchange: data.shortExchange,
+                shortOrderType: data.shortOrderType,
             },
             authStore.token
         )
