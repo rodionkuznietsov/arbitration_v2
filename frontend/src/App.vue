@@ -82,7 +82,7 @@
                 )
 
                 if (userStateStore.exchanges.length > 0) {
-                  homeStore.longExchange = userStateStore.exchanges.length > 1 ? userStateStore.exchanges[1].name : userStateStore.exchanges[0].name
+                  homeStore.longExchange = userStateStore.exchanges[0].name
                   homeStore.shortExchange = userStateStore.exchanges[0].name
                 } else {
                   homeStore.longExchange = "Нет доступных бирж"
@@ -100,6 +100,11 @@
                     name: event_data.payload.exchange_name,
                     is_available: true
                   })
+                }
+
+                if (userStateStore.exchanges.length > 1) {
+                  homeStore.longExchange = userStateStore.exchanges[1].name
+                  homeStore.shortExchange = userStateStore.exchanges[0].name
                 }
               }
             } else if (event_data.payload.event == "add_exchange") {
