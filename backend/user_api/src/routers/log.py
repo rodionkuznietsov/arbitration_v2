@@ -38,7 +38,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             "longOrderType": data.data.longOrderType,
             "shortExchange": data.data.shortExchange,
             "shortOrderType": data.data.shortOrderType,
-            "status": 'Онлайн',
+            "status": 'online',
             "isBotRunning": False
         }
     }
