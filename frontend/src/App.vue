@@ -75,6 +75,12 @@ import { useOrderBookStore } from './stores/orderbook';
                 )
               }
 
+              userStateStore.symbol = event_data.payload.symbol,
+              userStateStore.longExchange = event_data.payload.longExchange,
+              userStateStore.longOrderType = event_data.payload.longOrderType,
+              userStateStore.shortExchange = event_data.payload.shortExchange,
+              userStateStore.shortOrderType = event_data.payload.shortOrderType
+
               userStateStore.logs.push({
                 event: event_data.payload.event,
                 symbol: event_data.payload.symbol,
