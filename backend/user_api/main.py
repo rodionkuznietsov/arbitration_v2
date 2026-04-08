@@ -31,6 +31,14 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+@app.get("/")
+async def start_page():
+    return ResultSchema(
+        status_code=200,
+        success=True,
+        message="Api is working"
+    )
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
