@@ -4,7 +4,7 @@ export const useUserState = defineStore('userState', {
     state: () => ({        
         // Параметры для данных из backend 
         isBotRunning: false,
-        symbol: null,
+        symbol: 'BTC',
         
         logs: [],
         exchanges: {},

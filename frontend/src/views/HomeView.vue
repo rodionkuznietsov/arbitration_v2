@@ -40,15 +40,15 @@
 
     const orderBook = ref(null)
     const orderBookStore = useOrderBookStore()
+    const userStore = useUserState()
 
     // Данные с полей
     const longOrderType = ref("Спот")
     const shortOrderType = ref("Спот")
-    const ticker = ref("BTC")
     const chartStore = useChartStore()
 
     function filterInput(event) {
-      ticker.value = event.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+      userStore.symbol = event.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
     }
 
     async function start() {
@@ -60,7 +60,7 @@
       }
 
       userState.set_data(
-        ticker.value, 
+        userStore.symbol, 
         homeStore.longExchange, 
         homeStore.shortExchange,
         longOrderType.value,
@@ -98,7 +98,7 @@
           <div id="form-column">
             <div class="form-group">
               <label for="ticker" id="form_label">Тикер (BTC):</label>
-              <input id="ticker" name="ticker" type="text" value="BTC" class="form_input" v-model="ticker" @input="filterInput">
+              <input id="ticker" name="ticker" type="text" value="BTC" class="form_input" v-model="userStore.symbol" @input="filterInput">
             </div>
 
             <div class="form-group">
