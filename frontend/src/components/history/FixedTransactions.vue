@@ -30,6 +30,7 @@
         text-align: center;
         table-layout: fixed;
         font-size: 14px;
+        margin: 0 auto;
         vertical-align: middle;
     }
 
