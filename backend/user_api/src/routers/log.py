@@ -27,8 +27,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     tg_user_id = int(authothicate(token))
     await database.add_log(tg_user_id, data)
 
-    log.info(data.data.long_order_type)
-
     event_data = {
         "type": "log",
         "tg_user_id": tg_user_id, 
@@ -37,9 +35,9 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             "event": data.event, 
             "symbol": f"{data.data.symbol.upper()}USDT",
             "longExchange": data.data.long_exchange,
-            "longOrderType": data.data.long_order_type,
+            "longOrderType": data.data.longOrderType,
             "shortExchange": data.data.short_exchange,
-            "shortOrderType": data.data.short_order_type,
+            "shortOrderType": data.data.shortOrderType,
             "isBotRunning": False
         }
     }

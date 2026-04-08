@@ -40,9 +40,9 @@
         logBotEvent(
             "bot_start", {
                 symbol: data.ticker,
-                long_exchange: data.longExchange,
+                longExchange: data.longExchange,
                 longOrderType: data.longOrderType.toLowerCase(),
-                short_exchange: data.shortExchange,
+                shortExchange: data.shortExchange,
                 shortOrderType: data.shortOrderType.toLowerCase(),
             },
             authStore.token

@@ -17,11 +17,11 @@ class OrderTypeEnum(str, Enum):
 class LogDataSchema(BaseModel):
     symbol: str
 
-    long_exchange: ExchangeEnum
-    long_order_type: Optional[OrderTypeEnum] = None
+    longExchange: ExchangeEnum
+    longOrderType: Optional[OrderTypeEnum] = None
 
-    short_exchange: ExchangeEnum
-    short_order_type: Optional[OrderTypeEnum] = None
+    shortExchange: ExchangeEnum
+    shortOrderType: Optional[OrderTypeEnum] = None
 
 class UserLogSchema(BaseModel):
     event: EventTypeEnum
