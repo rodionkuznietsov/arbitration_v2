@@ -18,6 +18,7 @@ async def event_streamer(tg_user_id):
     while True:
         try:
             event = await event_deque.get()
+            log.info(event)
             if event["tg_user_id"] == tg_user_id or event["tg_user_id"] == "all":
                 yield f"data: { json.dumps(event) }\n\n"
         except asyncio.TimeoutError as e:
