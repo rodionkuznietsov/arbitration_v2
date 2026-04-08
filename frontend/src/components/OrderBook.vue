@@ -51,7 +51,6 @@
 
     function stop() {
         const data = userState.get_data()
-        isVisible.value = "display: none;"
         loading.value = "display: none;"
         userState.clearValues()
         orderBookStore.clearValues()
