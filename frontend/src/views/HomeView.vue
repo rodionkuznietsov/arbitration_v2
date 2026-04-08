@@ -59,6 +59,8 @@
         return
       }
 
+      alert("Ws is connect!")
+
       userState.set_data(
         userStore.symbol, 
         homeStore.longExchange, 

@@ -23,9 +23,9 @@
     function start() {
         const data = userState.get_data()
         loading.value = "display: block;"
-        unsubscribe = ws.subscribe(data.ticker.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (result) => {            
+        unsubscribe = ws.subscribe(data.symbol.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (result) => {            
             orderBookStore.updateHeader(
-                data.ticker,
+                data.symbol,
                 data.longExchange, 
                 data.longOrderType,
                 data.shortExchange,
@@ -39,7 +39,7 @@
         // Сохраняем лог о старте бота в базу данных
         logBotEvent(
             "bot_start", {
-                symbol: data.ticker,
+                symbol: data.symbol,
                 longExchange: data.longExchange,
                 longOrderType: data.longOrderType.toLowerCase(),
                 shortExchange: data.shortExchange,
@@ -59,7 +59,7 @@
 
             logBotEvent(
                 "bot_stop", {
-                    symbol: data.ticker,
+                    symbol: data.symbol,
                     longExchange: data.longExchange,
                     shortExchange: data.shortExchange
                 },
