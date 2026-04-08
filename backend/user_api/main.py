@@ -63,28 +63,5 @@ async def shutdown():
 
 app.include_router(exchange_router, prefix="/api/exchanges")
 
-@app.websocket("/ws")
-async def websocket_proxy(websocket: WebSocket):
-    try:
-        await websocket.accept()
-        async with websockets.connect("ws://localhost:9000/ws") as ws_rust:
-            async def forward_to_rust():
-                async for msg in websocket.iter_text():
-                    await ws_rust.send(msg)
-        
-            async def forward_to_client():
-                async for msg in ws_rust:
-                    try:
-                        if websocket.client_state.value == 1:  # WebSocketState.CONNECTED
-                            await websocket.send_text(msg)
-                        else:
-                            await ws_rust.close()
-                    except RuntimeError as _:
-                        log.error("WebsocketProxy -> Нельзя отправить сообщение, соединение закрыто")
-                            
-            await asyncio.gather(forward_to_rust(), forward_to_client())
-    except Exception as e:
-        log.error(f"FastApiWsProxy -> {e}")
-
 frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
 app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
