@@ -5,9 +5,6 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 import structlog
-
-from backend.user_api.src import tg_bot_app
-
 from ..cache import event_deque
 
 router = APIRouter()
