@@ -19,7 +19,7 @@ log = structlog.get_logger()
 
 router = APIRouter()
 
-@router.post("/auth", tags=["telegram bot"])
+@router.post("/api/auth", tags=["telegram bot"])
 async def auth_telegram(request: Request):
     
     data = await request.json()
