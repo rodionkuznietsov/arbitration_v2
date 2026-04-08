@@ -60,6 +60,8 @@
           const event_data = JSON.parse(event.data)
           if (event_data.type == "log") {
             try {
+              tg.showAlert(`ShowToAllDevices: ${event_data.isBotRunning}`)
+
               userStateStore.logs.push({
                 event: event_data.payload.event,
                 symbol: event_data.payload.symbol,

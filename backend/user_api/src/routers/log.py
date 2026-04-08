@@ -8,6 +8,8 @@ import structlog
 import jwt
 from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
+from ..schemas import EventTypeEnum
+
 from .events import push_to_subscribes
 
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
@@ -15,7 +17,7 @@ from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 from ..db import database
 from ..schemas import LogMessageSchema, ResultSchema, UserLogSchema
 
-log = structlog.get_logger()
+log: structlog.PrintLogger = structlog.get_logger()
 router = APIRouter()
 
 @router.post("/add/log", response_model=ResultSchema, tags=["logs"])
@@ -36,6 +38,12 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             "short_exchange": data.data.short_exchange,
         }
     }
+    
+    match data.event:
+        case EventTypeEnum.EventTypeEnum.BotStart:
+            log.info(f"{EventTypeEnum.EventTypeEnum.BotStart}")
+
+    # Пушим на все устройства новое собитие
     await push_to_subscribes(event_data, tg_user_id)
 
     return ResultSchema(
