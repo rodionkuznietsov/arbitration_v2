@@ -23,8 +23,8 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
             pass
         finally:
             # убираем только свою очередь
-            if tg_user_id in subscribes and q in subscribes[tg_user_id]:
-                subscribes[tg_user_id].remove(q)
+            if tg_user_id in subscribes and data in subscribes[tg_user_id]:
+                subscribes[tg_user_id].remove(data)
  
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
