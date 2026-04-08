@@ -31,7 +31,7 @@ async def subscribe_events(tg_user_id: int):
     subscribes[tg_user_id].append(q)
 
     return StreamingResponse(
-        event_streamer(q), 
+        event_streamer(q, tg_user_id), 
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     )
