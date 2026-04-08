@@ -59,10 +59,6 @@
         return
       }
 
-      if (userState.botWorking) {
-        return
-      }
-
       userState.set_data(
         ticker.value, 
         homeStore.longExchange, 
@@ -70,7 +66,6 @@
         longOrderType.value,
         shortOrderType.value,
       )
-      userState.botWorking = true
       chartStore.finished = false
 
       orderBook.value.start()
