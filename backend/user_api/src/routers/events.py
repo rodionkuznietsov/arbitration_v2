@@ -24,17 +24,20 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
  
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
-    if tg_user_id not in subscribes:
-        subscribes[tg_user_id] = []
+    try:
+        if tg_user_id not in subscribes:
+            subscribes[tg_user_id] = []
 
-    q = asyncio.Queue()
-    subscribes[tg_user_id].append(q)
+        q = asyncio.Queue()
+        subscribes[tg_user_id].append(q)
 
-    return StreamingResponse(
-        event_streamer(q, tg_user_id), 
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
-    )
+        return StreamingResponse(
+            event_streamer(q, tg_user_id), 
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        )
+    except Exception as e:
+        log.error(f"EventsRouter -> {e}")
 
 async def push_to_subscribes(event_data):
     print(len(subscribes))
