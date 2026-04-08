@@ -11,23 +11,22 @@
     import AuthError from '@/components/AuthError.vue';
     import { API_URL, WEBSOCKET_URL } from '@/config';
     import { useTgStore } from '@/stores/tg';
+    import { useHomeStore } from '@/stores/home';
 
     const authStore = useAuthStore()
     const ws = useWebsocketStore()
     const userState = useUserState()
     const tgStore = useTgStore()
+    const homeStore = useHomeStore()
 
-    const longExchange = ref("Нет доступных бирж")
-    const shortExchange = ref("Нет доступных бирж")
-    
     onMounted(async () => {
       try {
         const response = await fetch(`${API_URL}/exchanges/available`)
         const data = await response.json()
 
         userState.exchanges = data.exchanges
-        longExchange.value = userState.exchanges[0] ? userState.exchanges[0].name : longExchange.value
-        shortExchange.value = userState.exchanges[1] ? userState.exchanges[1].name : longExchange.value
+        homeStore.longExchange = userState.exchanges[0] ? userState.exchanges[0].name : homeStore.longExchange.value
+        homeStore.shortExchange = userState.exchanges[1] ? userState.exchanges[1].name : homeStore.longExchange.value
       } catch(err) {
         if (tgStore.tgObject) {
           tgStore.tgObject.showAlert("Системный сбой. Пожайлуйста сообщите об этом в службу поддержки.", () => {
@@ -66,8 +65,8 @@
 
       userState.set_data(
         ticker.value, 
-        longExchange.value, 
-        shortExchange.value,
+        homeStore.longExchange, 
+        homeStore.shortExchange,
         longOrderType.value,
         shortOrderType.value,
       )
@@ -116,7 +115,7 @@
                 <label for="order" id="form_label">Лонг:</label>
                 <img src="../assets/icons/up.svg" alt="" draggable="false">
               </div>
-              <FormCombobox v-model="longExchange" :options="userState.exchanges.map(c => c.name)"/>
+              <FormCombobox v-model="homeStore.longExchange" :options="userState.exchanges.map(c => c.name)"/>
             </div>
 
             <div class="form-group">
@@ -140,7 +139,7 @@
                 <label for="order" id="form_label">Шорт:</label>
                 <img class="img_reverse" src="../assets/icons/up.svg" alt="" draggable="false">
               </div>
-              <FormCombobox v-model="shortExchange" :options="userState.exchanges.map(c => c.name)"/>
+              <FormCombobox v-model="homeStore.shortExchange" :options="userState.exchanges.map(c => c.name)"/>
             </div>
 
             <div class="form-group">

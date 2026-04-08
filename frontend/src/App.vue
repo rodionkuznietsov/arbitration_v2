@@ -21,10 +21,12 @@
   import { API_URL } from './config';
   import { useUserState } from './stores/user_state';
   import { useTgStore } from './stores/tg';
+  import { useHomeStore } from './stores/home';
   
   const authStore = useAuthStore()
   const userStateStore = useUserState()
   const tgStore = useTgStore()
+  const homeStore = useHomeStore()
 
   onMounted(async () => {
     // Авторизация в Telegram Web App
@@ -78,6 +80,14 @@
                 userStateStore.exchanges = userStateStore.exchanges.filter(
                   ex => ex.name !== event_data.payload.exchange_name
                 )
+
+                if (userStateStore.exchanges.length > 0) {
+                  homeStore.longExchange = userStateStore.exchanges[0].name
+                  homeStore.shortExchange = userStateStore.exchanges[0].name
+                } else {
+                  homeStore.longExchange = "Не доступных бирж"
+                  homeStore.shortExchange = "Не доступных бирж"
+                }
               } else {
                 const index = userStateStore.exchanges.findIndex(
                   ex => ex.name === event_data.payload.exchange_name
