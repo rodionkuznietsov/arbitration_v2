@@ -2,7 +2,7 @@
     import { useOrderBookStore } from '@/stores/orderbook';
     import { useUserState } from '@/stores/user_state';
     import { useWebsocketStore } from '@/stores/websocket';
-    import { ref, defineExpose, computed } from 'vue';
+    import { defineExpose, computed } from 'vue';
     import { volumeFormatter, formatCurrency } from '@/utils/formatters';
     import { useAuthStore } from '@/stores/auth';
     import { logBotEvent } from '@/utils/logFetch';
@@ -10,7 +10,10 @@
     const isVisible = computed(() => {
         return userState.isBotRunning ? 'display: block;' : "display: none;"
     })
-    const loading = ref("display: none;")
+    
+    const loading = computed(() => {
+        return userState.isBotRunning ? 'display: none;' : "display: block;"
+    })
 
     const authStore = useAuthStore()
     const userState = useUserState()
@@ -22,7 +25,6 @@
 
     function start() {
         const data = userState.get_data()
-        loading.value = "display: block;"
         unsubscribe = ws.subscribe(data.symbol.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (result) => {            
             orderBookStore.updateHeader(
                 data.symbol,
@@ -33,7 +35,6 @@
             )
 
             orderBookStore.updateData(result.data.order_book)
-            loading.value = "display: none;"
         })
 
         // Сохраняем лог о старте бота в базу данных
@@ -51,7 +52,6 @@
 
     function stop() {
         const data = userState.get_data()
-        loading.value = "display: none;"
         userState.clearValues()
         orderBookStore.clearValues()
         if (unsubscribe) {
