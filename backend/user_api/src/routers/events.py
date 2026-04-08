@@ -19,8 +19,12 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
         except asyncio.TimeoutError as e:
             log.error(f"EventSender: {e}")
             yield f"data: keep-alive\n\n"
+        except asyncio.CancelledError:
+            pass
         finally:
-            subscribes[tg_user_id].remove(data)
+            # убираем только свою очередь
+            if tg_user_id in subscribes and q in subscribes[tg_user_id]:
+                subscribes[tg_user_id].remove(q)
  
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
