@@ -24,8 +24,7 @@ async def event_streamer(data: asyncio.Queue):
 async def subscribe_events(tg_user_id: int):
     if not tg_user_id in subscribes:
         q = asyncio.Queue()
-        subscribes[tg_user_id] = q
-    
+        subscribes[tg_user_id]["queue"] = q
         subscribes[tg_user_id]["stream"] = StreamingResponse(
             event_streamer(q), 
             media_type="text/event-stream",
@@ -37,4 +36,4 @@ async def subscribe_events(tg_user_id: int):
 async def push_to_subscribes(event_data):
     print(len(subscribes))
     for q in subscribes.values():
-        await q.put(event_data)
+        await q["queue"].put(event_data)
