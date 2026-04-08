@@ -19,11 +19,11 @@
   import AppMenu from './components/AppMenu.vue';
   import { useAuthStore } from './stores/auth';
   import { API_URL } from './config';
-  // import { useUserState } from './stores/user_state';
+  import { useUserState } from './stores/user_state';
   import { useTgStore } from './stores/tg';
   
   const authStore = useAuthStore()
-  // const userStateStore = useUserState()
+  const userStateStore = useUserState()
   const tgStore = useTgStore()
 
   onMounted(async () => {
@@ -55,55 +55,52 @@
         const es = new EventSource(`${API_URL}/subscribe/events/${authStore.tg_user_id}`)
 
         es.onmessage = (event) => {
-          // const event_data = JSON.parse(event.data)
-          tg.showAlert(JSON.stringify(event.data), () => {
-            console.log("")
-          })
-          // if (event_data.type == "log") {
-          //   try {
-          //     userStateStore.logs.push({
-          //       event: event_data.payload.event,
-          //       symbol: event_data.payload.symbol,
-          //       long_exchange: event_data.payload.long_exchange,
-          //       short_exchange: event_data.payload.short_exchange,
-          //       timestamp: event_data.timestamp
-          //     })
-          //     userStateStore.logs.sort((a, b) => b.timestamp - a.timestamp) // DESC
-          //   } catch(err) {
-          //     tg.showAlert("Ошибка загрузки страницы", () => {
-          //       console.log("Пользователь закрыл alert")
-          //     });
-          //   }
-          // } else if (event_data.type == "exchange") {
-          //   if (event_data.payload.event == "update_exchange") {
-          //     if (!event_data.payload.is_available) {
-          //       // Удаляем биржу
-          //       userStateStore.exchanges = userStateStore.exchanges.filter(
-          //         ex => ex.name !== event_data.payload.exchange_name
-          //       )
-          //     } else {
-          //       const index = userStateStore.exchanges.findIndex(
-          //         ex => ex.name === event_data.payload.exchange_name
-          //       )
+          const event_data = JSON.parse(event.data)
+          if (event_data.type == "log") {
+            try {
+              userStateStore.logs.push({
+                event: event_data.payload.event,
+                symbol: event_data.payload.symbol,
+                long_exchange: event_data.payload.long_exchange,
+                short_exchange: event_data.payload.short_exchange,
+                timestamp: event_data.timestamp
+              })
+              userStateStore.logs.sort((a, b) => b.timestamp - a.timestamp) // DESC
+            } catch(err) {
+              tg.showAlert("Ошибка загрузки страницы", () => {
+                console.log("Пользователь закрыл alert")
+              });
+            }
+          } else if (event_data.type == "exchange") {
+            if (event_data.payload.event == "update_exchange") {
+              if (!event_data.payload.is_available) {
+                // Удаляем биржу
+                userStateStore.exchanges = userStateStore.exchanges.filter(
+                  ex => ex.name !== event_data.payload.exchange_name
+                )
+              } else {
+                const index = userStateStore.exchanges.findIndex(
+                  ex => ex.name === event_data.payload.exchange_name
+                )
 
-          //       // Добавляем биржу
-          //       if (index === -1) {
-          //         userStateStore.exchanges.push({
-          //           id: userStateStore.exchanges.length + 1,
-          //           name: event_data.payload.exchange_name,
-          //           is_available: true
-          //         })
-          //       }
-          //     }
-          //   } else if (event_data.payload.event == "add_exchange") {
-          //     // Добавляем биржу
-          //     userStateStore.exchanges.push({
-          //       id: userStateStore.exchanges.length + 1,
-          //       name: event_data.payload.exchange_name,
-          //       is_available: true
-          //     })
-          //   }
-          // }
+                // Добавляем биржу
+                if (index === -1) {
+                  userStateStore.exchanges.push({
+                    id: userStateStore.exchanges.length + 1,
+                    name: event_data.payload.exchange_name,
+                    is_available: true
+                  })
+                }
+              }
+            } else if (event_data.payload.event == "add_exchange") {
+              // Добавляем биржу
+              userStateStore.exchanges.push({
+                id: userStateStore.exchanges.length + 1,
+                name: event_data.payload.exchange_name,
+                is_available: true
+              })
+            }
+          }
         }
 
         es.onerror = (event) => {
