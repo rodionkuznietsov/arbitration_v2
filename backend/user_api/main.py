@@ -27,7 +27,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://api.arbitrage-bot.xyz"],
+    allow_origins=["https://arbitrage-bot.xyz"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
