@@ -11,8 +11,8 @@ export const useUserState = defineStore('userState', {
 
         longExchange: null,
         shortExchange: null,
-        longOrderType: null,
-        shortOrderType: null,
+        longOrderType: "Спот",
+        shortOrderType: "Спот",
         currentStatus: 'offline',
         bybit_api_key: null,
         bybit_api_secret: null

@@ -43,8 +43,6 @@
     const userStore = useUserState()
 
     // Данные с полей
-    const longOrderType = ref("Спот")
-    const shortOrderType = ref("Спот")
     const chartStore = useChartStore()
 
     function filterInput(event) {
@@ -63,8 +61,8 @@
         userStore.symbol, 
         homeStore.longExchange, 
         homeStore.shortExchange,
-        longOrderType.value,
-        shortOrderType.value,
+        userStore.longOrderType,
+        userStore.shortOrderType,
       )
       chartStore.finished = false
 
@@ -110,7 +108,7 @@
             </div>
 
             <div class="form-group">
-              <FormCombobox v-model="longOrderType" :options="market_types"/>
+              <FormCombobox v-model="chartStore.longOrderType" :options="market_types"/>
             </div>
 
             <div class="form-group">
@@ -134,7 +132,7 @@
             </div>
 
             <div class="form-group">
-              <FormCombobox v-model="shortOrderType" :options="market_types"/>
+              <FormCombobox v-model="chartStore.shortOrderType" :options="market_types"/>
             </div>
 
             <div class="form-group">
