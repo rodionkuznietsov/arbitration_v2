@@ -27,4 +27,8 @@ async def event_streamer(tg_user_id: int):
  
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
-    return StreamingResponse(event_streamer(tg_user_id), media_type="text/event-stream")
+    return StreamingResponse(
+        event_streamer(tg_user_id), 
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+    )
