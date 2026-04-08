@@ -2,6 +2,8 @@ import time
 
 from fastapi import APIRouter, HTTPException
 
+from .events import push_to_subscribes
+
 from ..db import database
 from ..schemas.exchange import ExchangeSchema
 from ..schemas.result import ResultSchema
@@ -28,7 +30,7 @@ async def add_exchange(exchange_data: ExchangeSchema):
     if not added:
         raise HTTPException(status_code=400, detail=f"Биржа {exchange_data.name} уже существует в базе данных.")
 
-    exchange_event = {
+    event_data = {
         "type": "exchange",
         "tg_user_id": "all", 
         "timestamp": time.time(),
@@ -39,7 +41,7 @@ async def add_exchange(exchange_data: ExchangeSchema):
         }
     }
     
-    await event_deque.put(exchange_event)
+    push_to_subscribes(event_data)
 
     return ResultSchema(
         status_code=200,
@@ -58,7 +60,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
             message=f"Биржа {exchange_data.name} не существует в базе данных."
         )
     
-    exchange_event = {
+    event_data = {
         "type": "exchange",
         "tg_user_id": "all", 
         "timestamp": time.time(),
@@ -69,7 +71,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         }
     }
     
-    await event_deque.put(exchange_event)
+    push_to_subscribes(event_data)
 
     return ResultSchema(
         status_code=200,
