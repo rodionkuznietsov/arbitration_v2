@@ -1,7 +1,7 @@
 <template>
     <div style="margin-bottom: 10px;">
         <div class="title">Активные сделки</div>
-        <table class="active-order">
+        <table class="active-order-table">
             <thead>
                 <td>#</td>
                 <td>Статус</td>
@@ -21,7 +21,7 @@
 </template>
 
 <style scoped>
-    .active-order {
+    .active-order-table {
         background-color: var(--log-table-bg-color);
         padding: var(--default-padding);
         border-radius: var(--default-border-radius);
@@ -29,7 +29,8 @@
         box-sizing: border-box;
         text-align: center;
         word-wrap: break-word;
-        white-space: normal;
+        white-space: nowrap;
+        overflow: hidden;
         text-overflow: ellipsis;
     }
 </style>
