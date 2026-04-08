@@ -27,6 +27,8 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     tg_user_id = int(authothicate(token))
     await database.add_log(tg_user_id, data)
 
+    log.info(data.data.long_order_type)
+
     event_data = {
         "type": "log",
         "tg_user_id": tg_user_id, 
