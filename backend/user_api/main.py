@@ -24,7 +24,8 @@ from src.routers import user_router, events_router
 app = FastAPI(
     title="Arbitrage-Bot Api",
     version="Beta 0.0.5",
-    openapi_url="/openapi.json"
+    openapi_url="/api/openapi.json",
+    docs_url='/api/docs'
 )
 
 app.add_middleware(
