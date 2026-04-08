@@ -40,7 +40,7 @@ async def subscribe_events(tg_user_id: int):
         log.error(f"EventsRouter -> {e}")
 
 async def push_to_subscribes(event_data):
-    print(len(subscribes))
+    print(event_data.get("payload").get("event"))
     for queues in subscribes.values():
         for queue in queues:
             await queue.put(event_data)
