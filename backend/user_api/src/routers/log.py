@@ -3,7 +3,6 @@ import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
 import structlog
 
 import jwt
@@ -37,7 +36,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             "short_exchange": data.data.short_exchange,
         }
     }
-    await push_to_subscribes(event_data)
+    await push_to_subscribes(event_data, tg_user_id)
 
     return ResultSchema(
         status_code=200,
