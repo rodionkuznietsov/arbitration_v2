@@ -14,13 +14,9 @@ log: structlog.PrintLogger = structlog.get_logger()
 async def event_streamer(data: asyncio.Queue, tg_user_id):
     try:
         while True:
-            try:
-                event = await data.get()
-                yield f"data: { json.dumps(event) }\n\n"
-            except asyncio.TimeoutError as e:
-                log.error(f"EventSender: {e}")
-                yield f"data: keep-alive\n\n"
-    except asyncio.CancelledError as e:
+            event = await data.get()
+            yield f"data: { json.dumps(event) }\n\n"
+    except asyncio.CancelledError:
         pass
     finally:
         # убираем только свою очередь
