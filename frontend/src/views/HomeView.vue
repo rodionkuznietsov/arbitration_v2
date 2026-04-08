@@ -25,8 +25,8 @@
         const data = await response.json()
 
         userState.exchanges = data.exchanges
-        homeStore.longExchange = userState.exchanges[0] ? userState.exchanges[0].name : homeStore.longExchange.value
-        homeStore.shortExchange = userState.exchanges[1] ? userState.exchanges[1].name : homeStore.longExchange.value
+        homeStore.longExchange = userState.exchanges[0] ? userState.exchanges[0].name : homeStore.longExchange
+        homeStore.shortExchange = userState.exchanges[1] ? userState.exchanges[1].name : homeStore.longExchange
       } catch(err) {
         if (tgStore.tgObject) {
           tgStore.tgObject.showAlert("Системный сбой. Пожайлуйста сообщите об этом в службу поддержки.", () => {
