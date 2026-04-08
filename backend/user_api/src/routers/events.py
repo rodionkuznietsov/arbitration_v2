@@ -24,12 +24,12 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
  
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
-    if not subscribes[tg_user_id]:
+    if tg_user_id not in subscribes:
         subscribes[tg_user_id] = []
 
     q = asyncio.Queue()
     subscribes[tg_user_id].append(q)
-    
+
     return StreamingResponse(
         event_streamer(q), 
         media_type="text/event-stream",
