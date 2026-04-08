@@ -85,8 +85,8 @@
                   homeStore.longExchange = userStateStore.exchanges[0].name
                   homeStore.shortExchange = userStateStore.exchanges[0].name
                 } else {
-                  homeStore.longExchange = "Не доступных бирж"
-                  homeStore.shortExchange = "Не доступных бирж"
+                  homeStore.longExchange = "Нет доступных бирж"
+                  homeStore.shortExchange = "Нет доступных бирж"
                 }
               } else {
                 const index = userStateStore.exchanges.findIndex(
