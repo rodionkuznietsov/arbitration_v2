@@ -9,6 +9,8 @@ import structlog
 import jwt
 from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
+from backend.user_api.src.routers.events import push_to_subscribes
+
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 
 from ..db import database
@@ -25,7 +27,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     tg_user_id = int(authothicate(token))
     await database.add_log(tg_user_id, data)
 
-    log_event = {
+    event_data = {
         "type": "log",
         "tg_user_id": tg_user_id, 
         "timestamp": data.timestamp,
@@ -36,7 +38,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             "short_exchange": data.data.short_exchange,
         }
     }
-    await event_deque.put(log_event)
+    await push_to_subscribes(event_data)
 
     return ResultSchema(
         status_code=200,
