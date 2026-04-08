@@ -1,5 +1,5 @@
 /rust_bot/target
 /target
-/rust_bot/
+/rust_bot/.env
 /user_api/.venv
 /user_api/.env

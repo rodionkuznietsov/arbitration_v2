@@ -18,12 +18,15 @@ class AsyncDatabase:
     pool: Optional[asyncpg.Connection] = None
 
     async def connect(self, min_size, max_size):
-        if self.pool is None:
-            self.pool = await asyncpg.create_pool(
-                dsn=DATABASE_URL,
-                min_size=min_size,
-                max_size=max_size
-            )
+        try:
+            if self.pool is None:
+                self.pool = await asyncpg.create_pool(
+                    dsn=DATABASE_URL,
+                    min_size=min_size,
+                    max_size=max_size
+                )
+        except Exception as e:
+            log.error(f"AsyncDatabase -> {e}")
         log.info("Connected to the database.")
 
     async def close(self):
