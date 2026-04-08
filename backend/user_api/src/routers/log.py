@@ -40,8 +40,8 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     }
     
     match data.event:
-        case EventTypeEnum.EventTypeEnum.BotStart:
-            log.info(f"{EventTypeEnum.EventTypeEnum.BotStart}")
+        case EventTypeEnum.BotStart:
+            log.info(f"{EventTypeEnum.BotStart}")
 
     # Пушим на все устройства новое собитие
     await push_to_subscribes(event_data, tg_user_id)
