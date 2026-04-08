@@ -82,7 +82,7 @@
                 )
 
                 if (userStateStore.exchanges.length > 0) {
-                  homeStore.longExchange = userStateStore.exchanges.length == 2 ? userStateStore.exchanges[1].name : userStateStore.exchanges[0].name
+                  homeStore.longExchange = userStateStore.exchanges.length > 1 ? userStateStore.exchanges[1].name : userStateStore.exchanges[0].name
                   homeStore.shortExchange = userStateStore.exchanges[0].name
                 } else {
                   homeStore.longExchange = "Нет доступных бирж"
