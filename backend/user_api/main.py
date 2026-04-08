@@ -21,7 +21,11 @@ from src import tg_bot_app
 from src.routers import exchange_router
 from src.routers import user_router, events_router
 
-app = FastAPI()
+app = FastAPI(
+    title="Arbitrage-Bot Api",
+    version="Beta 0.0.5",
+    openapi_url="/openapi.json"
+)
 
 app.add_middleware(
     CORSMiddleware,
