@@ -28,6 +28,10 @@
         width: 100%;
         box-sizing: border-box;
         text-align: center;
+        table-layout: fixed;
+    }
+
+    .active-order-table td {
         word-wrap: break-word;
         white-space: nowrap;
         overflow: hidden;
