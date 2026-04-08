@@ -60,8 +60,8 @@
             logBotEvent(
                 "bot_stop", {
                     symbol: data.ticker,
-                    long_exchange: data.longExchange,
-                    short_exchange: data.shortExchange
+                    longExchange: data.longExchange,
+                    shortExchange: data.shortExchange
                 },
                 authStore.token
             )
