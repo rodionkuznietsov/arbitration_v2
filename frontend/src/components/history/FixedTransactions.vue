@@ -34,7 +34,7 @@
         vertical-align: middle;
     }
 
-    .active-order-table td {
+    .active-order-table td, th {
         word-wrap: break-word;
         white-space: nowrap;
         overflow: hidden;
