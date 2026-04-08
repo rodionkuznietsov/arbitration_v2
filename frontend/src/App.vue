@@ -122,7 +122,7 @@
         }
 
         es.onerror = (event) => {
-          tg.showAlert(`Error: ${JSON.stringify(event.data)}`)
+          console.log(event)
         }
 
       } catch(err) {
