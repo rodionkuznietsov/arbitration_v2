@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 from pydantic import BaseModel
 
 class ExchangeEnum(str, Enum):
@@ -15,12 +16,12 @@ class OrderTypeEnum(str, Enum):
 
 class LogDataSchema(BaseModel):
     symbol: str
-    
+
     long_exchange: ExchangeEnum
-    long_order_type: OrderTypeEnum
+    long_order_type: Optional[OrderTypeEnum] = None
 
     short_exchange: ExchangeEnum
-    short_order_type: OrderTypeEnum
+    short_order_type: Optional[OrderTypeEnum] = None
 
 class UserLogSchema(BaseModel):
     event: EventTypeEnum
