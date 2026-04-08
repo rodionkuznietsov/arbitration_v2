@@ -34,9 +34,9 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
         "payload": {
             "event": data.event, 
             "symbol": f"{data.data.symbol.upper()}USDT",
-            "longExchange": data.data.long_exchange,
+            "longExchange": data.data.longExchange,
             "longOrderType": data.data.longOrderType,
-            "shortExchange": data.data.short_exchange,
+            "shortExchange": data.data.shortExchange,
             "shortOrderType": data.data.shortOrderType,
             "isBotRunning": False
         }
