@@ -14,11 +14,12 @@ log: structlog.PrintLogger = structlog.get_logger()
 async def event_streamer(data: asyncio.Queue, tg_user_id):
     try:
         while True:
-            event = await data.get()
-            yield f"data: { json.dumps(event) }\n\n"
-    except asyncio.TimeoutError as e:
-        log.error(f"EventSender: {e}")
-        yield f"data: keep-alive\n\n"
+            try:
+                event = await data.get()
+                yield f"data: { json.dumps(event) }\n\n"
+            except asyncio.TimeoutError as e:
+                log.error(f"EventSender: {e}")
+                yield f"data: keep-alive\n\n"
     except asyncio.CancelledError as e:
         pass
     finally:
@@ -29,7 +30,7 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
                 f"EventsRouter -> {tg_user_id} вышел из потока. "
                 f"Его текущие потоки: {len(subscribes.get(tg_user_id, []))}"
             )
-            
+
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
     try:
