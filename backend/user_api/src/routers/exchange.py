@@ -7,7 +7,6 @@ from .events import push_to_subscribes
 from ..db import database
 from ..schemas.exchange import ExchangeSchema
 from ..schemas.result import ResultSchema
-from ..cache import event_deque
 
 router = APIRouter()
 @router.get("/available", tags=["exchanges"])
