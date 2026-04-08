@@ -98,15 +98,18 @@ class AsyncDatabase:
         return result is not None
     
     async def add_log(self, tg_user_id: int, data: UserLogSchema):
-        if await self.__check_log_exists__(data.timestamp, tg_user_id):
-            log.warning(f"Не удалось добавить лог")
-            return
-        
-        await self.pool.execute(
-            "INSERT INTO user_logs (event, tg_user_id, symbol, long_exchange, short_exchange, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
-            data.event, tg_user_id, data.data.symbol, data.data.long_exchange, data.data.short_exchange, data.timestamp
-        )
-        log.info(f"Лог: {data.event.title()}, успешно был добавлен для пользователя с id: {tg_user_id}.")
+        try:
+            if await self.__check_log_exists__(data.timestamp, tg_user_id):
+                log.warning(f"Не удалось добавить лог")
+                return
+            
+            await self.pool.execute(
+                "INSERT INTO user_logs (event, tg_user_id, symbol, long_exchange, short_exchange, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
+                data.event, tg_user_id, data.data.symbol, data.data.longExchange, data.data.shortExchange, data.timestamp
+            )
+            log.info(f"Лог: {data.event.title()}, успешно был добавлен для пользователя с id: {tg_user_id}.")
+        except Exception as e:
+            log.error(f"AsyncDatabase: {e}")
 
     async def __check_log_exists__(self, timestamp, tg_user_id):
         if timestamp is not None:
