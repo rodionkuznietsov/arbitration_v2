@@ -27,7 +27,7 @@ class AsyncDatabase:
                 )
             log.info("Connected to the database.",)
         except Exception as e:
-            log.error(f"AsyncDatabase -> {e}, CurrentUrl: {DATABASE_URL}")
+            log.error(f"AsyncDatabase -> {e}")
 
     async def close(self):
         if self.pool:
