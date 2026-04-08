@@ -36,7 +36,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-@app.get("/api")
+@app.get("/api/")
 async def start_page():
     return ResultSchema(
         status_code=200,
