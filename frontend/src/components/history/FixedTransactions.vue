@@ -11,7 +11,7 @@
             </thead>
             <tbody>
                 <td>1</td>
-                <td id="status"><div class="online" style="justify-content: center;" id="status_circle"></div></td>
+                <td id="status" style="justify-content: center;"><div class="online" id="status_circle"></div></td>
                 <td>Bybit/Short</td>
                 <td>BTCUSDT</td>
                 <td>19 Минут</td>
