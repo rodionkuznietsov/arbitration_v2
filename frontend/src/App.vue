@@ -63,7 +63,7 @@ import { useOrderBookStore } from './stores/orderbook';
           if (event_data.type == "log") {
             try {
               // Устанавлияем необходимые данные
-              userStateStore.isBotRunning = event_data.payload.is_bot_running
+              userStateStore.isBotRunning = event_data.payload.isBotRunning
 
               if (userStateStore.isBotRunning) {
                 orderBookStore.ticker = event_data.payload.symbol
