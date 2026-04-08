@@ -77,7 +77,7 @@ import { useOrderBookStore } from './stores/orderbook';
 
               userStateStore.changeStatus(event_data.payload.status)
 
-              userStateStore.symbol = event_data.payload.symbol,
+              userStateStore.symbol = event_data.payload.symbol.replace("USDT", ""),
               homeStore.longExchange = event_data.payload.longExchange,
               userStateStore.longOrderType = event_data.payload.longOrderType,
               homeStore.shortExchange = event_data.payload.shortExchange,
