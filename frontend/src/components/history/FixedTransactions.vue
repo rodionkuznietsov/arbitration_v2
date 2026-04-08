@@ -28,5 +28,8 @@
         width: 100%;
         box-sizing: border-box;
         text-align: center;
+        word-wrap: break-word;
+        white-space: normal;
+        text-overflow: ellipsis;
     }
 </style>
