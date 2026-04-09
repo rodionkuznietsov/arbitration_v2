@@ -69,7 +69,7 @@
                 <div class="with_img">
                     <img :src="orderBookStore.longExchangeLogo" alt="">
                     <span>{{ orderBookStore.longExchange }}</span>
-                    <span class="ticker_name">{{ orderBookStore.symbol }} - {{ orderBookStore.longOrderType }}</span>
+                    <span class="ticker_name">{{ orderBookStore.symbol }} - {{ userStateStore.longOrderType }}</span>
                 </div>
             </div>
             <div id="order_book_element">
@@ -110,7 +110,7 @@
                 <div class="with_img">
                     <img :src="orderBookStore.shortExchangeLogo" alt="">
                     <span>{{ orderBookStore.shortExchange }}</span>
-                    <span class="ticker_name">{{ orderBookStore.symbol }} - {{ orderBookStore.shortOrderType }}</span>
+                    <span class="ticker_name">{{ orderBookStore.symbol }} - {{ userStateStore.shortOrderType }}</span>
                 </div>
             </div>
             <div id="order_book_element">

@@ -7,7 +7,7 @@ export const useOrderBookStore = defineStore('orderbook', {
 
         longExchange: null,
         longExchangeLogo: null, 
-        longOrderType: null,
+        longOrderType: 'Спот',
         longArrow: null,
         longAsks: [],
         longBids: [],
