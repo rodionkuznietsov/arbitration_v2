@@ -192,7 +192,7 @@
         img.style.pointerEvents = 'none'
         img.style.userSelect = 'none'
         
-        document.body.appendChild(img)
+        document.getElementById("app").appendChild(img)
       }
     }
   });
