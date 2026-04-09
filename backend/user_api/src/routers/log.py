@@ -62,6 +62,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
                 
                 message.event_data.payload.status = AppStatusEnum.Online
+                message.event_data.payload.isBotRunning = AppStatusEnum.Running
 
                 # Сохраняем насстройки для остальных устройств
                 user_state[tg_user_id] = MessageData(
