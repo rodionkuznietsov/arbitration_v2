@@ -63,9 +63,16 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 user_state[tg_user_id] = {
                     "type": EventDataTypeEnum.UserState,
                     "symbol": event_data["payload"]["symbol"],
+                    
+                    "longExchange": event_data["payload"]["longExchange"],
+                    "longOrderType": event_data["payload"]["longOrderType"],
+
+                    "shortExchange": event_data["payload"]["longExchange"],
+                    "shortOrderType": event_data["payload"]["shortOrderType"],
+
+                    "status": event_data["payload"]["status"],
                     "isBotRunning": event_data["payload"]["isBotRunning"],
                     "devices": 1,
-                    # "ws_task": task,
                 } 
 
         case EventTypeEnum.BotStop:
@@ -75,6 +82,11 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             if task:
                 task.cancel()
                 del ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"]
+                user_state[tg_user_id]["devices"] = (
+                    user_state[tg_user_id]["devices"] - 1
+                    if user_state[tg_user_id]["devices"] > 0
+                    else 0
+                )
                 log.info(f"Для клиента: {tg_user_id}, был отключен RustWebsocket")
 
     # Пушим новое собитие на все устройства
