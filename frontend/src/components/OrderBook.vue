@@ -37,7 +37,9 @@
             "bot_stop", {
                 symbol: userStateStore.symbol,
                 longExchange: userStateStore.longExchange,
-                shortExchange: userStateStore.shortExchange
+                longOrderType: userStateStore.longOrderType.toLowerCase(),
+                shortExchange: userStateStore.shortExchange,
+                shortOrderType: userStateStore.shortOrderType.toLowerCase(),
             },
             authStore.token
         )
