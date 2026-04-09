@@ -32,7 +32,6 @@ async def subscribe_events(tg_user_id: int):
     try:
         if tg_user_id in user_state:
             print(user_state)
-            return
         
         if tg_user_id not in subscribes:
             subscribes[tg_user_id] = []
