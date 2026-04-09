@@ -34,8 +34,8 @@ async def run_ws(
                 "ticker": symbol
             }))
 
-            # while True:
-            #     response = await websocket.recv()
-                # log.info(response)
+            while True:
+                response = await websocket.recv()
+                log.info(response)
     except asyncio.asyncio.CancelledError:
         log.info("ВебСокет остановлен")
