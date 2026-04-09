@@ -42,7 +42,6 @@
     const orderBookStore = useOrderBookStore()
     const userStore = useUserState()
 
-    // Данные с полей
     const chartStore = useChartStore()
 
     function filterInput(event) {

@@ -21,7 +21,6 @@ router = APIRouter()
 
 @router.post("/auth", tags=["telegram bot"])
 async def auth_telegram(request: Request):
-    
     data = await request.json()
     init_data = data.get("initData")
 

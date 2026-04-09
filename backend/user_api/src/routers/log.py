@@ -7,6 +7,8 @@ import structlog
 import jwt
 from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
+from ..rust_ws import run_ws
+
 from ..schemas import EventTypeEnum, AppStatusEnum
 
 from .events import push_to_subscribes
@@ -38,17 +40,20 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             "shortExchange": data.data.shortExchange,
             "shortOrderType": data.data.shortOrderType,
             "status": AppStatusEnum.Offline,
-            "isBotRunning": False
-        }
+            "isBotRunning": AppStatusEnum.Stopped
+        }, 
     }
     
     match data.event:
         case EventTypeEnum.BotStart:
             log.info(f"{EventTypeEnum.BotStart}")
-            event_data["payload"]["isBotRunning"] = True
+            event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
             event_data["payload"]["status"] = AppStatusEnum.Online
 
-    # Пушим на все устройства новое собитие
+            # Подключаюсь к rust_ws
+            await run_ws()
+
+    # Пушим новое собитие на все устройства
     await push_to_subscribes(event_data, tg_user_id)
 
     return ResultSchema(

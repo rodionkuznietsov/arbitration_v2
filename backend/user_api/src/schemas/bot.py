@@ -17,6 +17,8 @@ class OrderTypeEnum(str, Enum):
 class AppStatusEnum(str, Enum):
     Online = "online",
     Offline = "offline"
+    Running = True
+    Stopped = False
 
 class LogDataSchema(BaseModel):
     symbol: str
