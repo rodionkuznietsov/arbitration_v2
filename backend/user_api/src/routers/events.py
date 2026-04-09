@@ -46,7 +46,7 @@ async def subscribe_events(tg_user_id: int):
             await push_to_subscribes(user_state[tg_user_id], tg_user_id=tg_user_id)
 
         return StreamingResponse(
-            event_streamer(q, tg_user_id), 
+            event_streamer(success_queue, tg_user_id), 
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
         )
