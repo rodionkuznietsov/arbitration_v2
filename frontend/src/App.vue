@@ -188,6 +188,8 @@
         const img = document.createElement('img')
 
         img.src = FetchErrorImg
+        img.width = "100%"
+        img.height = "100%"
         img.style.objectFit = 'cover'
         img.style.pointerEvents = 'none'
         img.style.userSelect = 'none'
