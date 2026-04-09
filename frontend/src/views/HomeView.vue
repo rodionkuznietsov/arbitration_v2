@@ -8,7 +8,7 @@
     import { useChartStore } from '@/stores/chart';
     import { useOrderBookStore } from '@/stores/orderbook';
     import { useAuthStore } from '@/stores/auth';
-    import AuthError from '@/components/AuthError.vue';
+    // import AuthError from '@/components/AuthError.vue';
     import { API_URL } from '@/config';
     import { useTgStore } from '@/stores/tg';
     import { useHomeStore } from '@/stores/home';
@@ -150,5 +150,5 @@
       </div>
     </div>
 
-    <AuthError v-else/>
+    <!-- <AuthError v-else/> -->
 </template>
