@@ -48,7 +48,6 @@
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.log("ЭТО ОШИБКА!", response.status)
           throw new Error(errorData.message || "Неизвестная ошибка")
         }
 
@@ -182,6 +181,8 @@
         }
 
       } catch(err) {
+        console.log("ЭТО ОИШБК", err)
+        
         const img = document.createElement('img')
 
         img.src = FetchErrorImg
