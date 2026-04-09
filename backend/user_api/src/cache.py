@@ -16,6 +16,7 @@ async def push_to_subscribes(
         for queues in subscribes.values():
             for queue in queues:
                 try:
+                    print(message.context.method)
                     # queue.put_nowait(event_data)
                 except asyncio.QueueFull:
                     pass
