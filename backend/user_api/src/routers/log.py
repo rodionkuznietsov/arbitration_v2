@@ -1,4 +1,5 @@
 
+import asyncio
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 import structlog
@@ -38,6 +39,8 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
         }, 
     }
     
+    ws_task = {}
+
     match data.event:
         case EventTypeEnum.BotStart:
             log.info(f"{EventTypeEnum.BotStart}")
@@ -45,21 +48,22 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             event_data["payload"]["status"] = AppStatusEnum.Online
 
             # Конектимся к rust websocket
-            await run_ws(
+            task = asyncio.create_task(run_ws(
                 action=WebSocketActionEnum.Subscribe,
                 channel=WebSocketChannelEnum.OrderBook,
                 long_exchange=data.data.longExchange,
                 short_exchange=data.data.shortExchange,
                 symbol=data.data.symbol
-            )
+            ))
+            ws_task[data.data.symbol] = task
         case EventTypeEnum.BotStop:
-            await run_ws(
-                action=WebSocketActionEnum.UnSubscribe,
-                channel=WebSocketChannelEnum.OrderBook,
-                long_exchange=data.data.longExchange,
-                short_exchange=data.data.shortExchange,
-                symbol=data.data.symbol
-            ) 
+            task = ws_task.get(data.data.symbol)
+
+            if task:
+                task.cancel()
+                del ws_task[data.data.symbol]
+                log.info(f"Для клиента: {tg_user_id} был отключен вебсокет по его просьбе.")
+
 
     # Пушим новое собитие на все устройства
     await push_to_subscribes(event_data, tg_user_id)
