@@ -7,7 +7,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
 from ..rust_ws import run_ws
-from ..schemas import EventTypeEnum, AppStatusEnum, WebSocketActionEnum, WebSocketChannelEnum
+from ..schemas import EventDataTypeEnum, EventTypeEnum, AppStatusEnum, WebSocketActionEnum, WebSocketChannelEnum
 from ..cache import push_to_subscribes
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 from ..db import database
@@ -26,7 +26,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     await database.add_log(tg_user_id, data)
 
     event_data = {
-        "type": "log",
+        "type": EventDataTypeEnum.Log,
         "tg_user_id": tg_user_id, 
         "timestamp": data.timestamp,
         "payload": {

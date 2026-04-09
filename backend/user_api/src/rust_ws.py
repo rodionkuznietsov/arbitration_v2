@@ -9,6 +9,7 @@ import structlog
 from .cache import push_to_subscribes
 
 from .schemas import (
+    EventDataTypeEnum,
     WebSocketActionEnum, 
     WebSocketChannelEnum, 
     ExchangeEnum
@@ -39,6 +40,7 @@ async def run_ws(
             while True:
                 response = await websocket.recv()
                 data = json.loads(response)
+                data["type"] = EventDataTypeEnum.Websocket
                 # await push_to_subscribes()
     except asyncio.CancelledError:
         log.info("RustWebsocket -> успешно остановлен")
