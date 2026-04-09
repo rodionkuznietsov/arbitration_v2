@@ -35,7 +35,8 @@ async def run_ws(
     long_exchange: ExchangeEnum,
     short_exchange: ExchangeEnum,
     symbol: str,
-    tg_user_id: int
+    
+    user_state: MessageData,
 ):
     log.info("Подключение к RustWebsocket")
 
@@ -43,7 +44,7 @@ async def run_ws(
         while True:
             try:
                 async with websockets.connect(WEBSOCKET_URL) as websocket:
-                    log.info("Подключено к RustWebsocket")
+                    user_state.event_data.payload.status = AppStatusEnum.Running
 
                     await websocket.send(json.dumps({
                         "action": action,
@@ -55,8 +56,7 @@ async def run_ws(
 
                     response = await websocket.recv()
                     data = json.loads(response)
-                    data["type"] = EventDataTypeEnum.Websocket
-                    await push_to_subscribes(data, tg_user_id=tg_user_id)
+                    # await push_to_subscribes(data, tg_user_id=tg_user_id)
                     log.info(data)
             except websockets.exceptions.InvalidStatus as e:
                 log.error(f"RustWebsocket -> {e}")
@@ -79,11 +79,11 @@ async def run_ws(
                         ),
                         context=MessageContext(
                             method=MessageMethod.WebsocketErrorConnection,
-                            tg_user_id=tg_user_id,
+                            tg_user_id=user_state.context.tg_user_id,
                         )
                     )
 
-                    await push_to_subscribes(message=message)
+                    # await push_to_subscribes(message=message)
                 except pydantic.ValidationError as e:
                     log.error("RustWebsocket -> Одно из полей `message` имеет не правильный формат")
                     log.error(f"RustWebsocket -> {e}")

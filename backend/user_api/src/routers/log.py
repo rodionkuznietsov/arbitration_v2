@@ -50,20 +50,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     match data.event:
         case EventTypeEnum.BotStart:
             if tg_user_id not in user_state or user_state[tg_user_id].event_data.payload.isBotRunning == AppStatusEnum.Stopped:
-                # Подключаем клиента
-                task = asyncio.create_task(run_ws(
-                    action=WebSocketActionEnum.Subscribe,
-                    channel=WebSocketChannelEnum.OrderBook,
-                    long_exchange=data.data.longExchange,
-                    short_exchange=data.data.shortExchange,
-                    symbol=data.data.symbol,
-                    tg_user_id=tg_user_id
-                ))
-                ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
-                
-                message.event_data.payload.status = AppStatusEnum.Online
-                message.event_data.payload.isBotRunning = AppStatusEnum.Running
-
                 # Сохраняем насстройки для остальных устройств
                 user_state[tg_user_id] = MessageData(
                     event_data=MessageEventData(
@@ -88,14 +74,28 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     )
                 )
                 
-                error_queues = await get_queue(tg_user_id)
-                for queue in error_queues:
-                    error_event = queue.get_nowait()
-                    message.event_data.payload.isBotRunning = error_event.payload.isBotRunning
-                    message.event_data.payload.status = error_event.payload.status
+                # Подключаем клиента
+                task = asyncio.create_task(run_ws(
+                    action=WebSocketActionEnum.Subscribe,
+                    channel=WebSocketChannelEnum.OrderBook,
+                    long_exchange=data.data.longExchange,
+                    short_exchange=data.data.shortExchange,
+                    symbol=data.data.symbol,
+                    user_state=user_state[tg_user_id]
+                ))
+                ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
+                
+                # message.event_data.payload.status = AppStatusEnum.Online
+                # message.event_data.payload.isBotRunning = AppStatusEnum.Running
+                
+                # error_queues = await get_queue(tg_user_id)
+                # for queue in error_queues:
+                #     error_event = await queue.get_nowait()
+                #     message.event_data.payload.isBotRunning = error_event.payload.isBotRunning
+                #     message.event_data.payload.status = error_event.payload.status
 
-                    user_state[tg_user_id].event_data.payload.isBotRunning = error_event.payload.isBotRunning
-                    user_state[tg_user_id].event_data.payload.status = error_event.payload.status
+                #     user_state[tg_user_id].event_data.payload.isBotRunning = error_event.payload.isBotRunning
+                #     user_state[tg_user_id].event_data.payload.status = error_event.payload.status
 
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
