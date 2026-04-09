@@ -157,8 +157,7 @@
               orderBookStore.shortBids = event_data.result.data.order_book.short.bids
             }
           } else if (event_data.type == "user_state") {
-            tg.showAlert(`${JSON.stringify(event.data)}`, () => {
-            })
+            alert(`${JSON.stringify(event.data)}`)
             // userStateStore.changeStatus(event_data.status)
             // userStateStore.isBotRunning = event_data.isBotRunning
 
