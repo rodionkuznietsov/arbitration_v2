@@ -157,25 +157,27 @@
               orderBookStore.shortBids = event_data.result.data.order_book.short.bids
             }
           } else if (event_data.type == "user_state") {
-            userStateStore.changeStatus(event_data.status)
-            userStateStore.isBotRunning = event_data.isBotRunning
+            tg.showAlert(`${JSON.stringify(event.data)}`, () => {
+            })
+            // userStateStore.changeStatus(event_data.status)
+            // userStateStore.isBotRunning = event_data.isBotRunning
 
-            if (userStateStore.isBotRunning) {
-              orderBookStore.updateHeader(
-                event_data.symbol,
-                event_data.longExchange,
-                event_data.longOrderType,
-                event_data.shortExchange,
-                event_data.shortOrderType
-              )
-            }
+            // if (userStateStore.isBotRunning) {
+            //   orderBookStore.updateHeader(
+            //     event_data.symbol,
+            //     event_data.longExchange,
+            //     event_data.longOrderType,
+            //     event_data.shortExchange,
+            //     event_data.shortOrderType
+            //   )
+            // }
 
-            userStateStore.symbol = event_data.symbol
-            userStateStore.longExchange = event_data.longExchange
-            userStateStore.longOrderType = event_data.longOrderType
+            // userStateStore.symbol = event_data.symbol
+            // userStateStore.longExchange = event_data.longExchange
+            // userStateStore.longOrderType = event_data.longOrderType
 
-            userStateStore.shortExchange = event_data.shortExchange
-            userStateStore.shortOrderType = event_data.shortOrderType
+            // userStateStore.shortExchange = event_data.shortExchange
+            // userStateStore.shortOrderType = event_data.shortOrderType
           }
         }
 
