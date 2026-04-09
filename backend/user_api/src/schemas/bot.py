@@ -14,6 +14,8 @@ class OrderTypeEnum(str, Enum):
 class AppStatusEnum(str, Enum):
     Online = "online",
     Offline = "offline"
+    Warning = "warning"
+
     Running = True
     Stopped = False
 
