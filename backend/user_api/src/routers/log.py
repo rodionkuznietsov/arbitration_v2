@@ -102,11 +102,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             if task:
                 task.cancel()
                 del ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"]
-                user_state[tg_user_id]["devices"] = (
-                    user_state[tg_user_id]["devices"] - 1
-                    if user_state[tg_user_id]["devices"] > 0
-                    else 0
-                )
                 user_state[tg_user_id]["isBotRunning"] = AppStatusEnum.Stopped
                 user_state[tg_user_id]["status"] = AppStatusEnum.Offline
 
