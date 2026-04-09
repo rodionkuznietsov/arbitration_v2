@@ -70,6 +70,7 @@ async def run_ws(
                                 type=EventDataTypeEnum.Websocket,
                                 payload=MessageEventPayload(
                                     event=EventTypeEnum.Websocket,
+                                    symbol=symbol,
                                     longExchange=message.event_data.payload.longExchange,
                                     longOrderType=message.event_data.payload.longOrderType,
                                     shortExchange=message.event_data.payload.shortExchange,
