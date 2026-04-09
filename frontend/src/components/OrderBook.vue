@@ -51,7 +51,7 @@
     }
 
     function stop() {
-        // const data = userState.get_data()
+        const data = userState.get_data()
         userState.clearValues()
         orderBookStore.clearValues()
         // if (unsubscribe) {
