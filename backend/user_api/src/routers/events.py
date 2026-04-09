@@ -35,6 +35,7 @@ async def subscribe_events(tg_user_id: int):
     try:        
         success_queue = asyncio.Queue()
         error_queue = asyncio.Queue()
+        
         subscribes[tg_user_id]["success_queue"].append(success_queue)
         subscribes[tg_user_id]["error_queue"].append(error_queue)
         

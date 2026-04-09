@@ -26,6 +26,7 @@ async def push_to_subscribes(
                     except asyncio.QueueFull:
                         pass
             if message.context.method == MessageMethod.WebsocketErrorConnection:
+                log.info("Cache -> Полученно новое собитие error")
                 for queues in user_queues["error_queue"]:
                     try:
                         queues.put_nowait(message.event_data)
