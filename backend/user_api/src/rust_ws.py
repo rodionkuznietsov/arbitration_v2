@@ -64,23 +64,23 @@ async def run_ws(
                     response = await websocket.recv()
                     data = json.loads(response)
 
-                    ws_message = MessageData(
-                        event_data=MessageEventData(
-                            type=EventDataTypeEnum.Websocket,
-                            payload=MessageEventPayload(
-                                event=EventTypeEnum.Websocket,
-                                longExchange=message.event_data.payload.longExchange,
-                                longOrderType=message.event_data.payload.longOrderType,
-                                shortExchange=message.event_data.payload.shortExchange,
-                                shortOrderType=message.event_data.payload.shortOrderType,
-                                status=AppStatusEnum.Online,
-                                isBotRunning=AppStatusEnum.Running
-                            ),
-                        ),
-                        ws_data=data
-                    )
+                    # ws_message = MessageData(
+                    #     event_data=MessageEventData(
+                    #         type=EventDataTypeEnum.Websocket,
+                    #         payload=MessageEventPayload(
+                    #             event=EventTypeEnum.Websocket,
+                    #             longExchange=message.event_data.payload.longExchange,
+                    #             longOrderType=message.event_data.payload.longOrderType,
+                    #             shortExchange=message.event_data.payload.shortExchange,
+                    #             shortOrderType=message.event_data.payload.shortOrderType,
+                    #             status=AppStatusEnum.Online,
+                    #             isBotRunning=AppStatusEnum.Running
+                    #         ),
+                    #     ),
+                    #     ws_data=data
+                    # )
                     
-                    log.info(ws_message)
+                    log.info(data)
 
                     # await push_to_subscribes(ws_message)
             except websockets.exceptions.InvalidStatus as e:
