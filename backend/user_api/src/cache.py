@@ -19,7 +19,7 @@ async def push_to_subscribes(
                 try:
                     if message.context.method == MessageMethod.User:
                         queues["success_queue"].put_nowait(message.event_data)
-                except asyncio.asyncio.QueueFull:
+                except asyncio.QueueFull:
                     pass
 
         # for queues in subscribes:
