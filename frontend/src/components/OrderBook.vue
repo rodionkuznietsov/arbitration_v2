@@ -15,8 +15,10 @@
     })
     
     const loading = computed(() => {
-        return userStateStore.isBotRunning ? 'display: none;' : "display: block;"
-    })
+        return {
+            display: userStateStore.isBotRunning ? 'none' : 'block'
+        };
+    });
 
     function start() {
         // Сохраняем лог о старте бота в базу данных
