@@ -80,7 +80,7 @@ async def run_ws(
                         ),
                     )
 
-                    log.info(ws_message.event_data.ws_data)
+                    log.info(data)
                     
                     push_to_subscribes(ws_message)
             except websockets.exceptions.InvalidStatus as e:
