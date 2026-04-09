@@ -15,8 +15,8 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
     try:
         while True:
             event = await data.get()
-            log.info(f"Отправляем новое собитые { event }")
             yield f"data: { json.dumps(event.dict()) }\n\n"
+            log.info(f"Отправили событие { event }")
     except asyncio.CancelledError:
         pass
     except Exception as e:
@@ -42,7 +42,7 @@ async def subscribe_events(tg_user_id: int):
         
         if tg_user_id in user_state:
             log.info(f"UserState: {user_state}")
-            await push_to_subscribes(user_state[tg_user_id])
+            await push_to_subscribes(user_state[tg_user_id].event_data)
 
         return StreamingResponse(
             event_streamer(success_queue, tg_user_id), 
