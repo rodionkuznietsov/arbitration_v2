@@ -7,6 +7,8 @@ import os
 from dotenv import load_dotenv
 import structlog
 
+from .schemas.bot import OrderTypeEnum
+
 from .cache import MessageData, MessageMethod, push_to_subscribes
 
 from .schemas import (
@@ -58,28 +60,31 @@ async def run_ws(
             except websockets.exceptions.InvalidStatus as e:
                 log.error(f"RustWebsocket -> {e}")
 
-                message = MessageData(
-                    event_data=MessageEventData(
-                        type=EventDataTypeEnum.Log,
-                        timestamp=time(),
-                        payload=MessageEventPayload(
-                            event=EventTypeEnum.BotStart,
-                            symbol=symbol,
-                            longExchange=long_exchange,
-                            longOrderType="Спот",
-                            shortExchange=short_exchange,
-                            shortOrderType="Спот",
-                            isBotRunning=AppStatusEnum.Stopped,
-                            status=AppStatusEnum.Warning
+                try:
+                    message = MessageData(
+                        event_data=MessageEventData(
+                            type=EventDataTypeEnum.Log,
+                            timestamp=time(),
+                            payload=MessageEventPayload(
+                                event=EventTypeEnum.BotStart,
+                                symbol=symbol,
+                                longExchange=long_exchange,
+                                longOrderType="Спот",
+                                shortExchange=short_exchange,
+                                shortOrderType=OrderTypeEnum.Spot,
+                                isBotRunning=AppStatusEnum.Stopped,
+                                status=AppStatusEnum.Warning
+                            )
+                        ),
+                        context=MessageContext(
+                            method=MessageMethod.WebsocketErrorConnection,
+                            tg_user_id=tg_user_id,
                         )
-                    ),
-                    context=MessageContext(
-                        method=MessageMethod.WebsocketErrorConnection,
-                        tg_user_id=tg_user_id,
                     )
-                )
 
-                await push_to_subscribes(message=message)
+                    await push_to_subscribes(message=message)
+                except Exception as e:
+                    log.error("RustWebsocket -> Одно из полей имеет не правильный формат")
 
                 break
     except Exception as e:
