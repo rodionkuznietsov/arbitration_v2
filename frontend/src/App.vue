@@ -48,6 +48,7 @@
 
         if (!response.ok) {
           const errorData = await response.json();
+          console.log("ЭТО ОШИБКА!", response.status)
           throw new Error(errorData.message || "Неизвестная ошибка")
         }
 
@@ -173,10 +174,6 @@
 
             userStateStore.shortExchange = event_data.shortExchange
             userStateStore.shortOrderType = event_data.shortOrderType
-
-            tg.showAlert(`${JSON.stringify(event.data)}`, () => {
-
-            })
           }
         }
 
