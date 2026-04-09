@@ -25,17 +25,17 @@
 
     function start() {
         const data = userState.get_data()
-        unsubscribe = ws.subscribe(data.symbol.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (result) => {            
-            orderBookStore.updateHeader(
-                data.symbol,
-                data.longExchange, 
-                data.longOrderType,
-                data.shortExchange,
-                data.shortOrderType
-            )
+        // unsubscribe = ws.subscribe(data.symbol.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (result) => {            
+        //     orderBookStore.updateHeader(
+        //         data.symbol,
+        //         data.longExchange, 
+        //         data.longOrderType,
+        //         data.shortExchange,
+        //         data.shortOrderType
+        //     )
 
-            orderBookStore.updateData(result.data.order_book)
-        })
+        //     orderBookStore.updateData(result.data.order_book)
+        // })
 
         // Сохраняем лог о старте бота в базу данных
         logBotEvent(

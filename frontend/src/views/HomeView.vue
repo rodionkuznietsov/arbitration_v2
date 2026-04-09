@@ -49,12 +49,12 @@
     }
 
     async function start() {
-      await ws.connect(`${WEBSOCKET_URL}`)
+      // await ws.connect(`${WEBSOCKET_URL}`)
 
-      if (ws.socket.readyState == 3) {
-        userState.changeStatus('warning')
-        return
-      }
+      // if (ws.socket.readyState == 3) {
+      //   userState.changeStatus('warning')
+      //   return
+      // }
 
       userState.set_data(
         userStore.symbol, 
@@ -74,10 +74,10 @@
     }    
     
     async function stop() {
-      await new Promise(resolve => {
-        ws.disconnect()
-        resolve()
-      })
+      // await new Promise(resolve => {
+      //   ws.disconnect()
+      //   resolve()
+      // })
       orderBook.value.stop() 
       orderBookStore.clearValues()
       chartStore.finished = true
