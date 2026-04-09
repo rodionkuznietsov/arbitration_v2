@@ -79,6 +79,8 @@ async def run_ws(
                             ws_data=data
                         ),
                     )
+
+                    log.info(ws_message.event_data.ws_data)
                     
                     push_to_subscribes(ws_message)
             except websockets.exceptions.InvalidStatus as e:
