@@ -64,6 +64,10 @@
 
         es.onmessage = (event) => {
           const event_data = JSON.parse(event.data)
+          tg.showAlert(`${JSON.stringify(event.data)}`, () => {
+            console.log("Пользователь закрыл alert")
+          });
+          
           if (event_data.type == "log") {
             try {
               userStateStore.isBotRunning = event_data.payload.isBotRunning
