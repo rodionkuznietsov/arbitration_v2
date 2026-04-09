@@ -120,6 +120,8 @@ async fn handle_connection(
     // Обрабатываем входящие сообщения от клиента
     while let Some(msg) = ws_receiver.next().await {
         if let Ok(msg) = msg {
+            println!("{:?}", msg);
+
             match msg {
                 Message::Text(msg) => {
                     if let Ok(subscription) = serde_json::from_str::<Subscription>(&msg) {       
