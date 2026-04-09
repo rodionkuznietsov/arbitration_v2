@@ -90,7 +90,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 
                 error_queues = await get_queue(tg_user_id)
                 for queue in error_queues:
-                    error_event = await queue.get()
+                    error_event = queue.get_nowait()
                     message.event_data.payload.isBotRunning = error_event.payload.isBotRunning
                     message.event_data.payload.status = error_event.payload.status
 
