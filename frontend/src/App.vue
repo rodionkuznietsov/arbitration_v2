@@ -142,7 +142,9 @@ import { useOrderBookStore } from './stores/orderbook';
               })
             }
           } else if (event_data.type == "websocket") {
-            
+            if (event_data.channel == "order_book") {
+              orderBookStore.longLastPrice = event_data.result.data.order_book.long.last_price
+            }
           }
         }
 
