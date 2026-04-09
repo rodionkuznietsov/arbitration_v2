@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing import Literal
 import structlog
 
-from .schemas import MessageData, MessageMethod
+from .schemas import EventDataTypeEnum, MessageData, MessageMethod
 
 log: structlog.PrintLogger = structlog.get_logger()
 
