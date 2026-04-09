@@ -40,7 +40,7 @@ async def subscribe_events(tg_user_id: int):
             user_state[tg_user_id]["devices"] = user_state[tg_user_id]["devices"] + 1
             log.info(f"UserState: {user_state}")
 
-            await push_to_subscribes(user_state, tg_user_id=tg_user_id)
+            await push_to_subscribes(user_state[tg_user_id], tg_user_id=tg_user_id)
 
         return StreamingResponse(
             event_streamer(q, tg_user_id), 
