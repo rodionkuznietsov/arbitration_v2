@@ -91,6 +91,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
 
                 if user_state[tg_user_id]["devices"] == 0:
                     user_state.pop(tg_user_id, None)
+                    log.info(f"LogRouter -> Было удаленно состояние пользователя: {tg_user_id}")
                 log.info(f"Для клиента: {tg_user_id}, был отключен RustWebsocket")
 
     # Пушим новое собитие на все устройства
