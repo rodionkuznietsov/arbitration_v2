@@ -50,7 +50,8 @@ async def run_ws(
                     await push_to_subscribes(data, tg_user_id=tg_user_id)
                     log.info(data)
             except websockets.exceptions.InvalidStatus as e:
-                log.error(e)
+                log.error(f"RustWebsocket -> {e}")
+                await asyncio.timeout(3)
     except Exception as e:
         log.err(f"RustWebsocket -> {e}")
     except asyncio.CancelledError:

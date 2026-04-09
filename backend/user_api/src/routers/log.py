@@ -7,7 +7,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
 from ..rust_ws import run_ws
-from ..schemas import EventDataTypeEnum, EventTypeEnum, AppStatusEnum, WebSocketActionEnum, WebSocketChannelEnum
+from ..schemas import EventDataTypeEnum, EventTypeEnum, AppStatusEnum, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod, WebSocketActionEnum, WebSocketChannelEnum
 from ..cache import push_to_subscribes, user_state
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 from ..db import database
@@ -25,21 +25,44 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     tg_user_id = int(authothicate(token))
     await database.add_log(tg_user_id, data)
 
-    event_data = {
-        "type": EventDataTypeEnum.Log,
-        "tg_user_id": tg_user_id, 
-        "timestamp": data.timestamp,
-        "payload": {
-            "event": data.event, 
-            "symbol": f"{data.data.symbol.upper()}",
-            "longExchange": data.data.longExchange,
-            "longOrderType": data.data.longOrderType,
-            "shortExchange": data.data.shortExchange,
-            "shortOrderType": data.data.shortOrderType,
-            "status": AppStatusEnum.Offline,
-            "isBotRunning": AppStatusEnum.Stopped
-        }, 
-    }
+    event_data = MessageData(
+        event_data=MessageEventData(
+            type=EventDataTypeEnum.Log,
+            timestamp=data.timestamp,
+            payload=MessageEventPayload(
+                event=data.event,
+                symbol=f"{data.data.symbol.upper()}",
+                longExchange=data.data.longExchange,
+                longOrderType=data.data.longOrderType,
+                shortExchange=data.data.shortExchange,
+                shortOrderType=data.data.shortOrderType,
+                isBotRunning=AppStatusEnum.Stopped
+            )
+        ),
+        context=MessageContext(
+            method=MessageMethod.User,
+            tg_user_id=tg_user_id,
+            status=AppStatusEnum.Offline
+        )
+    )
+
+    log.info(event_data)
+
+    # event_data = {
+    #     "type": ,
+    #     "tg_user_id": tg_user_id, 
+    #     "timestamp": data.timestamp,
+    #     "payload": {
+    #         "event": data.event, 
+    #         "symbol": f"{data.data.symbol.upper()}",
+    #         "longExchange": data.data.longExchange,
+    #         "longOrderType": data.data.longOrderType,
+    #         "shortExchange": data.data.shortExchange,
+    #         "shortOrderType": data.data.shortOrderType,
+    #         "status": AppStatusEnum.Offline,
+    #         "isBotRunning": AppStatusEnum.Stopped
+    #     }, 
+    # }
     
     match data.event:
         case EventTypeEnum.BotStart:
@@ -55,24 +78,24 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 ))
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
                 
-                event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
-                event_data["payload"]["status"] = AppStatusEnum.Online
+                # event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
+                # event_data["payload"]["status"] = AppStatusEnum.Online
 
                 # Сохраняем насстройки для остальных устройств
-                user_state[tg_user_id] = {
-                    "type": EventDataTypeEnum.UserState,
-                    "symbol": event_data["payload"]["symbol"],
+                # user_state[tg_user_id] = {
+                #     "type": EventDataTypeEnum.UserState,
+                #     "symbol": event_data["payload"]["symbol"],
                     
-                    "longExchange": event_data["payload"]["longExchange"],
-                    "longOrderType": event_data["payload"]["longOrderType"],
+                #     "longExchange": event_data["payload"]["longExchange"],
+                #     "longOrderType": event_data["payload"]["longOrderType"],
 
-                    "shortExchange": event_data["payload"]["shortExchange"],
-                    "shortOrderType": event_data["payload"]["shortOrderType"],
+                #     "shortExchange": event_data["payload"]["shortExchange"],
+                #     "shortOrderType": event_data["payload"]["shortOrderType"],
 
-                    "status": event_data["payload"]["status"],
-                    "isBotRunning": event_data["payload"]["isBotRunning"],
-                    "devices": 1,
-                } 
+                #     "status": event_data["payload"]["status"],
+                #     "isBotRunning": event_data["payload"]["isBotRunning"],
+                #     "devices": 1,
+                # } 
 
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
@@ -95,7 +118,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 log.info(f"Для клиента: {tg_user_id}, был отключен RustWebsocket")
 
     # Пушим новое собитие на все устройства
-    await push_to_subscribes(event_data, tg_user_id)
+    # await push_to_subscribes(event_data, tg_user_id)
 
     return ResultSchema(
         status_code=200,

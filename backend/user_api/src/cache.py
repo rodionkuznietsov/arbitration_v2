@@ -1,14 +1,20 @@
 import asyncio
+from typing import Literal
 import structlog
+
+from .schemas import ErrorToUser
 
 log: structlog.PrintLogger = structlog.get_logger()
 
 subscribes = {}
 user_state = {}
 
-async def push_to_subscribes(event_data, tg_user_id: None):
+async def push_to_subscribes(
+    event_data, 
+    error_message: ErrorToUser
+):
     try:
-        if tg_user_id is not None:
+        if error_message is not None:
             for queue in subscribes[tg_user_id]:
                 try:
                     queue.put_nowait(event_data)
