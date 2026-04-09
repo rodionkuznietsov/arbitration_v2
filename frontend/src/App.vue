@@ -22,7 +22,8 @@
   import { useUserState } from './stores/user_state';
   import { useTgStore } from './stores/tg';
   import { useHomeStore } from './stores/home';
-import { useOrderBookStore } from './stores/orderbook';
+  import { useOrderBookStore } from './stores/orderbook';
+  import FetchErrorImg from './assets/img/fetch_error.png'
   
   const authStore = useAuthStore()
   const userStateStore = useUserState()
@@ -184,11 +185,18 @@ import { useOrderBookStore } from './stores/orderbook';
         }
 
       } catch(err) {
-        console.error(err);
+        const img = document.createElement('img')
 
-        tg.showAlert(`Ошибка при авторизации: ${err}`, () => {
-          console.log("Пользователь закрыл alert")
-        });
+        img.src = FetchErrorImg
+        img.style.width = '100%'
+        img.style.height = '100%'
+        
+        document.body.appendChild(img)
+        // console.error(err);
+
+        // tg.showAlert(`Ошибка при авторизации: ${err}`, () => {
+        //   console.log("Пользователь закрыл alert")
+        // });
       }
     }
   });
