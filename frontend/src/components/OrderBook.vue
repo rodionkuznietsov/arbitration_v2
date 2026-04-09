@@ -1,62 +1,43 @@
 <script setup>
     import { useOrderBookStore } from '@/stores/orderbook';
     import { useUserState } from '@/stores/user_state';
-    // import { useWebsocketStore } from '@/stores/websocket';
     import { defineExpose, computed } from 'vue';
     import { volumeFormatter, formatCurrency } from '@/utils/formatters';
     import { useAuthStore } from '@/stores/auth';
     import { logBotEvent } from '@/utils/logFetch';
 
+    const authStore = useAuthStore()
+    const userStateStore = useUserState()
+    const orderBookStore = useOrderBookStore()
+
     const isVisible = computed(() => {
-        return userState.isBotRunning ? 'display: block;' : "display: none;"
+        return userStateStore.isBotRunning ? 'display: block;' : "display: none;"
     })
     
     const loading = computed(() => {
-        return userState.isBotRunning ? 'display: none;' : "display: block;"
+        return userStateStore.isBotRunning ? 'display: none;' : "display: block;"
     })
 
-    const authStore = useAuthStore()
-    const userState = useUserState()
-
-    const orderBookStore = useOrderBookStore()
-    // const ws = useWebsocketStore()
-
-    // let unsubscribe
-
     function start() {
-        const data = userState.get_data()
-        // unsubscribe = ws.subscribe(data.symbol.toString(), 'order_book', data.longExchange.toString(), data.shortExchange.toString(), (result) => {            
-        //     orderBookStore.updateHeader(
-        //         data.symbol,
-        //         data.longExchange, 
-        //         data.longOrderType,
-        //         data.shortExchange,
-        //         data.shortOrderType
-        //     )
-
-        //     orderBookStore.updateData(result.data.order_book)
-        // })
-
         // Сохраняем лог о старте бота в базу данных
         logBotEvent(
             "bot_start", {
-                symbol: data.symbol,
-                longExchange: data.longExchange,
-                longOrderType: data.longOrderType.toLowerCase(),
-                shortExchange: data.shortExchange,
-                shortOrderType: data.shortOrderType.toLowerCase(),
+                symbol: userStateStore.symbol,
+                longExchange: userStateStore.longExchange,
+                longOrderType: userStateStore.longOrderType.toLowerCase(),
+                shortExchange: userStateStore.shortExchange,
+                shortOrderType: userStateStore.shortOrderType.toLowerCase(),
             },
             authStore.token
         )
     }
 
     function stop() {
-        const data = userState.get_data()
         logBotEvent(
             "bot_stop", {
-                symbol: data.symbol,
-                longExchange: data.longExchange,
-                shortExchange: data.shortExchange
+                symbol: userStateStore.symbol,
+                longExchange: userStateStore.longExchange,
+                shortExchange: userStateStore.shortExchange
             },
             authStore.token
         )

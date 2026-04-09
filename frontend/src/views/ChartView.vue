@@ -1,18 +1,13 @@
 <script setup>
     import { useChartStore } from '@/stores/chart';
-    // import { useOrderBookStore } from '@/stores/orderbook';
     import { useUserState } from '@/stores/user_state';
-    import { useWebsocketStore } from '@/stores/websocket';
     import { createChart, CrosshairMode } from 'lightweight-charts';
     import { computed, onActivated, onDeactivated, ref, watch } from 'vue';
-    import { volumeFormatter } from '@/utils/formatters';
+    // import { volumeFormatter } from '@/utils/formatters';
     import ChartLeftMenu from '@/components/chart/ChartLeftMenu.vue';
     import ChartHeader from '@/components/chart/ChartHeader.vue';
 
     const userStateStore = useUserState()
-    const ws = useWebsocketStore()
-    let unsubscribe
-
     const container = ref(null)
     const chartStore = useChartStore()
 
@@ -27,40 +22,6 @@
     let stopVolumeWatch
 
     onActivated(() => {
-        unsubscribe = ws.subscribe(userStateStore.ticker, 'chart', userStateStore.longExchange, userStateStore.shortExchange, (result) => {                                                            
-
-            const tempLongHistory = result.data.lines_history ? result.data.lines_history.long.map(line => ({
-                time: Math.floor(new Date(line.time).getTime()),
-                value: parseFloat(line.value)
-            })) : {}
-
-            const tempShortHistory = result.data.lines_history ? result.data.lines_history.short.map(line => ({
-                time: Math.floor(new Date(line.time).getTime()),
-                value: parseFloat(line.value)
-            })) : {}
-
-            chartStore.linesLongHistory = tempLongHistory
-            chartStore.linesShortHistory = tempShortHistory 
-
-            const update_long_value = result.data.update_line ? {
-                time: Math.floor(new Date(result.data.update_line.long.time).getTime()),
-                value: parseFloat(result.data.update_line.long.value)
-            } : {}
-
-            const update_short_value = result.data.update_line ? {
-                time: Math.floor(new Date(result.data.update_line.short.time).getTime()),
-                value: parseFloat(result.data.update_line.short.value)
-            } : {}
-            
-            chartStore.lastLongLine = update_long_value
-            chartStore.lastShortLine = update_short_value
-
-            if (result.data.volume24h) {
-                chartStore.longVolume24hr = volumeFormatter(result.data.volume24h.long.value)
-                chartStore.shortVolume24hr = volumeFormatter(result.data.volume24h.short.value)
-            }
-        })
-
         const chartOptions = {
             width: container.value.clientWidth,
             height: container.value.clientHeight,
@@ -143,11 +104,6 @@
 
         if (stopVolumeWatch) {
             stopVolumeWatch()
-        }
-
-        if (unsubscribe) {
-            unsubscribe()
-            unsubscribe = null
         }
 
         if (chartStore.chart) {
