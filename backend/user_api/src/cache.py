@@ -7,7 +7,10 @@ from .schemas import MessageData, MessageMethod
 
 log: structlog.PrintLogger = structlog.get_logger()
 
-subscribes = defaultdict(lambda: {"success_queue": [], "error_queue": []})
+subscribes = defaultdict(lambda: {
+    "success_queue": [], 
+    "error_queue": []
+})
 user_state = {}
 
 async def push_to_subscribes(
@@ -16,19 +19,11 @@ async def push_to_subscribes(
     try:
         if message.context is not None:
             user_queues = subscribes[message.context.tg_user_id]
-            try:
-                if message.context.method == MessageMethod.User:
-                    user_queues["success_queue"].put_nowait(message.event_data)
-            except asyncio.QueueFull:
-                pass
-
-        # for queues in subscribes:
-            # for queue in queues:
-            #     try:
-            #         if message.context is not None:
-                        
-            #         # queue.put_nowait(event_data)
-            #     except asyncio.QueueFull:
-            #         pass
+            if message.context.method == MessageMethod.User:
+                for queues in user_queues["success_queue"]:
+                    try:
+                        queues.put_nowait(message.event_data)
+                    except asyncio.QueueFull:
+                        pass
     except Exception as e:
         log.error(f"Cache: {e}")
