@@ -43,25 +43,29 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     
     match data.event:
         case EventTypeEnum.BotStart:
-            # Подключаем клиента
-            task = asyncio.create_task(run_ws(
-                action=WebSocketActionEnum.Subscribe,
-                channel=WebSocketChannelEnum.OrderBook,
-                long_exchange=data.data.longExchange,
-                short_exchange=data.data.shortExchange,
-                symbol=data.data.symbol,
-                tg_user_id=tg_user_id
-            ))
-            ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
-            event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
-            event_data["payload"]["status"] = AppStatusEnum.Online
+            if tg_user_id not in user_state:
 
-            # Сохраняем насстройки для остальных устройств
-            user_state[tg_user_id] = {
-                "ws_task": task,
-                "isBotRunning": event_data["payload"]["isBotRunning"],
-                "devices": 1
-            } 
+                # Подключаем клиента
+                task = asyncio.create_task(run_ws(
+                    action=WebSocketActionEnum.Subscribe,
+                    channel=WebSocketChannelEnum.OrderBook,
+                    long_exchange=data.data.longExchange,
+                    short_exchange=data.data.shortExchange,
+                    symbol=data.data.symbol,
+                    tg_user_id=tg_user_id
+                ))
+                ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
+                
+                event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
+                event_data["payload"]["status"] = AppStatusEnum.Online
+
+                # Сохраняем насстройки для остальных устройств
+                user_state[tg_user_id] = {
+                    "symbol": event_data["payload"]["symbol"],
+                    "isBotRunning": event_data["payload"]["isBotRunning"],
+                    "devices": 1,
+                    "ws_task": task,
+                } 
 
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
