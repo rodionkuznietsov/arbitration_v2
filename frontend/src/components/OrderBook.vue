@@ -21,7 +21,7 @@
     const orderBookStore = useOrderBookStore()
     // const ws = useWebsocketStore()
 
-    let unsubscribe
+    // let unsubscribe
 
     function start() {
         const data = userState.get_data()
@@ -51,21 +51,21 @@
     }
 
     function stop() {
-        const data = userState.get_data()
+        // const data = userState.get_data()
         userState.clearValues()
         orderBookStore.clearValues()
-        if (unsubscribe) {
-            unsubscribe()
+        // if (unsubscribe) {
+        //     unsubscribe()
 
-            logBotEvent(
-                "bot_stop", {
-                    symbol: data.symbol,
-                    longExchange: data.longExchange,
-                    shortExchange: data.shortExchange
-                },
-                authStore.token
-            )
-        }
+        //     logBotEvent(
+        //         "bot_stop", {
+        //             symbol: data.symbol,
+        //             longExchange: data.longExchange,
+        //             shortExchange: data.shortExchange
+        //         },
+        //         authStore.token
+        //     )
+        // }
     }
 
     function getFillPercentAsk(value, method) {
