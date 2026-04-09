@@ -15,7 +15,7 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
     try:
         while True:
             event = await data.get()
-            log.info(f"Отправляем новое собитые { event.event_data.type }")
+            log.info(f"Отправляем новое собитые { event }")
             yield f"data: { json.dumps(event.dict()) }\n\n"
     except asyncio.CancelledError:
         pass
