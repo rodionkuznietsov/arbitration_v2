@@ -17,7 +17,7 @@ async def run_ws():
             "channel": "order_book",
             "long_exchange": "Bybit",
             "short_exchange": "Gate.io",
-            "symbol": "BTC"
+            "ticker": "BTC"
         }))
         response = await websocket.recv()
         log.info(response)
