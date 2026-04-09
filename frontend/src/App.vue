@@ -156,6 +156,16 @@ import { useOrderBookStore } from './stores/orderbook';
             userStateStore.changeStatus(event_data.status)
             userStateStore.isBotRunning = event_data.isBotRunning
 
+            if (userStateStore.isBotRunning) {
+              orderBookStore.updateHeader(
+                event_data.symbol,
+                event_data.longExchange,
+                event_data.longOrderType,
+                event_data.shortExchange,
+                event_data.shortOrderType
+              )
+            }
+
             userStateStore.symbol = event_data.symbol
             userStateStore.longExchange = event_data.longExchange
             userStateStore.longOrderType = event_data.longOrderType
