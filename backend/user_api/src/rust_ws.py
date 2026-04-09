@@ -78,6 +78,7 @@ async def run_ws(
                                     status=AppStatusEnum.Online,
                                     isBotRunning=AppStatusEnum.Running
                                 ),
+                                timestamp=int(time()),
                                 ws_data=data
                             ),
                         )
