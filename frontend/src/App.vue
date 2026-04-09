@@ -171,12 +171,12 @@
               )
             }
 
-            // userStateStore.symbol = event_data.symbol
-            // userStateStore.longExchange = event_data.longExchange
-            // userStateStore.longOrderType = event_data.longOrderType
+            userStateStore.symbol = event_data.payload.symbol
+            userStateStore.longExchange = event_data.payload.longExchange
+            userStateStore.longOrderType = event_data.payload.longOrderType
 
-            // userStateStore.shortExchange = event_data.shortExchange
-            // userStateStore.shortOrderType = event_data.shortOrderType
+            userStateStore.shortExchange = event_data.payload.shortExchange
+            userStateStore.shortOrderType = event_data.payload.shortOrderType
           }
         }
 
