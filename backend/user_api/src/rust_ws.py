@@ -36,6 +36,6 @@ async def run_ws(
 
             while True:
                 response = await websocket.recv()
-                log.info(response)
+                # log.info(response)
     except asyncio.asyncio.CancelledError:
         log.info("ВебСокет остановлен")
