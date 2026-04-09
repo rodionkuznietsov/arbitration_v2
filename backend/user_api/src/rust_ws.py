@@ -44,5 +44,7 @@ async def run_ws(
                 data["type"] = EventDataTypeEnum.Websocket
                 await push_to_subscribes(data, tg_user_id=tg_user_id)
                 log.info(data)
+    except Exception as e:
+        log.err(f"RustWebsocket -> {e}")
     except asyncio.CancelledError:
         log.info("RustWebsocket -> успешно остановлен")
