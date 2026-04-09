@@ -15,12 +15,12 @@ async def push_to_subscribes(
 ):
     try:
         if message.context is not None:
-            for queues in subscribes[message.context.tg_user_id]:
-                try:
-                    if message.context.method == MessageMethod.User:
-                        queues["success_queue"].put_nowait(message.event_data)
-                except asyncio.QueueFull:
-                    pass
+            user_queues = subscribes[message.context.tg_user_id]
+            try:
+                if message.context.method == MessageMethod.User:
+                    user_queues["success_queue"].put_nowait(message.event_data)
+            except asyncio.QueueFull:
+                pass
 
         # for queues in subscribes:
             # for queue in queues:
