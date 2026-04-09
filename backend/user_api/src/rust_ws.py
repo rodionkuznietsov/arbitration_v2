@@ -51,7 +51,7 @@ async def run_ws(
                     message.event_data.payload.status = AppStatusEnum.Online
                     message.event_data.payload.isBotRunning = AppStatusEnum.Running
 
-                    # await push_to_subscribes(message=message)
+                    push_to_subscribes(message=message)
 
                     await websocket.send(json.dumps({
                         "action": action,

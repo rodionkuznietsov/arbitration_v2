@@ -42,7 +42,7 @@ async def subscribe_events(tg_user_id: int):
         
         if tg_user_id in user_state:
             log.info(f"UserState: {user_state}")
-            await push_to_subscribes(user_state[tg_user_id])
+            push_to_subscribes(user_state[tg_user_id])
 
         return StreamingResponse(
             event_streamer(success_queue, tg_user_id), 

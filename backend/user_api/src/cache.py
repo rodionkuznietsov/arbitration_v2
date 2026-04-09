@@ -13,7 +13,7 @@ subscribes = defaultdict(lambda: {
 })
 user_state = {}
 
-async def push_to_subscribes(
+def push_to_subscribes(
     message: MessageData
 ):
     try:
