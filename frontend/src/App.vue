@@ -191,6 +191,8 @@
         img.style.width = '100%'
         img.style.height = '100%'
         img.style.objectFit = 'cover'
+        img.style.pointerEvents = 'none'
+        img.style.userSelect = 'none'
         
         document.body.appendChild(img)
       }
