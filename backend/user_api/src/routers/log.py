@@ -50,6 +50,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 long_exchange=data.data.longExchange,
                 short_exchange=data.data.shortExchange,
                 symbol=data.data.symbol,
+                tg_user_id=tg_user_id
             ))
             ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
             event_data["payload"]["isBotRunning"] = AppStatusEnum.Running

@@ -26,6 +26,7 @@ async def run_ws(
     long_exchange: ExchangeEnum,
     short_exchange: ExchangeEnum,
     symbol: str,
+    tg_user_id: int
 ):
     try:
         async with websockets.connect(WEBSOCKET_URL) as websocket:
@@ -41,7 +42,6 @@ async def run_ws(
                 response = await websocket.recv()
                 data = json.loads(response)
                 data["type"] = EventDataTypeEnum.Websocket
-                print(data)
-                # await push_to_subscribes()
+                await push_to_subscribes(data, tg_user_id=tg_user_id)
     except asyncio.CancelledError:
         log.info("RustWebsocket -> успешно остановлен")

@@ -141,6 +141,10 @@ import { useOrderBookStore } from './stores/orderbook';
                 is_available: true
               })
             }
+          } else if (event_data.type == "websocket") {
+            tg.showAlert(JSON.stringify(event_data.channel), () => {
+              
+            })
           }
         }
 
