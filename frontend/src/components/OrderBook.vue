@@ -13,12 +13,6 @@
     const isVisible = computed(() => {
         return userStateStore.isBotRunning ? 'display: block;' : "display: none;"
     })
-    
-    const loading = computed(() => {
-        return {
-            display: userStateStore.isBotRunning ? 'none' : 'block'
-        };
-    });
 
     function start() {
         // Сохраняем лог о старте бота в базу данных
@@ -65,7 +59,7 @@
 <template>
     <div class="order_book_title">Книги ордеров</div>
     <div id="stakan">
-        <div class="loading_div" :style="loading">
+        <div class="loading_div" v-show="!userStateStore.isBotRunning">
             <img class="loading" src="../assets/img/loading_books.png" draggable="false">
         </div>
         <div id="order_book" :style="isVisible">
