@@ -44,7 +44,8 @@ async def run_ws(
         while True:
             try:
                 async with websockets.connect(WEBSOCKET_URL) as websocket:
-                    user_state.event_data.payload.status = AppStatusEnum.Running
+                    user_state.event_data.payload.status = AppStatusEnum.Online
+                    user_state.event_data.payload.isBotRunning = AppStatusEnum.Running
 
                     await websocket.send(json.dumps({
                         "action": action,
@@ -57,7 +58,7 @@ async def run_ws(
                     response = await websocket.recv()
                     data = json.loads(response)
                     # await push_to_subscribes(data, tg_user_id=tg_user_id)
-                    log.info(data)
+                    # log.info(data)
             except websockets.exceptions.InvalidStatus as e:
                 log.error(f"RustWebsocket -> {e}")
 
