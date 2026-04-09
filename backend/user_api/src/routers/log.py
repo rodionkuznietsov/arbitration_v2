@@ -87,6 +87,8 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     if user_state[tg_user_id]["devices"] > 0
                     else 0
                 )
+                user_state[tg_user_id]["isBotRunning"] = AppStatusEnum.Stopped
+                user_state[tg_user_id]["status"] = AppStatusEnum.Offline
                 log.info(f"Для клиента: {tg_user_id}, был отключен RustWebsocket")
 
     # Пушим новое собитие на все устройства
