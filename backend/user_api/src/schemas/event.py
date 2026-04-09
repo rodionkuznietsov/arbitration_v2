@@ -5,3 +5,4 @@ class EventDataTypeEnum(str, Enum):
     Log = "log"
     Exchange = "exchange"
     Websocket = "websocket"
+    UserState = "user_state"

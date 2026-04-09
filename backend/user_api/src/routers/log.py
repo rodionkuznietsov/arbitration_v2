@@ -61,6 +61,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
 
                 # Сохраняем насстройки для остальных устройств
                 user_state[tg_user_id] = {
+                    "type": EventDataTypeEnum.UserState,
                     "symbol": event_data["payload"]["symbol"],
                     "isBotRunning": event_data["payload"]["isBotRunning"],
                     "devices": 1,

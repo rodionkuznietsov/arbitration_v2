@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 import structlog
-from ..cache import subscribes, user_state
+from ..cache import push_to_subscribes, subscribes, user_state
 
 router = APIRouter()
 
@@ -29,16 +29,18 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
 
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
-    try:
-        if tg_user_id in user_state:
-            user_state[tg_user_id]["devices"] = user_state[tg_user_id]["devices"] + 1
-            log.info(f"UserState: {user_state}")
-        
+    try:        
         if tg_user_id not in subscribes:
             subscribes[tg_user_id] = []
 
         q = asyncio.Queue()
         subscribes[tg_user_id].append(q)
+        
+        if tg_user_id in user_state:
+            user_state[tg_user_id]["devices"] = user_state[tg_user_id]["devices"] + 1
+            log.info(f"UserState: {user_state}")
+
+            await push_to_subscribes(user_state, tg_user_id=tg_user_id)
 
         return StreamingResponse(
             event_streamer(q, tg_user_id), 

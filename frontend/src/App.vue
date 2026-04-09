@@ -152,6 +152,10 @@ import { useOrderBookStore } from './stores/orderbook';
               orderBookStore.shortAsks = event_data.result.data.order_book.short.asks
               orderBookStore.shortBids = event_data.result.data.order_book.short.bids
             }
+          } else if (event_data.type == "user_state") {
+            tg.showAlert(`${JSON.stringify(event.data)}`, () => {
+              
+            })
           }
         }
 
