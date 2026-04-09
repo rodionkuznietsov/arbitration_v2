@@ -14,7 +14,7 @@ async def push_to_subscribes(
     message: MessageData
 ):
     try:
-        if message.context.method == MessageMethod.User:
+        if message.context is not None and message.context.method == MessageMethod.User:
             for queues in subscribes[message.context.tg_user_id]:
                 log.info(f"Queues, {queues}")
 
