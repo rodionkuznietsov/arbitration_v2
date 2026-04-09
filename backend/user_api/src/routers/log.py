@@ -64,10 +64,10 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 log.info(f"Queues: {error_queues}")
                 for queue in error_queues:
                     error_event = await queue.get()
-                    log.info(f"error_event_receiver: {error_event}")
-
-                # event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
+                    message.event_data.payload.isBotRunning = error_event.payload.isBotRunning
                 # event_data["payload"]["status"] = AppStatusEnum.Online
+
+                log.info(f"isBotRunning: {message.event_data.payload.isBotRunning}")
 
                 # Сохраняем насстройки для остальных устройств
                 # user_state[tg_user_id] = {
