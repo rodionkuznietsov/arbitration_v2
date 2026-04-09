@@ -14,7 +14,8 @@ async def push_to_subscribes(
     message: MessageData
 ):
     try:
-            log.info(subscribes)
+        for subcribe in subscribes:
+            log.info(subcribe)
 
         # for queues in subscribes:
             # for queue in queues:
