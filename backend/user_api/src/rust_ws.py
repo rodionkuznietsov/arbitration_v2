@@ -81,7 +81,7 @@ async def run_ws(
 
                 await push_to_subscribes(message=message)
 
-                await asyncio.sleep(3)
+                break
     except Exception as e:
         log.err(f"RustWebsocket -> {e}")
     except asyncio.CancelledError:
