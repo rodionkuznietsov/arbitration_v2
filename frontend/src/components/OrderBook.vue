@@ -52,11 +52,6 @@
 
     function stop() {
         const data = userState.get_data()
-        // userState.clearValues()
-        // orderBookStore.clearValues()
-        // if (unsubscribe) {
-        //     unsubscribe()
-
         logBotEvent(
             "bot_stop", {
                 symbol: data.symbol,
@@ -65,7 +60,6 @@
             },
             authStore.token
         )
-        // }
     }
 
     function getFillPercentAsk(value, method) {

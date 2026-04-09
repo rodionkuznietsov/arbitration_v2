@@ -62,7 +62,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             if task:
                 task.cancel()
                 del ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"]
-                log.info(f"Для клиента: {tg_user_id} был отключен вебсокет по его просьбе.")
+                log.info(f"Для клиента: {tg_user_id}, был отключен RustWebsocket")
 
     # Пушим новое собитие на все устройства
     await push_to_subscribes(event_data, tg_user_id)
