@@ -2,6 +2,7 @@ import asyncio
 import json
 from time import time
 
+import pydantic
 import websockets
 import os
 from dotenv import load_dotenv
@@ -83,7 +84,7 @@ async def run_ws(
                     )
 
                     await push_to_subscribes(message=message)
-                except Exception as e:
+                except pydantic.ValidationError as e:
                     log.error("RustWebsocket -> Одно из полей `message` имеет не правильный формат")
 
                 break
