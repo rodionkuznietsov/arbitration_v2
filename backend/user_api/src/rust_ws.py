@@ -31,5 +31,7 @@ async def run_ws(
             "shortExchange": short_exchange,
             "ticker": symbol
         }))
-        response = await websocket.recv()
-        log.info(response)
+
+        while True:
+            response = await websocket.recv()
+            log.info(response)
