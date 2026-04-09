@@ -84,8 +84,9 @@ async def run_ws(
                     )
 
                     await push_to_subscribes(message=message)
-                except pydantic.ValidationError:
+                except pydantic.ValidationError as e:
                     log.error("RustWebsocket -> Одно из полей `message` имеет не правильный формат")
+                    log.error(f"RustWebsocket -> {e}")
 
                 break
     except Exception as e:
