@@ -125,7 +125,7 @@ async fn handle_connection(
                     if let Ok(subscription) = serde_json::from_str::<Subscription>(&msg) {                        
                         let ticker = Arc::new(format!("{}usdt", subscription.ticker.to_lowercase()));
 
-                        println!("{:?}", subscription)
+                        println!("{:?}", subscription);
 
                         match subscription.action {
                             ClientCmd::Subscribe => {
