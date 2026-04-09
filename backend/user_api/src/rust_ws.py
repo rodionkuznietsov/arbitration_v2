@@ -15,8 +15,8 @@ async def run_ws():
         await websocket.send(json.dumps({
             "action": "subscribe",
             "channel": "order_book",
-            "long_exchange": "Bybit",
-            "short_exchange": "Gate.io",
+            "long_exchange": "bybit",
+            "short_exchange": "gate.io",
             "ticker": "BTC"
         }))
         response = await websocket.recv()

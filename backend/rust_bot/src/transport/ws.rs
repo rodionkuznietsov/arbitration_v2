@@ -122,8 +122,6 @@ async fn handle_connection(
         if let Ok(msg) = msg {
             match msg {
                 Message::Text(msg) => {
-                    println!("{:?}", msg);
-
                     if let Ok(subscription) = serde_json::from_str::<Subscription>(&msg) {       
                         println!("{:?}", subscription);
                                          
