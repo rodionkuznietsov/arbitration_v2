@@ -49,7 +49,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
 
     match data.event:
         case EventTypeEnum.BotStart:
-            if tg_user_id not in user_state or user_state[tg_user_id]["isBotRunning"] == AppStatusEnum.Stopped:
+            if tg_user_id not in user_state or user_state[tg_user_id].event_data.payload.isBotRunning == AppStatusEnum.Stopped:
                 # Подключаем клиента
                 task = asyncio.create_task(run_ws(
                     action=WebSocketActionEnum.Subscribe,
