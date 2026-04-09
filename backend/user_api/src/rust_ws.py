@@ -28,11 +28,14 @@ async def run_ws(
     symbol: str,
     tg_user_id: int
 ):
+    log.info("Подключение к RustWebsocket")
+
     try:
         while True:
-
             try:
                 async with websockets.connect(WEBSOCKET_URL) as websocket:
+                    log.info("Подключено к RustWebsocket")
+
                     await websocket.send(json.dumps({
                         "action": action,
                         "channel": channel,
