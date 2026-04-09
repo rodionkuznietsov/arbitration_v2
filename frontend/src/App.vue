@@ -186,8 +186,6 @@
       } catch(err) {
         const img = document.createElement('img')
 
-        console.log(err.status)
-
         if (err.status == 400) {
           img.src = Error401Img
         } else {
