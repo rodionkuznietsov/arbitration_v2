@@ -1,4 +1,5 @@
 import asyncio
+from collections import defaultdict
 from typing import Literal
 import structlog
 
@@ -6,7 +7,7 @@ from .schemas import MessageData
 
 log: structlog.PrintLogger = structlog.get_logger()
 
-subscribes = {}
+subscribes = defaultdict(lambda: {"success_queue": [], "error_queue": []})
 user_state = {}
 
 async def push_to_subscribes(

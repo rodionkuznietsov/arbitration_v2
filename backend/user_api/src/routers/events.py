@@ -30,10 +30,6 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
     try:        
-        if tg_user_id not in subscribes:
-            subscribes[tg_user_id]["success_queue"] = []
-            subscribes[tg_user_id]["error_queue"] = []
-
         success_queue = asyncio.Queue()
         error_queue = asyncio.Queue()
         subscribes[tg_user_id]["success_queue"].append(success_queue)
