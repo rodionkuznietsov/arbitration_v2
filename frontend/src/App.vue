@@ -24,6 +24,7 @@
   import { useHomeStore } from './stores/home';
   import { useOrderBookStore } from './stores/orderbook';
   import FetchErrorImg from './assets/img/fetch_error.png'
+  import Error401Img from './assets/img/401.png'
   
   const authStore = useAuthStore()
   const userStateStore = useUserState()
@@ -48,7 +49,9 @@
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || "Неизвестная ошибка")
+          throw Object.assign(new Error(errorData.message || "Неизвестная ошибка"), {
+            status: errorData.status || 500
+          })
         }
 
         const data = await response.json()
@@ -181,11 +184,14 @@
         }
 
       } catch(err) {
-        console.log("ЭТО ОИШБК", err)
-        
         const img = document.createElement('img')
 
-        img.src = FetchErrorImg
+        if (err.status == 400) {
+          img.src = Error401Img
+        } else {
+          img.src = FetchErrorImg
+        }
+
         img.style.width = "100%"
         img.style.height = "100%"
         img.style.objectFit = 'cover'
