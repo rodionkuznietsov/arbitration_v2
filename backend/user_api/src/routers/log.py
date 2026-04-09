@@ -43,11 +43,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     
     match data.event:
         case EventTypeEnum.BotStart:
-            log.info(f"{EventTypeEnum.BotStart}")
-            event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
-            event_data["payload"]["status"] = AppStatusEnum.Online
-
-            # Конектимся к rust websocket
+            # Подключаем клиента
             task = asyncio.create_task(run_ws(
                 action=WebSocketActionEnum.Subscribe,
                 channel=WebSocketChannelEnum.OrderBook,
@@ -56,9 +52,12 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 symbol=data.data.symbol
             ))
             ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
+            event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
+            event_data["payload"]["status"] = AppStatusEnum.Online
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
             
+            # Отключаем клиента
             if task:
                 task.cancel()
                 del ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"]
