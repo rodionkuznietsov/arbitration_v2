@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from ..schemas import ExchangeEnum
 
 class EventTypeEnum(str, Enum):
+    UserState = "user_state"
     BotStart = "bot_start"
     BotStop = "bot_stop"
 

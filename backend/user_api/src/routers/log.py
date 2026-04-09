@@ -1,5 +1,6 @@
 
 import asyncio
+from time import time
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 import structlog
@@ -77,19 +78,24 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 #     "isBotRunning": message.event_data.payload.isBotRunning,
                 # } 
 
-                user_state[tg_user_id] = UserStatePayload(
-                    symbol=message.event_data.payload.symbol,
-                    
-                    longExchange=message.event_data.payload.longExchange,
-                    longOrderType=message.event_data.payload.longOrderType,
+                user_state[tg_user_id] = MessageData(
+                    event_data=MessageEventData(
+                        type=EventTypeEnum.UserState,
+                        payload=UserStatePayload(
+                            symbol=message.event_data.payload.symbol,
+                            
+                            longExchange=message.event_data.payload.longExchange,
+                            longOrderType=message.event_data.payload.longOrderType,
 
-                    shortExchange=message.event_data.payload.shortExchange,
-                    shortOrderType=message.event_data.payload.shortOrderType,
+                            shortExchange=message.event_data.payload.shortExchange,
+                            shortOrderType=message.event_data.payload.shortOrderType,
 
-                    status=message.event_data.payload.status,
-                    isBotRunning=message.event_data.payload.isBotRunning,
+                            status=message.event_data.payload.status,
+                            isBotRunning=message.event_data.payload.isBotRunning,
+                        ),
+                        timestamp=int(time())
+                    )
                 )
-                
                 
                 error_queues = await get_queue(tg_user_id)
                 for queue in error_queues:
