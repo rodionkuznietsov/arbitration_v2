@@ -63,7 +63,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 del ws_task[data.data.symbol]
                 log.info(f"Для клиента: {tg_user_id} был отключен вебсокет по его просьбе.")
 
-
     # Пушим новое собитие на все устройства
     await push_to_subscribes(event_data, tg_user_id)
 
