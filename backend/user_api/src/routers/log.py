@@ -103,6 +103,9 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     message.event_data.payload.isBotRunning = error_event.payload.isBotRunning
                     message.event_data.payload.status = error_event.payload.status
 
+                    user_state[tg_user_id].event_data.payload.isBotRunning = error_event.payload.isBotRunning
+                    user_state[tg_user_id].event_data.payload.status = error_event.payload.status
+
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
             
