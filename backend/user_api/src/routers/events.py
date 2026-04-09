@@ -31,6 +31,7 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
 async def subscribe_events(tg_user_id: int):
     try:
         if tg_user_id in user_state:
+            user_state[tg_user_id]["devices"] = user_state[tg_user_id]["devices"] + 1
             log.info(f"UserState: {user_state}")
         
         if tg_user_id not in subscribes:
