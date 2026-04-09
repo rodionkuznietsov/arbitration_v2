@@ -29,6 +29,7 @@ async def push_to_subscribes(
                 for queues in user_queues["error_queue"]:
                     try:
                         queues.put_nowait(message.event_data)
+                        log.info("Cache -> Добавлено новое событие для error_queue")
                     except asyncio.QueueFull:
                         pass
 
