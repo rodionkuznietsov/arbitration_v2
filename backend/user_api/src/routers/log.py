@@ -64,20 +64,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 message.event_data.payload.status = AppStatusEnum.Online
 
                 # Сохраняем насстройки для остальных устройств
-                # user_state[tg_user_id] = {
-                #     "type": EventDataTypeEnum.UserState,
-                #     "symbol": message.event_data.payload.symbol,
-                    
-                #     "longExchange": message.event_data.payload.longExchange,
-                #     "longOrderType": message.event_data.payload.longOrderType,
-
-                #     "shortExchange": message.event_data.payload.shortExchange,
-                #     "shortOrderType": message.event_data.payload.shortOrderType,
-
-                #     "status": message.event_data.payload.status,
-                #     "isBotRunning": message.event_data.payload.isBotRunning,
-                # } 
-
                 user_state[tg_user_id] = MessageData(
                     event_data=MessageEventData(
                         type=EventTypeEnum.UserState,
