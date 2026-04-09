@@ -64,6 +64,12 @@
 
         es.onmessage = (event) => {
           const event_data = JSON.parse(event.data)
+
+          tg.showAlert(`${JSON.stringify(event.data)}`, () => {
+            
+          })
+          
+          
           if (event_data.type == "log") {
             try {
               userStateStore.isBotRunning = event_data.payload.isBotRunning
@@ -156,8 +162,10 @@
               orderBookStore.shortAsks = event_data.result.data.order_book.short.asks
               orderBookStore.shortBids = event_data.result.data.order_book.short.bids
             }
-          } else {
-            alert(`${JSON.stringify(event.data)}`)
+          } else if (event_data.type == "user_state") {
+            tg.showAlert(`${JSON.stringify(event.data)}`, () => {
+              
+            })
             // userStateStore.changeStatus(event_data.status)
             // userStateStore.isBotRunning = event_data.isBotRunning
 
