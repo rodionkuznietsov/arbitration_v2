@@ -8,7 +8,7 @@ from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
 from ..rust_ws import run_ws
 from ..schemas import EventTypeEnum, AppStatusEnum, WebSocketActionEnum, WebSocketChannelEnum
-from .events import push_to_subscribes
+from ..cache import push_to_subscribes
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 from ..db import database
 from ..schemas import LogMessageSchema, ResultSchema, UserLogSchema
@@ -50,7 +50,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 long_exchange=data.data.longExchange,
                 short_exchange=data.data.shortExchange,
                 symbol=data.data.symbol,
-                tg_user_id=tg_user_id,
             ))
             ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
             event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
