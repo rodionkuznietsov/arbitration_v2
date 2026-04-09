@@ -64,9 +64,6 @@
 
         es.onmessage = (event) => {
           const event_data = JSON.parse(event.data)
-          tg.showAlert(`${JSON.stringify(event.data)}`, () => {
-            console.log("Пользователь закрыл alert")
-          });
           
           if (event_data.type == "log") {
             try {
@@ -161,9 +158,7 @@
               orderBookStore.shortBids = event_data.result.data.order_book.short.bids
             }
           } else if (event_data.type == "user_state") {
-            tg.showAlert(`${event_data}`, () => {
-              console.log("Пользователь закрыл alert")
-            });
+            tg.showAlert(`${event.data}`);
             // userStateStore.changeStatus(event_data.status)
             // userStateStore.isBotRunning = event_data.isBotRunning
 
