@@ -36,6 +36,6 @@ async def run_ws(
 
             while True:
                 response = await websocket.recv()
-                log.info(response)
+                log.info(response["channel"])
     except asyncio.CancelledError:
         log.info("RustWebsocket -> успешно остановлен")
