@@ -70,7 +70,7 @@ async def run_ws(
                                 event=EventTypeEnum.BotStart,
                                 symbol=symbol,
                                 longExchange=long_exchange,
-                                longOrderType="Спот",
+                                longOrderType=OrderTypeEnum.Spot,
                                 shortExchange=short_exchange,
                                 shortOrderType=OrderTypeEnum.Spot,
                                 isBotRunning=AppStatusEnum.Stopped,
@@ -84,7 +84,7 @@ async def run_ws(
                     )
 
                     await push_to_subscribes(message=message)
-                except pydantic.ValidationError as e:
+                except pydantic.ValidationError:
                     log.error("RustWebsocket -> Одно из полей `message` имеет не правильный формат")
 
                 break
