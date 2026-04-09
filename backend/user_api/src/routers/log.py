@@ -60,31 +60,31 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 ))
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
                 
+                message.event_data.payload.status = AppStatusEnum.Online
+
+                # Сохраняем насстройки для остальных устройств
+                user_state[tg_user_id] = {
+                    "type": EventDataTypeEnum.UserState,
+                    "symbol": message.event_data.payload.symbol,
+                    
+                    "longExchange": message.event_data.payload.longExchange,
+                    "longOrderType": message.event_data.payload.longOrderType,
+
+                    "shortExchange": message.event_data.payload.shortExchange,
+                    "shortOrderType": message.event_data.payload.shortOrderType,
+
+                    "status": message.event_data.payload.status,
+                    "isBotRunning": message.event_data.payload.isBotRunning,
+                } 
+                
                 error_queues = await get_queue(tg_user_id)
                 log.info(f"Queues: {error_queues}")
                 for queue in error_queues:
                     error_event = await queue.get()
                     message.event_data.payload.isBotRunning = error_event.payload.isBotRunning
                     message.event_data.payload.status = error_event.payload.status
-                # event_data["payload"]["status"] = AppStatusEnum.Online
 
                 log.info(f"StatusUpdate: {message.event_data.payload.status}")
-
-                # Сохраняем насстройки для остальных устройств
-                # user_state[tg_user_id] = {
-                #     "type": EventDataTypeEnum.UserState,
-                #     "symbol": event_data["payload"]["symbol"],
-                    
-                #     "longExchange": event_data["payload"]["longExchange"],
-                #     "longOrderType": event_data["payload"]["longOrderType"],
-
-                #     "shortExchange": event_data["payload"]["shortExchange"],
-                #     "shortOrderType": event_data["payload"]["shortOrderType"],
-
-                #     "status": event_data["payload"]["status"],
-                #     "isBotRunning": event_data["payload"]["isBotRunning"],
-                #     "devices": 1,
-                # } 
 
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
