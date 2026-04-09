@@ -14,8 +14,8 @@ async def push_to_subscribes(
     message: MessageData
 ):
     try:
-        for queues in subscribes.values():
-            print(queues)
+        for queues in subscribes:
+            log.info(queues)
             # for queue in queues:
             #     try:
             #         if message.context is not None:
