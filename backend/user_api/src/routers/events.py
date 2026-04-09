@@ -18,6 +18,9 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
             yield f"data: { json.dumps(event) }\n\n"
     except asyncio.CancelledError:
         pass
+    except Exception as e:
+        log.error(f"EventsRouter -> {e}")
+
     finally:
         # убираем только свою очередь
         if tg_user_id in subscribes and data in subscribes[tg_user_id]:
