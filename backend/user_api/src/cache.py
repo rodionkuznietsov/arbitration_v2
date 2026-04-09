@@ -34,3 +34,10 @@ async def push_to_subscribes(
 
     except Exception as e:
         log.error(f"Cache: {e}")
+
+async def get_queue(
+    tg_user_id: int
+):
+    if tg_user_id in subscribes:
+        return subscribes[tg_user_id]["error_queue"]
+    return None

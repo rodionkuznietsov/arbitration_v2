@@ -8,7 +8,7 @@ from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
 from ..rust_ws import run_ws
 from ..schemas import EventDataTypeEnum, EventTypeEnum, AppStatusEnum, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod, WebSocketActionEnum, WebSocketChannelEnum
-from ..cache import push_to_subscribes, user_state
+from ..cache import get_queue, push_to_subscribes, user_state
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 from ..db import database
 from ..schemas import LogMessageSchema, ResultSchema, UserLogSchema
@@ -46,22 +46,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
         )
     )
 
-    # event_data = {
-    #     "type": ,
-    #     "tg_user_id": tg_user_id, 
-    #     "timestamp": data.timestamp,
-    #     "payload": {
-    #         "event": data.event, 
-    #         "symbol": f"{data.data.symbol.upper()}",
-    #         "longExchange": data.data.longExchange,
-    #         "longOrderType": data.data.longOrderType,
-    #         "shortExchange": data.data.shortExchange,
-    #         "shortOrderType": data.data.shortOrderType,
-    #         "status": AppStatusEnum.Offline,
-    #         "isBotRunning": AppStatusEnum.Stopped
-    #     }, 
-    # }
-    
     match data.event:
         case EventTypeEnum.BotStart:
             if tg_user_id not in user_state or user_state[tg_user_id]["isBotRunning"] == AppStatusEnum.Stopped:
@@ -76,7 +60,8 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 ))
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
                 
-                
+                result = await get_queue(tg_user_id)
+                log.info(f"Result: {result}")
 
                 # event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
                 # event_data["payload"]["status"] = AppStatusEnum.Online
