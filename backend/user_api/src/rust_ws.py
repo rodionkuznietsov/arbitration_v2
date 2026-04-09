@@ -6,6 +6,8 @@ import os
 from dotenv import load_dotenv
 import structlog
 
+from .routers.events import push_to_subscribes
+
 from .schemas import (
     WebSocketActionEnum, 
     WebSocketChannelEnum, 
@@ -22,7 +24,8 @@ async def run_ws(
     channel: WebSocketChannelEnum,
     long_exchange: ExchangeEnum,
     short_exchange: ExchangeEnum,
-    symbol: str
+    symbol: str,
+    tg_user_id: int
 ):
     try:
         async with websockets.connect(WEBSOCKET_URL) as websocket:
@@ -37,6 +40,8 @@ async def run_ws(
             while True:
                 response = await websocket.recv()
                 data = json.loads(response)
-                log.info(data["channel"])
+                await push_to_subscribes(
+                    data, tg_user_id,
+                )
     except asyncio.CancelledError:
         log.info("RustWebsocket -> успешно остановлен")
