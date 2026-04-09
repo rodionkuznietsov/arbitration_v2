@@ -84,7 +84,7 @@ async def run_ws(
 
                     await push_to_subscribes(message=message)
                 except Exception as e:
-                    log.error("RustWebsocket -> Одно из полей имеет не правильный формат")
+                    log.error("RustWebsocket -> Одно из полей `message` имеет не правильный формат")
 
                 break
     except Exception as e:
