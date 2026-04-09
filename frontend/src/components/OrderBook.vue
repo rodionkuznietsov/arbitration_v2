@@ -57,14 +57,14 @@
         // if (unsubscribe) {
         //     unsubscribe()
 
-        //     logBotEvent(
-        //         "bot_stop", {
-        //             symbol: data.symbol,
-        //             longExchange: data.longExchange,
-        //             shortExchange: data.shortExchange
-        //         },
-        //         authStore.token
-        //     )
+        logBotEvent(
+            "bot_stop", {
+                symbol: data.symbol,
+                longExchange: data.longExchange,
+                shortExchange: data.shortExchange
+            },
+            authStore.token
+        )
         // }
     }
 
