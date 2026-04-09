@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import websockets
@@ -23,15 +24,18 @@ async def run_ws(
     short_exchange: ExchangeEnum,
     symbol: str
 ):
-    async with websockets.connect(WEBSOCKET_URL) as websocket:
-        await websocket.send(json.dumps({
-            "action": action,
-            "channel": channel,
-            "longExchange": long_exchange,
-            "shortExchange": short_exchange,
-            "ticker": symbol
-        }))
+    try:
+        async with websockets.connect(WEBSOCKET_URL) as websocket:
+            await websocket.send(json.dumps({
+                "action": action,
+                "channel": channel,
+                "longExchange": long_exchange,
+                "shortExchange": short_exchange,
+                "ticker": symbol
+            }))
 
-        while True:
-            response = await websocket.recv()
-            log.info(response)
+            while True:
+                response = await websocket.recv()
+                log.info(response)
+    except asyncio.asyncio.CancelledError:
+        log.info("ВебСокет остановлен")
