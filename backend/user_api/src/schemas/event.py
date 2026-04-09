@@ -46,6 +46,11 @@ class MessageContext(BaseModel):
     method: MessageMethod
     tg_user_id: int
 
+class MessageWebsocketData(BaseModel):
+    method: MessageMethod
+    tg_user_id: int
+
 class MessageData(BaseModel):
     event_data: MessageEventData
     context: Optional[MessageContext] = None
+    ws_data: Optional[MessageWebsocketData] = None

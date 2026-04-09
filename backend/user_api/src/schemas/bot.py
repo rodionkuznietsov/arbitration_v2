@@ -6,7 +6,8 @@ from ..schemas import ExchangeEnum
 class EventTypeEnum(str, Enum):
     UserState = "user_state"
     BotStart = "bot_start"
-    BotStop = "bot_stop"
+    BotStop = "bot_stop",
+    Websocket = "websocket"
 
 class OrderTypeEnum(str, Enum):
     Spot = "спот"
