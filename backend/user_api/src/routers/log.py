@@ -8,7 +8,7 @@ from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
 from ..rust_ws import run_ws
 from ..schemas import EventDataTypeEnum, EventTypeEnum, AppStatusEnum, WebSocketActionEnum, WebSocketChannelEnum
-from ..cache import push_to_subscribes
+from ..cache import push_to_subscribes, user_state
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 from ..db import database
 from ..schemas import LogMessageSchema, ResultSchema, UserLogSchema
@@ -40,6 +40,10 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             "isBotRunning": AppStatusEnum.Stopped
         }, 
     }
+
+    if tg_user_id in user_state:
+        print(user_state)
+        return
     
     match data.event:
         case EventTypeEnum.BotStart:
@@ -55,6 +59,13 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
             event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
             event_data["payload"]["status"] = AppStatusEnum.Online
+
+            # Сохраняем насстройки для остальных устройств
+            user_state[tg_user_id] = {
+                "ws_task": task,
+                "isBotRunning": event_data["payload"]["isBotRunning"],
+            } 
+
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
             

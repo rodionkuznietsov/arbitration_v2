@@ -1,6 +1,8 @@
 import asyncio
 
 subscribes = {}
+user_state = {}
+
 async def push_to_subscribes(event_data, tg_user_id: None):
     if tg_user_id is not None:
         for queue in subscribes[tg_user_id]:
