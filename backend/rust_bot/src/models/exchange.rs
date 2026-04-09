@@ -6,11 +6,11 @@ use strum_macros::Display;
 use crate::models::{websocket::Symbol};
 
 #[derive(Display, Debug, Clone, Type, PartialEq, Deserialize, Serialize, Copy, Eq, Hash, PartialOrd, GetSize)]
-#[serde(rename_all="snake_case")]
 #[strum(serialize_all="PascalCase")]
 #[sqlx(type_name="exchange_type")]
 pub enum ExchangeType {
     Binance, 
+    #[serde(rename="bybit")]
     Bybit,
     #[serde(rename="kucoin")]
     KuCoin,
