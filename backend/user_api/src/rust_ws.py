@@ -37,6 +37,7 @@ async def run_ws(
     symbol: str,
     
     user_state: MessageData,
+    message: MessageData,
 ):
     log.info("Подключение к RustWebsocket")
 
@@ -46,6 +47,9 @@ async def run_ws(
                 async with websockets.connect(WEBSOCKET_URL) as websocket:
                     user_state.event_data.payload.status = AppStatusEnum.Online
                     user_state.event_data.payload.isBotRunning = AppStatusEnum.Running
+
+                    message.event_data.payload.status = AppStatusEnum.Online
+                    message.event_data.payload.isBotRunning = AppStatusEnum.Running
 
                     await websocket.send(json.dumps({
                         "action": action,

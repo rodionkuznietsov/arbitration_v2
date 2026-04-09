@@ -81,12 +81,10 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     long_exchange=data.data.longExchange,
                     short_exchange=data.data.shortExchange,
                     symbol=data.data.symbol,
-                    user_state=user_state[tg_user_id]
+                    user_state=user_state[tg_user_id],
+                    message=message
                 ))
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
-                
-                message.event_data.payload.status = user_state[tg_user_id].event_data.payload.status
-                message.event_data.payload.isBotRunning = user_state[tg_user_id].event_data.payload.isBotRunning
                 
                 # error_queues = await get_queue(tg_user_id)
                 # for queue in error_queues:
