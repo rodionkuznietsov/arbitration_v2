@@ -153,8 +153,10 @@ import { useOrderBookStore } from './stores/orderbook';
               orderBookStore.shortBids = event_data.result.data.order_book.short.bids
             }
           } else if (event_data.type == "user_state") {
+            userStateStore.isBotRunning = event_data.isBotRunning
+
             tg.showAlert(`${JSON.stringify(event.data)}`, () => {
-              
+
             })
           }
         }
