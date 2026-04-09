@@ -1,20 +1,14 @@
 
 from typing import Annotated
-
 from fastapi import APIRouter, Depends, HTTPException
 import structlog
-
 import jwt
 from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
 from ..rust_ws import run_ws
-
-from ..schemas import EventTypeEnum, AppStatusEnum
-
+from ..schemas import EventTypeEnum, AppStatusEnum, WebSocketActionEnum, WebSocketChannelEnum
 from .events import push_to_subscribes
-
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
-
 from ..db import database
 from ..schemas import LogMessageSchema, ResultSchema, UserLogSchema
 
@@ -50,8 +44,14 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             event_data["payload"]["isBotRunning"] = AppStatusEnum.Running
             event_data["payload"]["status"] = AppStatusEnum.Online
 
-            # Подключаюсь к rust_ws
-            await run_ws()
+            # Конектимся к rust websocket
+            await run_ws(
+                action=WebSocketActionEnum.Subscribe,
+                channel=WebSocketChannelEnum.OrderBook,
+                long_exchange=data.data.longExchange,
+                short_exchange=data.data.shortExchange,
+                symbol=data.data.symbol
+            )
 
     # Пушим новое собитие на все устройства
     await push_to_subscribes(event_data, tg_user_id)

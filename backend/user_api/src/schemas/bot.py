@@ -1,10 +1,7 @@
 from enum import Enum
 from typing import Optional
 from pydantic import BaseModel
-
-class ExchangeEnum(str, Enum):
-    Bybit = "bybit"
-    Gate = "gate.io"
+from ..schemas import ExchangeEnum
 
 class EventTypeEnum(str, Enum):
     BotStart = "bot_start"

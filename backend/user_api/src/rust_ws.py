@@ -5,19 +5,31 @@ import os
 from dotenv import load_dotenv
 import structlog
 
+from .schemas import (
+    WebSocketActionEnum, 
+    WebSocketChannelEnum, 
+    ExchangeEnum
+)
+
 load_dotenv()
 log: structlog.PrintLogger = structlog.get_logger()
 
 WEBSOCKET_URL = os.getenv("WEBSOCKET_URL")
 
-async def run_ws():
+async def run_ws(
+    action: WebSocketActionEnum,
+    channel: WebSocketChannelEnum,
+    long_exchange: ExchangeEnum,
+    short_exchange: ExchangeEnum,
+    symbol: str
+):
     async with websockets.connect(WEBSOCKET_URL) as websocket:
         await websocket.send(json.dumps({
-            "action": "subscribe",
-            "channel": "order_book",
-            "longExchange": "bybit",
-            "shortExchange": "gate.io",
-            "ticker": "BTC"
+            "action": action,
+            "channel": channel,
+            "longExchange": long_exchange,
+            "shortExchange": short_exchange,
+            "ticker": symbol
         }))
         response = await websocket.recv()
         log.info(response)
