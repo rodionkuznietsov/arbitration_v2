@@ -40,10 +40,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             "isBotRunning": AppStatusEnum.Stopped
         }, 
     }
-
-    if tg_user_id in user_state:
-        print(user_state)
-        return
     
     match data.event:
         case EventTypeEnum.BotStart:
