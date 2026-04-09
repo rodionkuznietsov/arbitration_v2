@@ -14,11 +14,13 @@ async def push_to_subscribes(
 ):
     try:
         for queues in subscribes.values():
-            for queue in queues:
-                try:
-                    print(message.context.method)
-                    # queue.put_nowait(event_data)
-                except asyncio.QueueFull:
-                    pass
+            print(queues)
+            # for queue in queues:
+            #     try:
+            #         if message.context is not None:
+                        
+            #         # queue.put_nowait(event_data)
+            #     except asyncio.QueueFull:
+            #         pass
     except Exception as e:
         log.error(f"Cache: {e}")
