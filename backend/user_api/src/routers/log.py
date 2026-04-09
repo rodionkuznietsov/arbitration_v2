@@ -7,7 +7,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
 from ..rust_ws import run_ws
-from ..schemas import EventDataTypeEnum, EventTypeEnum, AppStatusEnum, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod, WebSocketActionEnum, WebSocketChannelEnum
+from ..schemas import EventDataTypeEnum, EventTypeEnum, AppStatusEnum, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod, UserStatePayload, WebSocketActionEnum, WebSocketChannelEnum
 from ..cache import get_queue, push_to_subscribes, user_state
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 from ..db import database
@@ -63,19 +63,33 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 message.event_data.payload.status = AppStatusEnum.Online
 
                 # Сохраняем насстройки для остальных устройств
-                user_state[tg_user_id] = {
-                    "type": EventDataTypeEnum.UserState,
-                    "symbol": message.event_data.payload.symbol,
+                # user_state[tg_user_id] = {
+                #     "type": EventDataTypeEnum.UserState,
+                #     "symbol": message.event_data.payload.symbol,
                     
-                    "longExchange": message.event_data.payload.longExchange,
-                    "longOrderType": message.event_data.payload.longOrderType,
+                #     "longExchange": message.event_data.payload.longExchange,
+                #     "longOrderType": message.event_data.payload.longOrderType,
 
-                    "shortExchange": message.event_data.payload.shortExchange,
-                    "shortOrderType": message.event_data.payload.shortOrderType,
+                #     "shortExchange": message.event_data.payload.shortExchange,
+                #     "shortOrderType": message.event_data.payload.shortOrderType,
 
-                    "status": message.event_data.payload.status,
-                    "isBotRunning": message.event_data.payload.isBotRunning,
-                } 
+                #     "status": message.event_data.payload.status,
+                #     "isBotRunning": message.event_data.payload.isBotRunning,
+                # } 
+
+                user_state[tg_user_id] = UserStatePayload(
+                    symbol=message.event_data.payload.symbol,
+                    
+                    longExchange=message.event_data.payload.longExchange,
+                    longOrderType=message.event_data.payload.longOrderType,
+
+                    shortExchange=message.event_data.payload.shortExchange,
+                    shortOrderType=message.event_data.payload.shortOrderType,
+
+                    status=message.event_data.payload.status,
+                    isBotRunning=message.event_data.payload.isBotRunning,
+                )
+                
                 
                 error_queues = await get_queue(tg_user_id)
                 for queue in error_queues:

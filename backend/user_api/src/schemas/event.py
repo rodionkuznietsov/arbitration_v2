@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel
 
 from ..schemas import ExchangeEnum
@@ -21,10 +21,21 @@ class MessageEventPayload(BaseModel):
     status: AppStatusEnum = AppStatusEnum.Offline
     isBotRunning: AppStatusEnum = AppStatusEnum.Stopped
 
+class UserStatePayload(BaseModel):
+    type: EventDataTypeEnum = EventDataTypeEnum.UserState
+    symbol: str
+    longExchange: ExchangeEnum
+    longOrderType: OrderTypeEnum
+    shortExchange: ExchangeEnum
+    shortOrderType: OrderTypeEnum
+    status: AppStatusEnum = AppStatusEnum.Offline
+    isBotRunning: AppStatusEnum = AppStatusEnum.Stopped
+
+
 class MessageEventData(BaseModel):
     type: EventDataTypeEnum
     timestamp: int
-    payload: MessageEventPayload
+    payload: Union[MessageEventPayload, UserStatePayload]
 
 class MessageMethod(str, Enum):
     User = "user"
