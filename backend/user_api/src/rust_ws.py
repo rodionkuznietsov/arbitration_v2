@@ -29,22 +29,25 @@ async def run_ws(
     tg_user_id: int
 ):
     try:
-        async with websockets.connect(WEBSOCKET_URL) as websocket:
-            await websocket.send(json.dumps({
-                "action": action,
-                "channel": channel,
-                "longExchange": long_exchange,
-                "shortExchange": short_exchange,
-                "ticker": symbol
-            }))
+        while True:
 
-            while True:
-                response = await websocket.recv()
-                data = json.loads(response)
-                data["type"] = EventDataTypeEnum.Websocket
-                await push_to_subscribes(data, tg_user_id=tg_user_id)
-                log.info(data)
-    except Exception as e:
-        log.err(f"RustWebsocket -> {e}")
+            try:
+                async with websockets.connect(WEBSOCKET_URL) as websocket:
+                    await websocket.send(json.dumps({
+                        "action": action,
+                        "channel": channel,
+                        "longExchange": long_exchange,
+                        "shortExchange": short_exchange,
+                        "ticker": symbol
+                    }))
+
+                    response = await websocket.recv()
+                    data = json.loads(response)
+                    data["type"] = EventDataTypeEnum.Websocket
+                    await push_to_subscribes(data, tg_user_id=tg_user_id)
+                    log.info(data)
+            except ConnectionRefusedError as e:
+                log.err(f"RustWebsocket -> {e}")
+                break
     except asyncio.CancelledError:
         log.info("RustWebsocket -> успешно остановлен")
