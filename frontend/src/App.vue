@@ -190,13 +190,9 @@
         img.src = FetchErrorImg
         img.style.width = '100%'
         img.style.height = '100%'
+        img.style.objectFit = 'cover'
         
         document.body.appendChild(img)
-        // console.error(err);
-
-        // tg.showAlert(`Ошибка при авторизации: ${err}`, () => {
-        //   console.log("Пользователь закрыл alert")
-        // });
       }
     }
   });
