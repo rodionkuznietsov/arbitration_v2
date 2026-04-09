@@ -53,4 +53,4 @@ class MessageWebsocketData(BaseModel):
 class MessageData(BaseModel):
     event_data: MessageEventData
     context: Optional[MessageContext] = None
-    ws_data: Optional[MessageWebsocketData] = None
+    ws_data: Optional[dict] = None
