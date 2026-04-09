@@ -145,6 +145,8 @@ import { useOrderBookStore } from './stores/orderbook';
             if (event_data.channel == "order_book") {
               orderBookStore.longLastPrice = event_data.result.data.order_book.long.last_price
               orderBookStore.shortLastPrice = event_data.result.data.order_book.short.last_price
+              orderBookStore.longAsks = event_data.result.data.order_book.long.asks
+              orderBookStore.shortAsks = event_data.result.data.order_book.short.asks
             }
           }
         }
