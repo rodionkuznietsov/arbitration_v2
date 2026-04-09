@@ -51,7 +51,7 @@ async def run_ws(
                     log.info(data)
             except websockets.exceptions.InvalidStatus as e:
                 log.error(f"RustWebsocket -> {e}")
-                await asyncio.timeout(3)
+                await asyncio.sleep(3)
     except Exception as e:
         log.err(f"RustWebsocket -> {e}")
     except asyncio.CancelledError:
