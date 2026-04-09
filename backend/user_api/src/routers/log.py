@@ -67,7 +67,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     "longExchange": event_data["payload"]["longExchange"],
                     "longOrderType": event_data["payload"]["longOrderType"],
 
-                    "shortExchange": event_data["payload"]["longExchange"],
+                    "shortExchange": event_data["payload"]["shortExchange"],
                     "shortOrderType": event_data["payload"]["shortOrderType"],
 
                     "status": event_data["payload"]["status"],
