@@ -61,6 +61,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
                 
                 error_queues = await get_queue(tg_user_id)
+                log.info(f"Queues: {error_queues}")
                 for queue in error_queues:
                     error_event = await queue.get()
                     log.info(error_event)
