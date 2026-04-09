@@ -161,15 +161,15 @@
             userStateStore.changeStatus(event_data.payload.status)
             userStateStore.isBotRunning = event_data.payload.status.isBotRunning
 
-            // if (userStateStore.isBotRunning) {
-            //   orderBookStore.updateHeader(
-            //     event_data.symbol,
-            //     event_data.longExchange,
-            //     event_data.longOrderType,
-            //     event_data.shortExchange,
-            //     event_data.shortOrderType
-            //   )
-            // }
+            if (userStateStore.isBotRunning) {
+              orderBookStore.updateHeader(
+                event_data.payload.symbol,
+                event_data.payload.longExchange,
+                event_data.payload.longOrderType,
+                event_data.payload.shortExchange,
+                event_data.payload.shortOrderType
+              )
+            }
 
             // userStateStore.symbol = event_data.symbol
             // userStateStore.longExchange = event_data.longExchange
