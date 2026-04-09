@@ -1,7 +1,7 @@
 <script setup>
     import { useOrderBookStore } from '@/stores/orderbook';
     import { useUserState } from '@/stores/user_state';
-    import { useWebsocketStore } from '@/stores/websocket';
+    // import { useWebsocketStore } from '@/stores/websocket';
     import { defineExpose, computed } from 'vue';
     import { volumeFormatter, formatCurrency } from '@/utils/formatters';
     import { useAuthStore } from '@/stores/auth';
@@ -19,7 +19,7 @@
     const userState = useUserState()
 
     const orderBookStore = useOrderBookStore()
-    const ws = useWebsocketStore()
+    // const ws = useWebsocketStore()
 
     let unsubscribe
 

@@ -3,18 +3,18 @@
     import FormCombobox from '../components/FormCombobox.vue';
     import OrderBook from '../components/OrderBook.vue';
     import AppHeader from '../components/AppHeader.vue'
-    import { useWebsocketStore } from '@/stores/websocket';
+    // import { useWebsocketStore } from '@/stores/websocket';
     import { useUserState } from '@/stores/user_state';
     import { useChartStore } from '@/stores/chart';
     import { useOrderBookStore } from '@/stores/orderbook';
     import { useAuthStore } from '@/stores/auth';
     import AuthError from '@/components/AuthError.vue';
-    import { API_URL, WEBSOCKET_URL } from '@/config';
+    import { API_URL } from '@/config';
     import { useTgStore } from '@/stores/tg';
     import { useHomeStore } from '@/stores/home';
 
     const authStore = useAuthStore()
-    const ws = useWebsocketStore()
+    // const ws = useWebsocketStore()
     const userState = useUserState()
     const tgStore = useTgStore()
     const homeStore = useHomeStore()
