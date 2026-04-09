@@ -185,7 +185,8 @@ import { useOrderBookStore } from './stores/orderbook';
 
       } catch(err) {
         console.error(err);
-        tg.showAlert("Ошибка при авторизации", () => {
+
+        tg.showAlert(`Ошибка при авторизации: ${err}`, () => {
           console.log("Пользователь закрыл alert")
         });
       }
