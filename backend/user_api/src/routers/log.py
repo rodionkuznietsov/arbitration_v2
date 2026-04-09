@@ -64,6 +64,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             user_state[tg_user_id] = {
                 "ws_task": task,
                 "isBotRunning": event_data["payload"]["isBotRunning"],
+                "devices": 1
             } 
 
         case EventTypeEnum.BotStop:
