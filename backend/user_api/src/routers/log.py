@@ -25,7 +25,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     tg_user_id = int(authothicate(token))
     await database.add_log(tg_user_id, data)
 
-    event_data = MessageData(
+    message = MessageData(
         event_data=MessageEventData(
             type=EventDataTypeEnum.Log,
             timestamp=data.timestamp,
@@ -45,8 +45,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             status=AppStatusEnum.Offline
         )
     )
-
-    log.info(event_data)
 
     # event_data = {
     #     "type": ,
@@ -118,7 +116,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 log.info(f"Для клиента: {tg_user_id}, был отключен RustWebsocket")
 
     # Пушим новое собитие на все устройства
-    # await push_to_subscribes(event_data, tg_user_id)
+    await push_to_subscribes(message)
 
     return ResultSchema(
         status_code=200,
