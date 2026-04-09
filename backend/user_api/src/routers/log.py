@@ -55,10 +55,9 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 short_exchange=data.data.shortExchange,
                 symbol=data.data.symbol
             ))
-            ws_task[f"{tg_user_id}:{data.data.symbol}"] = task
+            ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
         case EventTypeEnum.BotStop:
-            task = ws_task.get(f"{tg_user_id}:{data.data.symbol}")
-            print(ws_task, data.data.symbol)
+            task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
             
             if task:
                 task.cancel()
