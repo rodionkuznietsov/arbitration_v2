@@ -85,8 +85,8 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 ))
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
                 
-                # message.event_data.payload.status = AppStatusEnum.Online
-                # message.event_data.payload.isBotRunning = AppStatusEnum.Running
+                message.event_data.payload.status = user_state[tg_user_id].event_data.payload.status
+                message.event_data.payload.isBotRunning = user_state[tg_user_id].event_data.payload.isBotRunning
                 
                 # error_queues = await get_queue(tg_user_id)
                 # for queue in error_queues:
