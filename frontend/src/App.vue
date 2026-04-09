@@ -50,7 +50,7 @@
         if (!response.ok) {
           const errorData = await response.json();
           throw Object.assign(new Error(errorData.message || "Неизвестная ошибка"), {
-            status: errorData.status || 500
+            status: response.status || 500
           })
         }
 
@@ -185,6 +185,8 @@
 
       } catch(err) {
         const img = document.createElement('img')
+
+        console.log(err.status)
 
         if (err.status == 400) {
           img.src = Error401Img
