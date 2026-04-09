@@ -84,9 +84,9 @@ async def run_ws(
                     except Exception as e:
                         log.error(f"RustWebsocket -> {e}")
 
-                    log.info(data)
+                    log.info(ws_message.event_data.ws_data)
                     
-                    # push_to_subscribes(ws_message)
+                    push_to_subscribes(ws_message)
             except websockets.exceptions.InvalidStatus as e:
                 log.error(f"RustWebsocket -> {e}")
 
