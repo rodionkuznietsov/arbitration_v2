@@ -64,21 +64,24 @@ async def run_ws(
                     response = await websocket.recv()
                     data = json.loads(response)
 
-                    # ws_message = MessageData(
-                    #     event_data=MessageEventData(
-                    #         type=EventDataTypeEnum.Websocket,
-                    #         payload=MessageEventPayload(
-                    #             event=EventTypeEnum.Websocket,
-                    #             longExchange=message.event_data.payload.longExchange,
-                    #             longOrderType=message.event_data.payload.longOrderType,
-                    #             shortExchange=message.event_data.payload.shortExchange,
-                    #             shortOrderType=message.event_data.payload.shortOrderType,
-                    #             status=AppStatusEnum.Online,
-                    #             isBotRunning=AppStatusEnum.Running
-                    #         ),
-                    #         ws_data=data
-                    #     ),
-                    # )
+                    try:
+                        ws_message = MessageData(
+                            event_data=MessageEventData(
+                                type=EventDataTypeEnum.Websocket,
+                                payload=MessageEventPayload(
+                                    event=EventTypeEnum.Websocket,
+                                    longExchange=message.event_data.payload.longExchange,
+                                    longOrderType=message.event_data.payload.longOrderType,
+                                    shortExchange=message.event_data.payload.shortExchange,
+                                    shortOrderType=message.event_data.payload.shortOrderType,
+                                    status=AppStatusEnum.Online,
+                                    isBotRunning=AppStatusEnum.Running
+                                ),
+                                ws_data=data
+                            ),
+                        )
+                    except Exception as e:
+                        log.error(f"RustWebsocket -> {e}")
 
                     log.info(data)
                     
