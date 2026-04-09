@@ -76,8 +76,8 @@ async def run_ws(
                                 status=AppStatusEnum.Online,
                                 isBotRunning=AppStatusEnum.Running
                             ),
+                            ws_data=data
                         ),
-                        ws_data=data
                     )
                     
                     push_to_subscribes(ws_message)

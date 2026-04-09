@@ -31,26 +31,25 @@ class UserStatePayload(BaseModel):
     status: AppStatusEnum = AppStatusEnum.Offline
     isBotRunning: AppStatusEnum = AppStatusEnum.Stopped
 
-
-class MessageEventData(BaseModel):
-    type: EventDataTypeEnum
-    timestamp: int
-    payload: Union[MessageEventPayload, UserStatePayload]
-
 class MessageMethod(str, Enum):
     User = "user"
     WebsocketConnected = "websocket_connected"
     WebsocketErrorConnection = "websocket_error_connection"
 
-class MessageContext(BaseModel):
+class MessageWebsocketData(BaseModel):
     method: MessageMethod
     tg_user_id: int
 
-class MessageWebsocketData(BaseModel):
+class MessageEventData(BaseModel):
+    type: EventDataTypeEnum
+    timestamp: int
+    payload: Union[MessageEventPayload, UserStatePayload]
+    ws_data: Optional[dict] = None
+
+class MessageContext(BaseModel):
     method: MessageMethod
     tg_user_id: int
 
 class MessageData(BaseModel):
     event_data: MessageEventData
     context: Optional[MessageContext] = None
-    ws_data: Optional[dict] = None
