@@ -52,6 +52,14 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 short_exchange=data.data.shortExchange,
                 symbol=data.data.symbol
             )
+        case EventTypeEnum.BotStop:
+            await run_ws(
+                action=WebSocketActionEnum.UnSubscribe,
+                channel=WebSocketChannelEnum.OrderBook,
+                long_exchange=data.data.longExchange,
+                short_exchange=data.data.shortExchange,
+                symbol=data.data.symbol
+            ) 
 
     # Пушим новое собитие на все устройства
     await push_to_subscribes(event_data, tg_user_id)
