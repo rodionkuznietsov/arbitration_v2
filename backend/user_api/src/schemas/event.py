@@ -18,6 +18,7 @@ class MessageEventPayload(BaseModel):
     longOrderType: OrderTypeEnum
     shortExchange: ExchangeEnum
     shortOrderType: OrderTypeEnum
+    status: AppStatusEnum = AppStatusEnum.Offline
     isBotRunning: AppStatusEnum = AppStatusEnum.Stopped
 
 class MessageEventData(BaseModel):
@@ -33,7 +34,6 @@ class MessageMethod(str, Enum):
 class MessageContext(BaseModel):
     method: MessageMethod
     tg_user_id: int
-    status: AppStatusEnum
 
 class MessageData(BaseModel):
     event_data: MessageEventData

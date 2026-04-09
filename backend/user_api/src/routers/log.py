@@ -36,13 +36,13 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 longOrderType=data.data.longOrderType,
                 shortExchange=data.data.shortExchange,
                 shortOrderType=data.data.shortOrderType,
-                isBotRunning=AppStatusEnum.Stopped
+                isBotRunning=AppStatusEnum.Stopped,
+                status=AppStatusEnum.Offline
             )
         ),
         context=MessageContext(
             method=MessageMethod.User,
             tg_user_id=tg_user_id,
-            status=AppStatusEnum.Offline
         )
     )
 
