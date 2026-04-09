@@ -65,7 +65,7 @@ async def run_ws(
                     message = MessageData(
                         event_data=MessageEventData(
                             type=EventDataTypeEnum.Log,
-                            timestamp=time(),
+                            timestamp=int(time()),
                             payload=MessageEventPayload(
                                 event=EventTypeEnum.BotStart,
                                 symbol=symbol,
