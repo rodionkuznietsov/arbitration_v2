@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing import Literal
 import structlog
 
-from .schemas import MessageData
+from .schemas import MessageData, MessageMethod
 
 log: structlog.PrintLogger = structlog.get_logger()
 
@@ -14,8 +14,9 @@ async def push_to_subscribes(
     message: MessageData
 ):
     try:
-        for subcribe in subscribes:
-            log.info(subcribe)
+        if message.context.method == MessageMethod.User:
+            for queues in subscribes[message.context.tg_user_id]:
+                log.info(f"Queues, {queues}")
 
         # for queues in subscribes:
             # for queue in queues:
