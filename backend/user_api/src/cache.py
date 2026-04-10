@@ -46,6 +46,7 @@ async def get_queue(
 async def check_active_subscribes():
     while True:
         try:
+            # Добавить удаления старых очередей, которые в течении 1 минуты, не было изменены
             for user in user_state.get_users():
                 # Удаляем все очереди для юзера
                 if (

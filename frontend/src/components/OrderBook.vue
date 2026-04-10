@@ -58,7 +58,7 @@
 
 <template>
     <div class="order_book_title">Книги ордеров</div>
-    <div id="stakan">
+    <div id="stakan" v-show="userStateStore.isBotRunning">
         <div class="loading_div" v-show="!userStateStore.isBotRunning">
             <img class="loading" src="../assets/img/loading_books.png" draggable="false">
         </div>

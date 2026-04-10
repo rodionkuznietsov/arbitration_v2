@@ -51,7 +51,7 @@ async def run_ws(
         try:
             log.info(f"{{ rust_websocket.connect }} -> {attempt} попытка")
             async with websockets.connect(WEBSOCKET_URL) as websocket:
-                is_success_running = True # При успешном коннекте завершаем цыкл с попытками
+                is_success_running = True # При успешном коннекте завершаем цикл с попытками
                 
                 # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
                 try:
@@ -151,13 +151,13 @@ async def run_ws(
             await asyncio.sleep(3)
         except Exception as e:
             log.error(f"RustWebsocket -> {e}")
-        except asyncio.CancelledError:        
+        except asyncio.CancelledError: # Юзер отключил WS
             message = MessageData(
                 event_data=MessageEventData(
                     type=EventDataTypeEnum.Websocket,
                     timestamp=int(time()),
                     payload=MessageEventPayload(
-                        event=EventTypeEnum.Websocket,
+                        event=EventTypeEnum.BotStop,
                         symbol=symbol,
                         longExchange=long_exchange,
                         longOrderType=OrderTypeEnum.Spot,
