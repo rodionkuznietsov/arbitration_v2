@@ -147,28 +147,33 @@ async def clear_all_logs():
 async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
     tg_user_id = int(authothicate(token))
     
-    log.info(user_state)
+    if tg_user_id in user_state:
+        if len(user_state[tg_user_id].event_data.payload.logs) == 0:
+            logs = await database.get_user_logs(tg_user_id)
 
-    if tg_user_id in user_state and len(user_state[tg_user_id].event_data.payload.logs) == 0:
-        logs = await database.get_user_logs(tg_user_id)
+            if not logs:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Не удалось найти логов"
+                )
 
-        if not logs:
-            raise HTTPException(
-                status_code=404,
-                detail="Не удалось найти логов"
+            user_state[tg_user_id].event_data.payload.logs = logs
+
+            return ResultSchema(
+                status_code=200,
+                success=True,
+                message=LogMessageSchema(
+                    logs=user_state[tg_user_id].event_data.payload.logs
+                )
             )
-
-        user_state[tg_user_id].event_data.payload.logs = logs
-
-        log.info(user_state[tg_user_id].event_data.payload.logs)
-
-        return ResultSchema(
-            status_code=200,
-            success=True,
-            message=LogMessageSchema(
-                logs=user_state[tg_user_id].event_data.payload.logs
+        else: 
+            return ResultSchema(
+                status_code=200,
+                success=True,
+                message=LogMessageSchema(
+                    logs=user_state[tg_user_id].event_data.payload.logs
+                )
             )
-        )
 
     return ResultSchema(
         status_code=404,
