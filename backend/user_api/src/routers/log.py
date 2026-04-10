@@ -70,7 +70,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                         isBotRunning=AppStatusEnum.Stopped,
                     )
 
-                    # # Подключаем клиента
+                    # Подключаем клиента
                     task = asyncio.create_task(run_ws(
                         action=WebSocketActionEnum.Subscribe,
                         channel=WebSocketChannelEnum.OrderBook,

@@ -88,8 +88,6 @@ async def run_ws(
                             )
                         )
 
-                        log.info(ws_message)
-                        
                         push_to_subscribes(ws_message)
                     except Exception as e:
                         log.error(f"RustWebsocket -> {e}")                    
