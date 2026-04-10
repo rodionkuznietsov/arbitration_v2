@@ -45,11 +45,11 @@ async def run_ws(
         while True:
             try:
                 async with websockets.connect(WEBSOCKET_URL) as websocket:
-                    user_state.event_data.payload.status = AppStatusEnum.Online
-                    user_state.event_data.payload.isBotRunning = AppStatusEnum.Running
+                    # user_state.event_data.payload.status = AppStatusEnum.Online
+                    # user_state.event_data.payload.isBotRunning = AppStatusEnum.Running
 
-                    message.event_data.payload.status = AppStatusEnum.Online
-                    message.event_data.payload.isBotRunning = AppStatusEnum.Running
+                    # message.event_data.payload.status = AppStatusEnum.Online
+                    # message.event_data.payload.isBotRunning = AppStatusEnum.Running
 
                     push_to_subscribes(message=message)
 
