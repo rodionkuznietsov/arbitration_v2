@@ -46,14 +46,6 @@ async def run_ws(
 
     try:
         async with websockets.connect(WEBSOCKET_URL) as websocket:
-            await websocket.send(json.dumps({
-                "action": action,
-                "channel": channel,
-                "longExchange": long_exchange,
-                "shortExchange": short_exchange,
-                "ticker": symbol
-            }))
-
             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
             user_state.change_status(
                 tg_user_id,
@@ -63,6 +55,14 @@ async def run_ws(
 
             while True:
                 try:
+
+                    await websocket.send(json.dumps({
+                        "action": action,
+                        "channel": channel,
+                        "longExchange": long_exchange,
+                        "shortExchange": short_exchange,
+                        "ticker": symbol
+                    }))
 
                     response = await websocket.recv()
                     data = json.loads(response)
