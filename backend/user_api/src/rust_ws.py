@@ -42,16 +42,18 @@ async def run_ws(
     tg_user_id: int,
     message: MessageData,
 ):
-    log.info("Подключение к RustWebsocket")
+    try:
+        log.info("Подключение к RustWebsocket")
 
+        user_state.change_status(
+            tg_user_id=tg_user_id,
+            status=AppStatusEnum.Online,
+            isBotRunning=AppStatusEnum.Running,
+        )
 
-    user_state.change_status(
-        tg_user_id=tg_user_id,
-        status=AppStatusEnum.Online,
-        isBotRunning=AppStatusEnum.Running,
-    )
-
-    log.info("Status changed")
+        log.info("Status changed")
+    except Exception as e:
+        log.error(f"RustWebsocket -> {e}")
 
     # try:
     #     while True:
