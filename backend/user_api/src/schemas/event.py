@@ -31,7 +31,8 @@ class LogPayload(BaseModel):
     status: LogStatusEnum = AppStatusEnum.Running
 
 class UserStatePayload(BaseModel):
-    type: EventDataTypeEnum = EventDataTypeEnum.UserState
+    type: EventDataTypeEnum = EventDataTypeEnum.UserState,
+    isActive: bool
     symbol: Optional[str] = None
     longExchange: Optional[ExchangeEnum] = None
     longOrderType: Optional[OrderTypeEnum] = None

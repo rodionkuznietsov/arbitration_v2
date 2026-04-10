@@ -65,7 +65,7 @@ async def startup():
     await tg_bot_app.initialize()
     await tg_bot_app.start()
     asyncio.create_task(tg_bot_app.updater.start_polling())
-    asyncio.create_task(check_active_subscribes())
+    # asyncio.create_task(check_active_subscribes())
 
 @app.on_event("shutdown")
 async def shutdown():

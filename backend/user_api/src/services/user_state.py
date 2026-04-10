@@ -20,6 +20,7 @@ class UserState:
                     event_data=MessageEventData(
                         type=EventTypeEnum.UserState,
                         payload=UserStatePayload(
+                            isActive=True,
                             symbol="BTC",
                             longExchange=ExchangeEnum.Bybit,
                             longOrderType=OrderTypeEnum.Spot,
