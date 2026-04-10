@@ -153,6 +153,10 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
             status_code=404,
             detail="Не удалось найти логов"
         )
+    
+    if tg_user_id in user_state:
+        [tg_user_id].event_data.payload.logs = logs
+        log.info(f"{tg_user_id}: текущие логи: {logs}")
 
     return ResultSchema(
         status_code=200,

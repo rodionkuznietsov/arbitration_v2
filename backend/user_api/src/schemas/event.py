@@ -39,6 +39,7 @@ class UserStatePayload(BaseModel):
     shortOrderType: OrderTypeEnum
     status: AppStatusEnum = AppStatusEnum.Offline
     isBotRunning: AppStatusEnum = AppStatusEnum.Stopped
+    logs: Optional[list] = []
 
 class MessageMethod(str, Enum):
     User = "user"
