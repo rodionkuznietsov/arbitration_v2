@@ -29,6 +29,8 @@
     }
 
     function stop() {
+        alert(userStateStore.isBotRunning)
+
         logBotEvent(
             "bot_stop", {
                 symbol: userStateStore.symbol,
