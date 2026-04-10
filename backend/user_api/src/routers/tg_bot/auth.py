@@ -50,7 +50,7 @@ async def auth_telegram(request: Request):
     # Создаем Default - состояние для юзера
     user_state1.push_default(tg_user_id=int(user.get('id')))
     state = user_state1.get(tg_user_id=int(user.get('id')))
-    print(state)
+    log.info(state)
     
     # if int(user.get('id')) not in user_state:
     #     user_state[int(user.get('id'))] = MessageData(
