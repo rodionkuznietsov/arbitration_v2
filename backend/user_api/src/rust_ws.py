@@ -81,6 +81,10 @@ async def run_ws(
                                 timestamp=int(time()),
                                 ws_data=data
                             ),
+                            context=MessageContext(
+                                method=MessageMethod.WebsocketConnected,
+                                tg_user_id=user_state.context.tg_user_id
+                            )
                         )
                         
                         push_to_subscribes(ws_message)

@@ -33,12 +33,6 @@ def push_to_subscribes(
                         queues.put_nowait(message.event_data)
                     except asyncio.QueueFull:
                         pass
-        elif message.event_data.type == EventDataTypeEnum.Websocket:
-            for queues in user_queues["success_queue"]:
-                try:
-                    queues.put_nowait(message.event_data)
-                except asyncio.QueueFull:
-                    pass 
 
     except Exception as e:
         log.error(f"Cache: {e}")
