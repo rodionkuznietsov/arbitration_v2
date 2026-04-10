@@ -19,6 +19,12 @@ class UserState:
                     event_data=MessageEventData(
                         type=EventTypeEnum.UserState,
                         payload=UserStatePayload(
+                            symbol="BTC",
+                            longExchange=ExchangeEnum.Gate,
+                            longOrderType=OrderTypeEnum.Spot,
+
+                            shortExchange=ExchangeEnum.Bybit,
+                            shortOrderType=OrderTypeEnum.Spot,
                             logs=[]
                         ),
                         timestamp=int(time.time())
