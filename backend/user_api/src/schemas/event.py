@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional, Union
 from pydantic import BaseModel
 
-from ..schemas import ExchangeEnum, ExchangeEventData, ExchangePayload
+from .exchange import ExchangeEnum, ExchangeEventData, ExchangePayload
 from .bot import AppStatusEnum, EventTypeEnum, LogStatusEnum, OrderTypeEnum
 
 class EventDataTypeEnum(str, Enum):
