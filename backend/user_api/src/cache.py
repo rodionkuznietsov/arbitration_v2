@@ -50,7 +50,7 @@ async def check_active_subscribes():
             for user in user_state.get_users():
                 # Удаляем все очереди для юзера
                 if (
-                    user.event_data.payload.isBotRunning != AppStatusEnum.Running 
+                    user.event_data.payload.isBotRunning is False
                     and user.event_data.payload.isSleeping == AppStatusEnum.Sleeping
                 ):
                     subscribes[user.context.tg_user_id]["success_queue"].clear()
