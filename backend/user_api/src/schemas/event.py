@@ -28,7 +28,7 @@ class LogPayload(BaseModel):
     longOrderType: OrderTypeEnum
     shortExchange: ExchangeEnum
     shortOrderType: OrderTypeEnum
-    status: LogStatusEnum = AppStatusEnum.Running
+    status: LogStatusEnum = LogStatusEnum.Success
 
 class UserStatePayload(BaseModel):
     type: EventDataTypeEnum = EventDataTypeEnum.UserState
@@ -39,7 +39,7 @@ class UserStatePayload(BaseModel):
     shortExchange: Optional[ExchangeEnum] = None
     shortOrderType: Optional[OrderTypeEnum] = None
     status: Optional[AppStatusEnum] = AppStatusEnum.Offline
-    isBotRunning: Optional[AppStatusEnum]= AppStatusEnum.Stopped
+    isBotRunning: False
     logs: Optional[list] = []
 
 class MessageMethod(str, Enum):
