@@ -164,8 +164,6 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
     try:
         if tg_user_id in user_state.exists_users():
             if user_state.long_size(tg_user_id) == 0:
-                log.info("LogRouter -> Инициализация историй с базы данных с id")
-
                 new_logs = await database.get_user_logs(tg_user_id)
                 if not new_logs:
                     raise HTTPException(
@@ -174,6 +172,8 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
                     )
 
                 user_state.set_logs(tg_user_id, new_logs)
+
+                log.info("LogRouter -> Инициализация историй с базы данных с id")
 
                 return ResultSchema(
                     status_code=200,
