@@ -32,9 +32,6 @@ log: structlog.PrintLogger = structlog.get_logger()
 
 WEBSOCKET_URL = os.getenv("WEBSOCKET_URL")
 
-attempt = 0
-max_atttemps = 3
-
 async def run_ws(
     action: WebSocketActionEnum,
     channel: WebSocketChannelEnum,
@@ -47,7 +44,10 @@ async def run_ws(
     message: MessageData,
 ):
     try:
-        while attempt <= max_atttemps:
+        attempt = 0
+        max_attempts = 3
+
+        while attempt <= max_attempts:
             log.info("Подключение к RustWebsocket: {}")
             async with websockets.connect(WEBSOCKET_URL) as websocket:
                 # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
@@ -111,7 +111,7 @@ async def run_ws(
             log.error(f"{{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")
             log.error(f"{{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
 
-            if attempt == max_atttemps:
+            if attempt == max_attempts:
                 log.info("Не удачная попытка")
         else:
             log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
