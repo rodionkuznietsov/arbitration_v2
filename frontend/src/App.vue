@@ -158,9 +158,6 @@
               orderBookStore.shortBids = event_data.ws_data.result.data.order_book.short.bids
             }
           } else if (event_data.type == "user_state") {
-            // userStateStore.changeStatus(event_data.payload.status)
-            // userStateStore.isBotRunning = event_data.payload.status.isBotRunning
-
             if (userStateStore.isBotRunning) {
               orderBookStore.updateHeader(
                 event_data.payload.symbol,
