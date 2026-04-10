@@ -26,30 +26,33 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     tg_user_id = int(authothicate(token))
     await database.add_log(tg_user_id, data)
 
-    message = MessageData(
-        event_data=MessageEventData(
-            type=EventDataTypeEnum.Log,
-            timestamp=data.timestamp,
-            payload=MessageEventPayload(
-                event=data.event,
-                symbol=f"{data.data.symbol.upper()}",
-                longExchange=data.data.longExchange,
-                longOrderType=data.data.longOrderType,
-                shortExchange=data.data.shortExchange,
-                shortOrderType=data.data.shortOrderType,
-                isBotRunning=AppStatusEnum.Stopped,
-                status=AppStatusEnum.Offline
-            )
-        ),
-        context=MessageContext(
-            method=MessageMethod.User,
-            tg_user_id=tg_user_id,
-        )
-    )
-
     match data.event:
         case EventTypeEnum.BotStart:
             if tg_user_id not in user_state or user_state[tg_user_id].event_data.payload.isBotRunning == AppStatusEnum.Stopped:
+
+                message = MessageData(
+                    event_data=MessageEventData(
+                        type=EventDataTypeEnum.Log,
+                        timestamp=data.timestamp,
+                        payload=MessageEventPayload(
+                            event=data.event,
+                            symbol=f"{data.data.symbol.upper()}",
+                            longExchange=data.data.longExchange,
+                            longOrderType=data.data.longOrderType,
+                            shortExchange=data.data.shortExchange,
+                            shortOrderType=data.data.shortOrderType,
+                            isBotRunning=AppStatusEnum.Running,
+                            status=AppStatusEnum.Online
+                        )
+                    ),
+                    context=MessageContext(
+                        method=MessageMethod.User,
+                        tg_user_id=tg_user_id,
+                    )
+                )
+                
+                push_to_subscribes(message)
+
                 # Сохраняем насстройки для остальных устройств
                 user_state[tg_user_id] = MessageData(
                     event_data=MessageEventData(
@@ -87,16 +90,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
 
                 log.info(user_state[tg_user_id].event_data.payload.status)
-
-                # error_queues = await get_queue(tg_user_id)
-                # for queue in error_queues:
-                #     error_event = await queue.get_nowait()
-                #     message.event_data.payload.isBotRunning = error_event.payload.isBotRunning
-                #     message.event_data.payload.status = error_event.payload.status
-
-                #     user_state[tg_user_id].event_data.payload.isBotRunning = error_event.payload.isBotRunning
-                #     user_state[tg_user_id].event_data.payload.status = error_event.payload.status
-
+                
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
             
