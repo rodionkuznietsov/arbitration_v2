@@ -4,15 +4,13 @@ export const useUserState = defineStore('userState', {
     state: () => ({        
         // Параметры для данных из backend 
         isBotRunning: false,
-        symbol: 'BTC',
-        longOrderType: "Спот",
-        shortOrderType: "Спот",
+        symbol: null,
+        longOrderType: null,
+        shortOrderType: null,
         
-        exchanges: {},
-
         longExchange: null,
         shortExchange: null,
-        currentStatus: 'offline',
+        currentStatus: null,
         bybit_api_key: null,
         bybit_api_secret: null
     }),

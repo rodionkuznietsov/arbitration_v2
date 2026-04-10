@@ -99,6 +99,8 @@
             userStateStore.longExchange = event_data.payload.longExchange
             userStateStore.longOrderType = event_data.payload.longOrderType
 
+            tg.showAlert(`LongExchange: ${userStateStore.longExchange}`)
+
             userStateStore.shortExchange = event_data.payload.shortExchange
             userStateStore.shortOrderType = event_data.payload.shortOrderType
           }
