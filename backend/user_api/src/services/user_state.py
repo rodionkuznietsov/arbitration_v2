@@ -79,9 +79,7 @@ class UserState:
         try:
             if tg_user_id in self.__user_state__:
                 self.__user_state__[tg_user_id].event_data.payload.logs = logs
-        
-            raise UserStateError(status_code=404, message=f"Не удалось найти пользователя с id: {tg_user_id}")
-        except UserStateError as e:
+        except Exception as e:
             log.error(f"UserState(set_logs) -> {e}")
 
     def update_payload(
