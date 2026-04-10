@@ -137,7 +137,7 @@
             userStateStore.isBotRunning = event_data.payload.isBotRunning
 
             if (!event_data.payload.isBotRunningg) {
-              alert(userStateStore.isBotRunning)
+              tg.showAlert(userStateStore.isBotRunning, () => {})
             }
 
             // Устанавливаем валидные данные для отображения стакана
