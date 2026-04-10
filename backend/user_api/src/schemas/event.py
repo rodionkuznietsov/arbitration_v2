@@ -33,12 +33,12 @@ class LogPayload(BaseModel):
 class UserStatePayload(BaseModel):
     type: EventDataTypeEnum = EventDataTypeEnum.UserState
     symbol: str
-    longExchange: ExchangeEnum
-    longOrderType: OrderTypeEnum
-    shortExchange: ExchangeEnum
-    shortOrderType: OrderTypeEnum
-    status: AppStatusEnum = AppStatusEnum.Offline
-    isBotRunning: AppStatusEnum = AppStatusEnum.Stopped
+    longExchange: Optional[ExchangeEnum] = None
+    longOrderType: Optional[OrderTypeEnum] = None
+    shortExchange: Optional[ExchangeEnum] = None
+    shortOrderType: Optional[OrderTypeEnum] = None
+    status: Optional[AppStatusEnum] = AppStatusEnum.Offline
+    isBotRunning: Optional[AppStatusEnum]= AppStatusEnum.Stopped
     logs: Optional[list] = []
 
 class MessageMethod(str, Enum):
@@ -54,7 +54,7 @@ class MessageWebsocketData(BaseModel):
 class MessageEventData(BaseModel):
     type: EventDataTypeEnum
     timestamp: int
-    payload: Union[MessageEventPayload, UserStatePayload, LogPayload]
+    payload: Union[MessageEventPayload, UserStatePayload, LogPayload] = None
     ws_data: Optional[dict] = None
 
 class MessageContext(BaseModel):
