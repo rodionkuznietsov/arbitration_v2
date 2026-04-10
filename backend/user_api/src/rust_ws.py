@@ -54,7 +54,7 @@ async def run_ws(
 
         log.info("Status changed")
     except Exception as e:
-        log.error(f"RustWebsocket(user_state=UserState) -> {e}")
+        log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
 
     # try:
     #     while True:
