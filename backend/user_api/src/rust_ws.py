@@ -105,7 +105,6 @@ async def run_ws(
     #                 except Exception as e:
     #                     log.error(f"RustWebsocket -> {e}")                    
     except websockets.exceptions.InvalidStatus as e:
-        global attempt
         attempt += 1
 
         if e.response.status_code == 502:
