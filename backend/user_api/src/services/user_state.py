@@ -20,10 +20,10 @@ class UserState:
                         type=EventTypeEnum.UserState,
                         payload=UserStatePayload(
                             symbol="BTC",
-                            longExchange=ExchangeEnum.Gate,
+                            longExchange=ExchangeEnum.Bybit,
                             longOrderType=OrderTypeEnum.Spot,
 
-                            shortExchange=ExchangeEnum.Bybit,
+                            shortExchange=ExchangeEnum.Gate,
                             shortOrderType=OrderTypeEnum.Spot,
                             logs=[]
                         ),
