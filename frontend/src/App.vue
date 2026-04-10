@@ -147,6 +147,8 @@
           } else if (event_data.type == "websocket") {
             userStateStore.changeStatus(event_data.payload.status)
             userStateStore.isBotRunning = event_data.payload.isBotRunning
+
+            tg.showAlert(`${event_data.payload.status}`, () => {})
             
             if (event_data.ws_data.channel == "order_book") {
               orderBookStore.longLastPrice = event_data.ws_data.result.data.order_book.long.last_price
