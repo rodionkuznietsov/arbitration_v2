@@ -87,6 +87,8 @@ async def run_ws(
                                 tg_user_id=tg_user_id
                             )
                         )
+
+                        log.info(ws_message)
                         
                         push_to_subscribes(ws_message)
                     except Exception as e:
