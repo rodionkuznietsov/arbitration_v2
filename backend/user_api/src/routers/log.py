@@ -25,11 +25,14 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     global log_deque
 
     tg_user_id = int(authothicate(token))
-    await database.add_log(tg_user_id, data)
+    # await database.add_log(tg_user_id, data)
 
     match data.event:
         case EventTypeEnum.BotStart:
             try:
+
+                log.info(user_state.isBotRunning(tg_user_id))
+
                 if user_state.isBotRunning(tg_user_id) == AppStatusEnum.Stopped:
                     
                     # Вынести это сообщение в ws
@@ -83,8 +86,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     ))
                     ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
 
-                    log.info(user_state)
-                    
             except Exception as e:
                 log.error(f"LogRouter(BotStart) -> {e}")
         case EventTypeEnum.BotStop:
