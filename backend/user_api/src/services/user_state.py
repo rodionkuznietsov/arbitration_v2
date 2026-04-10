@@ -135,5 +135,5 @@ class UserState:
     
     def isSleeping(
         self
-    ) -> bool:
+    ) -> AppStatusEnum:
         return self.__user_state__.event_data.payload.isSleeping

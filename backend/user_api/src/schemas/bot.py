@@ -20,6 +20,7 @@ class AppStatusEnum(str, Enum):
 
     Running = True
     Stopped = False
+    Sleeping = "sleeping"
 
 class LogStatusEnum(str, Enum):
     Error = "Не удалось запустить бота",
