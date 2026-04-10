@@ -1,4 +1,4 @@
-export function handle_websocket_data(
+export function ws_handler(
     event_data,
     userStateStore,
     orderBookStore

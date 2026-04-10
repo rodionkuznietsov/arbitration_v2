@@ -25,7 +25,8 @@
   import { useOrderBookStore } from './stores/orderbook';
   import FetchErrorImg from './assets/img/fetch_error.png'
   import Error401Img from './assets/img/401.png'
-  import { handle_websocket_data } from './utils/handlers';
+  import { ws_handler } from './handlers/websocket.handler';
+import { log_handler } from './handlers/log.handler';
   
   const authStore = useAuthStore()
   const userStateStore = useUserState()
@@ -34,7 +35,8 @@
   const homeStore = useHomeStore()
 
   const handlers = {
-    websocket: (data) => handle_websocket_data(data, userStateStore, orderBookStore),
+    log: (data) => log_handler(data, tgStore, userStateStore, homeStore),
+    websocket: (data) => ws_handler(data, userStateStore, orderBookStore),
     default: (data) => {
       console.warn("Не известное собитие", data.type)
     }
@@ -77,26 +79,27 @@
           handler(event_data)
           
           if (event_data.type == "log") {
-            try {
-              userStateStore.symbol = event_data.payload.symbol.replace("USDT", ""),
-              homeStore.longExchange = event_data.payload.longExchange,
-              userStateStore.longOrderType = event_data.payload.longOrderType,
-              homeStore.shortExchange = event_data.payload.shortExchange,
-              userStateStore.shortOrderType = event_data.payload.shortOrderType
+            console.log("")
+            // try {
+            //   userStateStore.symbol = event_data.payload.symbol.replace("USDT", ""),
+            //   homeStore.longExchange = event_data.payload.longExchange,
+            //   userStateStore.longOrderType = event_data.payload.longOrderType,
+            //   homeStore.shortExchange = event_data.payload.shortExchange,
+            //   userStateStore.shortOrderType = event_data.payload.shortOrderType
 
-              userStateStore.logs.push({
-                event: event_data.payload.event,
-                symbol: event_data.payload.symbol,
-                long_exchange: event_data.payload.long_exchange,
-                short_exchange: event_data.payload.short_exchange,
-                timestamp: event_data.timestamp
-              })
-              userStateStore.logs.sort((a, b) => b.timestamp - a.timestamp) // DESC
-            } catch(err) {
-              tg.showAlert("Ошибка загрузки страницы", () => {
-                console.log("Пользователь закрыл alert")
-              });
-            }
+            //   userStateStore.logs.push({
+            //     event: event_data.payload.event,
+            //     symbol: event_data.payload.symbol,
+            //     long_exchange: event_data.payload.long_exchange,
+            //     short_exchange: event_data.payload.short_exchange,
+            //     timestamp: event_data.timestamp
+            //   })
+            //   userStateStore.logs.sort((a, b) => b.timestamp - a.timestamp) // DESC
+            // } catch(err) {
+            //   tg.showAlert("Ошибка загрузки страницы", () => {
+            //     console.log("Пользователь закрыл alert")
+            //   });
+            // }
           } else if (event_data.type == "exchange") {
             if (event_data.payload.event == "update_exchange") {
               if (!event_data.payload.is_available) {
@@ -142,32 +145,6 @@
                 is_available: true
               })
             }
-          } else if (event_data.type == "websocket") {
-            console.log(event_data)
-            // userStateStore.changeStatus(event_data.payload.status)
-            // userStateStore.isBotRunning = event_data.payload.isBotRunning
-
-            // // Устанавливаем валидные данные для отображения стакана
-            // if (userStateStore.isBotRunning) {
-            //   orderBookStore.updateHeader(
-            //     event_data.payload.symbol,
-            //     event_data.payload.longExchange,
-            //     event_data.payload.longOrderType,
-            //     event_data.payload.shortExchange,
-            //     event_data.payload.shortOrderType
-            //   )
-            // }
-            
-            // if (event_data.ws_data.channel == "order_book") {
-            //   orderBookStore.longLastPrice = event_data.ws_data.result.data.order_book.long.last_price
-            //   orderBookStore.shortLastPrice = event_data.ws_data.result.data.order_book.short.last_price
-              
-            //   orderBookStore.longAsks = event_data.ws_data.result.data.order_book.long.asks
-            //   orderBookStore.longBids = event_data.ws_data.result.data.order_book.long.bids
-              
-            //   orderBookStore.shortAsks = event_data.ws_data.result.data.order_book.short.asks
-            //   orderBookStore.shortBids = event_data.ws_data.result.data.order_book.short.bids
-            // }
           } else if (event_data.type == "user_state") {
             if (userStateStore.isBotRunning) {
               orderBookStore.updateHeader(
