@@ -179,14 +179,22 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
                     logs=user_state[tg_user_id].event_data.payload.logs
                 )
             )
+    else: 
+        logs = await database.get_user_logs(tg_user_id)
 
-    return ResultSchema(
-        status_code=404,
-        success=False,
-        message=LogMessageSchema(
-            logs=[]
+        if not logs:
+            raise HTTPException(
+                status_code=404,
+                detail="Не удалось найти логов"
+            )
+
+        return ResultSchema(
+            status_code=200,
+            success=True,
+            message=LogMessageSchema(
+                logs=logs
+            )
         )
-    )
 
 def authothicate(token):
     credentials_exception = HTTPException(
