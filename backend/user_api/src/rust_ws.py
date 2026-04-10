@@ -53,7 +53,7 @@ async def run_ws(
 
         log.info("Status changed")
     except Exception as e:
-        log.error(f"RustWebsocket -> {e}")
+        log.error(f"RustWebsocket -> {e.args}")
 
     # try:
     #     while True:
