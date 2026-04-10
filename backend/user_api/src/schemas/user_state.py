@@ -1,5 +1,5 @@
 class UserStateError(Exception):
-    def __init__(self, status: int, msg: str):
-        self.status = status
-        self.msg = msg
-        super().__init__(msg)
+    def __init__(self, status_code: int, message: str):
+        self.status_code = status_code
+        self.message = message
+        super().__init__(message)

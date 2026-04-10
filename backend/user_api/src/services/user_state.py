@@ -39,7 +39,7 @@ class UserState:
             if tg_user_id in self.__user_state__:
                 return self.__user_state__[tg_user_id]
         
-            raise UserStateError(status=404, msg=f"Не удалось найти пользователя с id: {tg_user_id}")
+            raise UserStateError(status_code=404, message=f"Не удалось найти пользователя с id: {tg_user_id}")
         except UserStateError as e:
             log.error(e)
     
