@@ -25,6 +25,8 @@
 
         configStore.exchanges = data.exchanges
 
+        alert(userState.longExchange)
+
         if (!userState.longExchange || userState.longExchange != "unknown") {
           userState.longExchange = configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
         }
