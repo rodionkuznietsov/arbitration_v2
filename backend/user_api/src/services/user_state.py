@@ -133,11 +133,6 @@ class UserState:
     def exists_users(self):
         return self.__user_state__
     
-    def isSleeping(
-        self
-    ) -> AppStatusEnum:
-        return self.__user_state__.event_data.payload.isSleeping
-    
     def change_sleeping_status(
         self,
         tg_user_id: int,
