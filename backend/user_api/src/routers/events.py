@@ -40,7 +40,7 @@ async def subscribe_events(tg_user_id: int):
         subscribes[tg_user_id]["success_queue"].append(success_queue)
         subscribes[tg_user_id]["error_queue"].append(error_queue)
         
-        if tg_user_id in user_state:
+        if tg_user_id in user_state.exists_users():
             push_to_subscribes(user_state[tg_user_id])
 
         return StreamingResponse(

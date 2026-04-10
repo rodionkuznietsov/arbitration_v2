@@ -85,3 +85,6 @@ class UserState:
 
     def get_users(self):
         return self.__user_state__.values()
+
+    def exists_users(self):
+        return self.__user_state__
