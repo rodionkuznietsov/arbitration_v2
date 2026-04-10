@@ -135,10 +135,6 @@
             userStateStore.changeStatus(event_data.payload.status)
             userStateStore.isBotRunning = event_data.payload.isBotRunning
 
-            if (event_data.payload.event == "bot_stop") {
-              tg.showAlert(userStateStore.isBotRunning, () => {})
-            }
-
             // Устанавливаем валидные данные для отображения стакана
             if (userStateStore.isBotRunning) {
               orderBookStore.updateHeader(

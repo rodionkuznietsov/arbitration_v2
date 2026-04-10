@@ -14,7 +14,7 @@ class OrderTypeEnum(str, Enum):
     Futures = "фьючерс"
 
 class AppStatusEnum(str, Enum):
-    Online = "online",
+    Online = "online"
     Offline = "offline"
     Warning = "warning"
 
