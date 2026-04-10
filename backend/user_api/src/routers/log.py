@@ -66,8 +66,8 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                             shortExchange=message.event_data.payload.shortExchange,
                             shortOrderType=message.event_data.payload.shortOrderType,
 
-                            status=message.event_data.payload.status,
-                            isBotRunning=message.event_data.payload.isBotRunning,
+                            status=AppStatusEnum.Offline,
+                            isBotRunning=AppStatusEnum.Stopped,
                         ),
                         timestamp=int(time())
                     ),
