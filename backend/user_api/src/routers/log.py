@@ -82,7 +82,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                         message=message
                     ))
                     ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
-                except AttributeError as e:
+                except Exception as e:
                     log.error(f"LogRouter -> {e}")
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
