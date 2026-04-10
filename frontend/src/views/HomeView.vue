@@ -93,7 +93,7 @@
                 <label for="order" id="form_label">Лонг:</label>
                 <img src="../assets/icons/up.svg" alt="" draggable="false">
               </div>
-              <FormCombobox v-model="homeStore.longExchange" :options="userState.exchanges.map(c => c.name)"/>
+              <FormCombobox v-model="userState.longExchange" :options="configStore.exchanges.map(c => c.name)"/>
             </div>
 
             <div class="form-group">
@@ -117,7 +117,7 @@
                 <label for="order" id="form_label">Шорт:</label>
                 <img class="img_reverse" src="../assets/icons/up.svg" alt="" draggable="false">
               </div>
-              <FormCombobox v-model="homeStore.shortExchange" :options="userState.exchanges.map(c => c.name)"/>
+              <FormCombobox v-model="userState.shortExchange" :options="configStore.exchanges.map(c => c.name)"/>
             </div>
 
             <div class="form-group">
