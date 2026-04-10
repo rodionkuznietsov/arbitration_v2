@@ -12,6 +12,8 @@ export function exchange_handler(
 
     const handler = handlers[event_data.payload.event] || handlers.default
     handler(event_data)
+
+    alert(JSON.stringify(event_data))
     // if (event_data.payload.event == "update_exchange") {
     //     if (!event_data.payload.is_available) {
     //         // Удаляем биржу
