@@ -29,8 +29,6 @@
     }
 
     function stop() {
-        alert(userStateStore.isBotRunning)
-
         logBotEvent(
             "bot_stop", {
                 symbol: userStateStore.symbol,
@@ -41,6 +39,7 @@
             },
             authStore.token
         )
+
     }
 
     function getFillPercentAsk(value, method) {
