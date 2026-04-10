@@ -2,7 +2,7 @@ import time
 
 from fastapi import APIRouter, HTTPException
 
-from ..schemas import EventDataTypeEnum, ExchangeEvent, ExchangePayload, MessageData, MessageEventData
+from ..schemas import EventDataTypeEnum, ExchangeEvent, ExchangeEventData, ExchangePayload, MessageData, MessageEventData
 
 from ..cache import push_to_subscribes
 
@@ -32,7 +32,7 @@ async def add_exchange(exchange_data: ExchangeSchema):
         raise HTTPException(status_code=400, detail=f"Биржа {exchange_data.name} уже существует в базе данных.")
 
     message = MessageData(
-        event_data=MessageEventData(
+        event_data=ExchangeEventData(
             type=EventDataTypeEnum.Exchange,
             payload=ExchangePayload(
                 event=ExchangeEvent.AddExchange,
@@ -63,7 +63,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         )
 
     message = MessageData(
-        event_data=MessageEventData(
+        event_data=ExchangeEventData(
             type=EventDataTypeEnum.Exchange,
             payload=ExchangePayload(
                 event=ExchangeEvent.UpdateExchange,

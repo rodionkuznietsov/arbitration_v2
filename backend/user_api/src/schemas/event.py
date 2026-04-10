@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional, Union
 from pydantic import BaseModel
 
-from ..schemas import ExchangeEnum, ExchangePayload
+from ..schemas import ExchangeEnum, ExchangeEventData, ExchangePayload
 from .bot import AppStatusEnum, EventTypeEnum, LogStatusEnum, OrderTypeEnum
 
 class EventDataTypeEnum(str, Enum):
@@ -63,5 +63,5 @@ class MessageContext(BaseModel):
     tg_user_id: int
 
 class MessageData(BaseModel):
-    event_data: MessageEventData
+    event_data: Union[MessageEventData, ExchangeEventData]
     context: Optional[MessageContext] = None
