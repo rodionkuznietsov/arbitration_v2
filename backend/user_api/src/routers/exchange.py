@@ -1,11 +1,8 @@
 import time
-
 from fastapi import APIRouter, HTTPException
 
-from ..schemas import EventDataTypeEnum, ExchangeEvent, ExchangeEventData, ExchangePayload, MessageData, MessageEventData
-
+from ..schemas import EventDataTypeEnum, ExchangeEvent, ExchangeEventData, ExchangePayload, MessageData
 from ..cache import push_to_subscribes
-
 from ..db import database
 from ..schemas.exchange import ExchangeSchema
 from ..schemas.result import ResultSchema

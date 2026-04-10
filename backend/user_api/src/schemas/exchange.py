@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from .event import EventDataTypeEnum
+from ..schemas import EventDataTypeEnum
 
 class ExchangeEnum(str, Enum):
     Bybit = "bybit"
