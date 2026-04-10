@@ -2,11 +2,7 @@ from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from .event import EventDataTypeEnum
-
-class ExchangeEnum(str, Enum):
-    Bybit = "bybit"
-    Gate = "gate.io"
+from .enums import ExchangeEnum, EventDataTypeEnum
 
 class ExchangeEvent(str, Enum):
     AddExchange = "add_exchange"

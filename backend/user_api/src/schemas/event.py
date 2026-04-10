@@ -4,12 +4,7 @@ from pydantic import BaseModel
 
 from ..schemas import ExchangeEnum, ExchangeEventData
 from .bot import AppStatusEnum, EventTypeEnum, LogStatusEnum, OrderTypeEnum
-
-class EventDataTypeEnum(str, Enum):
-    Log = "log"
-    Exchange = "exchange"
-    Websocket = "websocket"
-    UserState = "user_state"
+from .enums import EventDataTypeEnum, ExchangeEnum
 
 class MessageEventPayload(BaseModel):
     event: EventTypeEnum
