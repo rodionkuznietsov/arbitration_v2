@@ -112,7 +112,7 @@ async def run_ws(
                         ),
                         context=MessageContext(
                             method=MessageMethod.WebsocketErrorConnection,
-                            tg_user_id=user_state.context.tg_user_id,
+                            tg_user_id=tg_user_id,
                         )
                     )
 
@@ -144,7 +144,7 @@ async def run_ws(
             ),
             context=MessageContext(
                 method=MessageMethod.WebsocketClosed,
-                tg_user_id=user_state.context.tg_user_id,
+                tg_user_id=tg_user_id,
             )
         )
         push_to_subscribes(message)
