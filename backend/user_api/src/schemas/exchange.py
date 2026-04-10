@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 from pydantic import BaseModel, Field
 
 class ExchangeEnum(str, Enum):
@@ -12,7 +13,7 @@ class ExchangeEvent(str, Enum):
 class ExchangePayload(BaseModel):
     event: ExchangeEvent
     exchange_name: ExchangeEnum
-    is_available: True
+    is_available: Optional[bool] = bool
 
 class ExchangeSchema(BaseModel):
     name: str = Field(..., example="Binance")
