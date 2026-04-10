@@ -48,7 +48,7 @@ async def run_ws(
 
     while attempt <= max_attempts:
         try:
-            log.info(f"Подключение к RustWebsocket: {attempt}")
+            log.info(f"{{ rust_websocket.connect }} -> {attempt}")
             async with websockets.connect(WEBSOCKET_URL) as websocket:
                 # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
                 try:
