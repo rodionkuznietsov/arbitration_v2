@@ -130,10 +130,8 @@ class SafeUserState(UserState):
         super().__init__()
 
     def change_status(self, tg_user_id, status, isBotRunning):
-        try:
-            return super().change_status(tg_user_id, status, isBotRunning)
-        except Exception as e:
-            log.error(f"UserState -> {e}")
+        log.info(super)
+        # return super().change_status(tg_user_id, status, isBotRunning)
 
     def push_default(self, tg_user_id):
         return super().push_default(tg_user_id)
