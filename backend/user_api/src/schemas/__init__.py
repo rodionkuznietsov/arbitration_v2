@@ -1,4 +1,4 @@
-from .exchange import ExchangeSchema, ExchangeEnum
+from .exchange import ExchangeSchema, ExchangeEnum, ExchangeEvent, ExchangePayload
 from .result import ResultSchema, LogMessageSchema, MessageSchema
 from .bot import UserLogSchema, LogStatusEnum
 from .access_token import TokenSchema, TokenDataSchema

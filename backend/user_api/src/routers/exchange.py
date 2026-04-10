@@ -2,7 +2,7 @@ import time
 
 from fastapi import APIRouter, HTTPException
 
-from ..schemas import EventDataTypeEnum
+from ..schemas import EventDataTypeEnum, ExchangeEvent, ExchangePayload, MessageData, MessageEventData
 
 from ..cache import push_to_subscribes
 
@@ -31,18 +31,30 @@ async def add_exchange(exchange_data: ExchangeSchema):
     if not added:
         raise HTTPException(status_code=400, detail=f"Биржа {exchange_data.name} уже существует в базе данных.")
 
-    event_data = {
-        "type": EventDataTypeEnum.Exchange,
-        "tg_user_id": "all", 
-        "timestamp": time.time(),
-        "payload": {
-            "event": "add_exchange", 
-            "exchange_name": exchange_data.name,
-            "is_available": exchange_data.is_available
-        }
-    }
+    # event_data = {
+    #     "type": EventDataTypeEnum.Exchange,
+    #     "tg_user_id": "all", 
+    #     "timestamp": time.time(),
+    #     "payload": {
+    #         "event": "add_exchange", 
+    #         "exchange_name": exchange_data.name,
+    #         "is_available": exchange_data.is_available
+    #     }
+    # }
     
-    push_to_subscribes(event_data, None)
+    message = MessageData(
+        event_data=MessageEventData(
+            type=EventDataTypeEnum.Exchange,
+            payload=ExchangePayload(
+                event=ExchangeEvent.AddExchange,
+                exchange_name=exchange_data.name,
+                is_available=exchange_data.is_available
+            ),
+            timestamp=int(time.time())
+        )
+    )
+
+    push_to_subscribes(message)
 
     return ResultSchema(
         status_code=200,
