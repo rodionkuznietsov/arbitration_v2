@@ -21,23 +21,27 @@
   import { API_URL } from './config';
   import { useUserState } from './stores/user_state';
   import { useTgStore } from './stores/tg';
-  import { useHomeStore } from './stores/home';
+  // import { useHomeStore } from './stores/home';
   import { useOrderBookStore } from './stores/orderbook';
   import FetchErrorImg from './assets/img/fetch_error.png'
   import Error401Img from './assets/img/401.png'
   import { ws_handler } from './handlers/websocket.handler';
   import { log_handler } from './handlers/log.handler';
-import { useLogStore } from './stores/log.store';
+  import { useLogStore } from './stores/log.store';
+  import { exchange_handler } from './handlers/exchange.handler';
+  import { useConfigStore } from './stores/config';
   
   const authStore = useAuthStore()
   const userStateStore = useUserState()
   const orderBookStore = useOrderBookStore()
   const tgStore = useTgStore()
-  const homeStore = useHomeStore()
+  // const homeStore = useHomeStore()
   const logStore = useLogStore()
+  const configStore = useConfigStore()
 
   const handlers = {
     log: (data) => log_handler(data, tgStore, logStore),
+    exchange: (data) => exchange_handler(data, configStore),
     websocket: (data) => ws_handler(data, userStateStore, orderBookStore),
     default: (data) => {
       console.warn("Не известное собитие", data.type)
@@ -80,73 +84,51 @@ import { useLogStore } from './stores/log.store';
           const handler = handlers[event_data.type] || handlers.default
           handler(event_data)
           
-          if (event_data.type == "log") {
-            console.log("")
-            // try {
-            //   userStateStore.symbol = event_data.payload.symbol.replace("USDT", ""),
-            //   homeStore.longExchange = event_data.payload.longExchange,
-            //   userStateStore.longOrderType = event_data.payload.longOrderType,
-            //   homeStore.shortExchange = event_data.payload.shortExchange,
-            //   userStateStore.shortOrderType = event_data.payload.shortOrderType
+          if (event_data.type == "exchange") {
+            // if (event_data.payload.event == "update_exchange") {
+            //   if (!event_data.payload.is_available) {
+            //     // Удаляем биржу
+            //     userStateStore.exchanges = userStateStore.exchanges.filter(
+            //       ex => ex.name !== event_data.payload.exchange_name
+            //     )
 
-            //   userStateStore.logs.push({
-            //     event: event_data.payload.event,
-            //     symbol: event_data.payload.symbol,
-            //     long_exchange: event_data.payload.long_exchange,
-            //     short_exchange: event_data.payload.short_exchange,
-            //     timestamp: event_data.timestamp
+            //     if (userStateStore.exchanges.length > 0) {
+            //       homeStore.longExchange = userStateStore.exchanges[0].name
+            //       homeStore.shortExchange = userStateStore.exchanges[0].name
+            //     } else {
+            //       homeStore.longExchange = "Нет доступных бирж"
+            //       homeStore.shortExchange = "Нет доступных бирж"
+            //     }
+            //   } else {
+            //     const index = userStateStore.exchanges.findIndex(
+            //       ex => ex.name === event_data.payload.exchange_name
+            //     )
+
+            //     // Добавляем биржу
+            //     if (index === -1) {
+            //       userStateStore.exchanges.push({
+            //         id: userStateStore.exchanges.length + 1,
+            //         name: event_data.payload.exchange_name,
+            //         is_available: true
+            //       })
+            //     }
+
+            //     if (userStateStore.exchanges.length > 1) {
+            //       homeStore.longExchange = userStateStore.exchanges[1].name
+            //       homeStore.shortExchange = userStateStore.exchanges[0].name
+            //     } else {
+            //       homeStore.longExchange = userStateStore.exchanges[0].name
+            //       homeStore.shortExchange = userStateStore.exchanges[0].name
+            //     }
+            //   }
+            // } else if (event_data.payload.event == "add_exchange") {
+            //   // Добавляем биржу
+            //   userStateStore.exchanges.push({
+            //     id: userStateStore.exchanges.length + 1,
+            //     name: event_data.payload.exchange_name,
+            //     is_available: true
             //   })
-            //   userStateStore.logs.sort((a, b) => b.timestamp - a.timestamp) // DESC
-            // } catch(err) {
-            //   tg.showAlert("Ошибка загрузки страницы", () => {
-            //     console.log("Пользователь закрыл alert")
-            //   });
             // }
-          } else if (event_data.type == "exchange") {
-            if (event_data.payload.event == "update_exchange") {
-              if (!event_data.payload.is_available) {
-                // Удаляем биржу
-                userStateStore.exchanges = userStateStore.exchanges.filter(
-                  ex => ex.name !== event_data.payload.exchange_name
-                )
-
-                if (userStateStore.exchanges.length > 0) {
-                  homeStore.longExchange = userStateStore.exchanges[0].name
-                  homeStore.shortExchange = userStateStore.exchanges[0].name
-                } else {
-                  homeStore.longExchange = "Нет доступных бирж"
-                  homeStore.shortExchange = "Нет доступных бирж"
-                }
-              } else {
-                const index = userStateStore.exchanges.findIndex(
-                  ex => ex.name === event_data.payload.exchange_name
-                )
-
-                // Добавляем биржу
-                if (index === -1) {
-                  userStateStore.exchanges.push({
-                    id: userStateStore.exchanges.length + 1,
-                    name: event_data.payload.exchange_name,
-                    is_available: true
-                  })
-                }
-
-                if (userStateStore.exchanges.length > 1) {
-                  homeStore.longExchange = userStateStore.exchanges[1].name
-                  homeStore.shortExchange = userStateStore.exchanges[0].name
-                } else {
-                  homeStore.longExchange = userStateStore.exchanges[0].name
-                  homeStore.shortExchange = userStateStore.exchanges[0].name
-                }
-              }
-            } else if (event_data.payload.event == "add_exchange") {
-              // Добавляем биржу
-              userStateStore.exchanges.push({
-                id: userStateStore.exchanges.length + 1,
-                name: event_data.payload.exchange_name,
-                is_available: true
-              })
-            }
           } else if (event_data.type == "user_state") {
             if (userStateStore.isBotRunning) {
               orderBookStore.updateHeader(

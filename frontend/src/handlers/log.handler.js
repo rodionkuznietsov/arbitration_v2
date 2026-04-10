@@ -4,12 +4,6 @@ export function log_handler(
     logStateStore
 ) {
     try {
-        // userStateStore.symbol = event_data.payload.symbol.replace("USDT", ""),
-        // homeStore.longExchange = event_data.payload.longExchange,
-        // userStateStore.longOrderType = event_data.payload.longOrderType,
-        // homeStore.shortExchange = event_data.payload.shortExchange,
-        // userStateStore.shortOrderType = event_data.payload.shortOrderType
-
         const log = {
             event: event_data.payload.event,
             symbol: event_data.payload.symbol,

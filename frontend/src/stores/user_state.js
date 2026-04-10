@@ -8,7 +8,6 @@ export const useUserState = defineStore('userState', {
         longOrderType: "Спот",
         shortOrderType: "Спот",
         
-        logs: [],
         exchanges: {},
 
         longExchange: null,
