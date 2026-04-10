@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional, Union
 from pydantic import BaseModel
 
-from ..schemas import ExchangeEnum
+from ..schemas import ExchangeEnum, ExchangePayload
 from .bot import AppStatusEnum, EventTypeEnum, LogStatusEnum, OrderTypeEnum
 
 class EventDataTypeEnum(str, Enum):
@@ -55,7 +55,7 @@ class MessageWebsocketData(BaseModel):
 class MessageEventData(BaseModel):
     type: EventDataTypeEnum
     timestamp: int
-    payload: Union[MessageEventPayload, UserStatePayload, LogPayload] = None
+    payload: Union[MessageEventPayload, UserStatePayload, LogPayload, ExchangePayload] = None
     ws_data: Optional[dict] = None
 
 class MessageContext(BaseModel):
