@@ -30,7 +30,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     match data.event:
         case EventTypeEnum.BotStart:
             if user_state.isBotRunning(tg_user_id) == AppStatusEnum.Stopped:
-                log.info(f"user_state: {user_state.get(tg_user_id)}")
                 
                 # # Вынести это сообщение в ws
                 # message = MessageData(
@@ -55,20 +54,22 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 
                 # push_to_subscribes(message)
 
-                # # Сохраняем насстройки для остальных устройств
-                # user_state.update_payload(
-                #     tg_user_id=tg_user_id, 
-                #     symbol=message.event_data.payload.symbol,
+                # Сохраняем насстройки для остальных устройств
+                user_state.update_payload(
+                    tg_user_id=tg_user_id, 
+                    symbol=message.event_data.payload.symbol,
                     
-                #     longExchange=message.event_data.payload.longExchange,
-                #     longOrderType=message.event_data.payload.longOrderType,
+                    longExchange=message.event_data.payload.longExchange,
+                    longOrderType=message.event_data.payload.longOrderType,
 
-                #     shortExchange=message.event_data.payload.shortExchange,
-                #     shortOrderType=message.event_data.payload.shortOrderType,
+                    shortExchange=message.event_data.payload.shortExchange,
+                    shortOrderType=message.event_data.payload.shortOrderType,
 
-                #     status=AppStatusEnum.Offline,
-                #     isBotRunning=AppStatusEnum.Stopped,
-                # )
+                    status=AppStatusEnum.Offline,
+                    isBotRunning=AppStatusEnum.Stopped,
+                )
+
+                log.info(f"user_state: {user_state.get(tg_user_id)}")
 
                 # # Подключаем клиента
                 # task = asyncio.create_task(run_ws(
