@@ -87,7 +87,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             if task:
                 task.cancel()
                 del ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"]
-                if tg_user_id in user_state:
+                if tg_user_id in user_state.exists_users():
                     user_state.change_status(tg_user_id, AppStatusEnum.Stopped, AppStatusEnum.Offline)
 
                 message = MessageData(
