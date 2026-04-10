@@ -2,7 +2,7 @@ import asyncio
 from collections import defaultdict
 import structlog
 
-from .schemas import MessageData, MessageMethod
+from .schemas import AppStatusEnum, MessageData, MessageMethod
 
 log: structlog.PrintLogger = structlog.get_logger()
 
@@ -41,11 +41,15 @@ async def get_queue(
         return subscribes[tg_user_id]["success_queue"]
     return None
 
-async def check_user_bot_working():
+async def check_active_users():
     while True:
         try:
             for user in user_state.values():
-                log.info(f"CurrentUser: {user}")
+                # Удаляем все очереди для юзера
+                if user.event_data.payload.isBotRunning != AppStatusEnum.Running and user.event_data.payload.status != AppStatusEnum.Online:
+                    subscribes[user.context.tg_user_id]["success_queue"].clear()
+                    subscribes[user.context.tg_user_id]["error_queue"].clear()
+
         except Exception as e:
             log.error(f"Cache -> {e}")
         await asyncio.sleep(20)
