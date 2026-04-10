@@ -117,12 +117,34 @@ async def run_ws(
         log.err(f"RustWebsocket -> {e}")
     except asyncio.CancelledError:
         log.info("RustWebsocket -> успешно остановлен")
+        # message = MessageData(
+        #     event_data=MessageEventData(
+        #         type=EventDataTypeEnum.Log,
+        #         timestamp=int(time()),
+        #         payload=MessageEventPayload(
+        #             event=EventTypeEnum.BotStop,
+        #             symbol=symbol,
+        #             longExchange=long_exchange,
+        #             longOrderType=OrderTypeEnum.Spot,
+        #             shortExchange=short_exchange,
+        #             shortOrderType=OrderTypeEnum.Spot,
+        #             isBotRunning=AppStatusEnum.Stopped,
+        #             status=AppStatusEnum.Stopped
+        #         )
+        #     ),
+        #     context=MessageContext(
+        #         method=MessageMethod.WebsocketClosed,
+        #         tg_user_id=user_state.context.tg_user_id,
+        #     )
+        # )
+        # push_to_subscribes(message)
+
         message = MessageData(
             event_data=MessageEventData(
-                type=EventDataTypeEnum.Log,
+                type=EventDataTypeEnum.Websocket,
                 timestamp=int(time()),
                 payload=MessageEventPayload(
-                    event=EventTypeEnum.BotStop,
+                    event=EventTypeEnum.Websocket,
                     symbol=symbol,
                     longExchange=long_exchange,
                     longOrderType=OrderTypeEnum.Spot,
