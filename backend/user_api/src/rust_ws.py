@@ -131,7 +131,7 @@ async def run_ws(
 
     #             break
     except Exception as e:
-        log.err(f"RustWebsocket -> {e}")
+        log.error(f"RustWebsocket -> {e}")
     except asyncio.CancelledError:        
         message = MessageData(
             event_data=MessageEventData(
