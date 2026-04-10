@@ -54,28 +54,41 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 push_to_subscribes(message)
 
                 # Сохраняем насстройки для остальных устройств
-                user_state[tg_user_id] = MessageData(
-                    event_data=MessageEventData(
-                        type=EventTypeEnum.UserState,
-                        payload=UserStatePayload(
-                            symbol=message.event_data.payload.symbol,
-                            
-                            longExchange=message.event_data.payload.longExchange,
-                            longOrderType=message.event_data.payload.longOrderType,
+                user_state.update_payload(tg_user_id, 
+                    symbol=message.event_data.payload.symbol,
+                    
+                    longExchange=message.event_data.payload.longExchange,
+                    longOrderType=message.event_data.payload.longOrderType,
 
-                            shortExchange=message.event_data.payload.shortExchange,
-                            shortOrderType=message.event_data.payload.shortOrderType,
+                    shortExchange=message.event_data.payload.shortExchange,
+                    shortOrderType=message.event_data.payload.shortOrderType,
 
-                            status=AppStatusEnum.Offline,
-                            isBotRunning=AppStatusEnum.Stopped,
-                        ),
-                        timestamp=int(time())
-                    ),
-                    context=MessageContext(
-                        method=MessageMethod.User,
-                        tg_user_id=tg_user_id
-                    )
+                    status=AppStatusEnum.Offline,
+                    isBotRunning=AppStatusEnum.Stopped,
                 )
+
+                # user_state[tg_user_id] = MessageData(
+                #     event_data=MessageEventData(
+                #         type=EventTypeEnum.UserState,
+                #         payload=UserStatePayload(
+                #             symbol=message.event_data.payload.symbol,
+                            
+                #             longExchange=message.event_data.payload.longExchange,
+                #             longOrderType=message.event_data.payload.longOrderType,
+
+                #             shortExchange=message.event_data.payload.shortExchange,
+                #             shortOrderType=message.event_data.payload.shortOrderType,
+
+                #             status=AppStatusEnum.Offline,
+                #             isBotRunning=AppStatusEnum.Stopped,
+                #         ),
+                #         timestamp=int(time())
+                #     ),
+                #     context=MessageContext(
+                #         method=MessageMethod.User,
+                #         tg_user_id=tg_user_id
+                #     )
+                # )
                 
                 # Подключаем клиента
                 task = asyncio.create_task(run_ws(
@@ -85,6 +98,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     short_exchange=data.data.shortExchange,
                     symbol=data.data.symbol,
                     user_state=user_state[tg_user_id],
+                    tg_user_id=tg_user_id,
                     message=message
                 ))
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task

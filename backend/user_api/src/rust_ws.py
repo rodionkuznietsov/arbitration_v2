@@ -8,6 +8,8 @@ import os
 from dotenv import load_dotenv
 import structlog
 
+from .services import UserState
+
 from .schemas.bot import OrderTypeEnum
 
 from .cache import MessageData, MessageMethod, push_to_subscribes
@@ -36,7 +38,8 @@ async def run_ws(
     short_exchange: ExchangeEnum,
     symbol: str,
     
-    user_state: MessageData,
+    user_state: UserState,
+    tg_user_id: int,
     message: MessageData,
 ):
     log.info("Подключение к RustWebsocket")
@@ -45,8 +48,11 @@ async def run_ws(
         while True:
             try:
                 async with websockets.connect(WEBSOCKET_URL) as websocket:
-                    user_state.event_data.payload.status = AppStatusEnum.Online
-                    user_state.event_data.payload.isBotRunning = AppStatusEnum.Running
+                    user_state.change_status(
+                        tg_user_id=tg_user_id,
+                        status=AppStatusEnum.Online,
+                        isBotRunning=AppStatusEnum.Running
+                    )
                     
                     await websocket.send(json.dumps({
                         "action": action,

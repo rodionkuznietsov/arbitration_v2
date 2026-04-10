@@ -14,7 +14,7 @@ from src import create_access_token
 from ...schemas import EventTypeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, ResultSchema, TokenSchema, MessageSchema, UserStatePayload
 from ...db import database
 from ...tg_bot.app import BOT_TOKEN
-from ...cache import user_state, user_state1
+from ...cache import user_state
 
 log = structlog.get_logger()
 
@@ -48,24 +48,7 @@ async def auth_telegram(request: Request):
     )
 
     # Создаем Default - состояние для юзера
-    user_state1.push_default(tg_user_id=int(user.get('id')))
-    state = user_state1.get(tg_user_id=int(user.get('id')))
-    log.info(state)
-    
-    # if int(user.get('id')) not in user_state:
-    #     user_state[int(user.get('id'))] = MessageData(
-    #         event_data=MessageEventData(
-    #             type=EventTypeEnum.UserState,
-    #             payload=UserStatePayload(
-    #                 logs=[]
-    #             ),
-    #             timestamp=int(time.time())
-    #         ),
-    #         context=MessageContext(
-    #             method=MessageMethod.User,
-    #             tg_user_id=int(user.get('id'))
-    #         )
-    #     )
+    user_state.push_default(tg_user_id=int(user.get('id')))
 
     return ResultSchema(
         status_code=200,

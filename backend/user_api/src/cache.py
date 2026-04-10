@@ -12,8 +12,7 @@ subscribes = defaultdict(lambda: {
     "success_queue": [], 
     "error_queue": []
 })
-user_state = {}
-user_state1 = UserState()
+user_state = UserState()
 
 def push_to_subscribes(
     message: MessageData
