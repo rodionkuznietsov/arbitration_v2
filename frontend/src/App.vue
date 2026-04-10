@@ -25,12 +25,20 @@
   import { useOrderBookStore } from './stores/orderbook';
   import FetchErrorImg from './assets/img/fetch_error.png'
   import Error401Img from './assets/img/401.png'
+import { handle_websocket_data } from './utils/handlers';
   
   const authStore = useAuthStore()
   const userStateStore = useUserState()
   const orderBookStore = useOrderBookStore()
   const tgStore = useTgStore()
   const homeStore = useHomeStore()
+
+  const handlers = {
+    websocket: (data) => handle_websocket_data(data),
+    default: (data) => {
+      console.warn("Не известное собитие", data.type)
+    }
+  }
 
   onMounted(async () => {
     // Авторизация в Telegram Web App
@@ -64,6 +72,9 @@
 
         es.onmessage = (event) => {
           const event_data = JSON.parse(event.data)
+
+          const handler = handlers[event_data.type] || handlers.default
+          handler(event_data)
           
           if (event_data.type == "log") {
             try {
