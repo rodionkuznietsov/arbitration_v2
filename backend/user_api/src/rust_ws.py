@@ -45,12 +45,15 @@ async def run_ws(
 ):
     attempt = 1
     max_attempts = 3
+    is_success_running = False
 
-    while attempt <= max_attempts:
+    while attempt <= max_attempts and is_success_running is False:
         try:
             log.info(f"{{ rust_websocket.connect }} -> {attempt} попытка")
             async with websockets.connect(WEBSOCKET_URL) as websocket:
                 # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
+                is_success_running = True
+                
                 try:
                     user_state.change_status(
                         tg_user_id=tg_user_id,
@@ -77,6 +80,7 @@ async def run_ws(
 
             while True:
                 log.info("Какие-то данные")
+                await asyncio.sleep(1)
 
                     # response = await websocket.recv()
                     # data = json.loads(response)
