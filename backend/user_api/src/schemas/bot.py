@@ -18,9 +18,6 @@ class AppStatusEnum(str, Enum):
     Offline = "offline"
     Warning = "warning"
 
-    Running = True
-    Stopped = False
-
     NotSleeping = "not_sleeping"
     Sleeping = "sleeping"
 

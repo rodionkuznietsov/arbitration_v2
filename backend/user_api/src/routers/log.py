@@ -64,7 +64,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     shortOrderType=message.event_data.payload.shortOrderType,
 
                     status=AppStatusEnum.Offline,
-                    isBotRunning=AppStatusEnum.Stopped,
+                    isBotRunning=False,
                 )
 
                 # Подключаем клиента
@@ -89,7 +89,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 if tg_user_id in user_state.exists_users():
                     user_state.change_status(
                         tg_user_id, 
-                        isBotRunning=AppStatusEnum.Stopped, 
+                        isBotRunning=False, 
                         status=AppStatusEnum.Offline
                     )
 

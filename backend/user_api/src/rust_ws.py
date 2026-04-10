@@ -92,7 +92,7 @@ async def run_ws(
                                     shortExchange=message.event_data.payload.shortExchange,
                                     shortOrderType=message.event_data.payload.shortOrderType,
                                     status=AppStatusEnum.Online,
-                                    isBotRunning=AppStatusEnum.Running
+                                    isBotRunning=True
                                 ),
                                 timestamp=int(time()),
                                 ws_data=data
@@ -163,7 +163,7 @@ async def run_ws(
                         longOrderType=OrderTypeEnum.Spot,
                         shortExchange=short_exchange,
                         shortOrderType=OrderTypeEnum.Spot,
-                        isBotRunning=AppStatusEnum.Stopped,
+                        isBotRunning=False,
                         status=AppStatusEnum.Offline
                     )
                 ),
