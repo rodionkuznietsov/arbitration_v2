@@ -146,15 +146,16 @@ async def clear_all_logs():
 @router.get("/get/logs/", response_model=ResultSchema, tags=["logs"])
 async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
     tg_user_id = int(authothicate(token))
-
-    if not logs:
-        raise HTTPException(
-            status_code=404,
-            detail="Не удалось найти логов"
-        )
     
     if tg_user_id in user_state and len(user_state[tg_user_id].event_data.payload.logs) == 0:
         logs = await database.get_user_logs(tg_user_id)
+
+        if not logs:
+            raise HTTPException(
+                status_code=404,
+                detail="Не удалось найти логов"
+            )
+
         user_state[tg_user_id].event_data.payload.logs = logs
 
     return ResultSchema(
