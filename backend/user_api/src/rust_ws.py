@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import structlog
 import traceback
 
-from .services import UserState
+from .services import SafeUserState
 
 from .schemas.bot import OrderTypeEnum
 
@@ -39,7 +39,7 @@ async def run_ws(
     short_exchange: ExchangeEnum,
     symbol: str,
     
-    user_state: UserState,
+    user_state: SafeUserState,
     tg_user_id: int,
     message: MessageData,
 ):
