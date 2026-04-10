@@ -54,6 +54,7 @@ async def run_ws(
                 "ticker": symbol
             }))
 
+            # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
             user_state.change_status(
                 tg_user_id,
                 status=AppStatusEnum.Online,
