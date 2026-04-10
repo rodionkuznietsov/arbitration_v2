@@ -1,7 +1,3 @@
-// import { useOrderBookStore } from "@/stores/orderbook"
-
-// const orderBookStore = useOrderBookStore()
-
 export function handle_websocket_data(
     event_data,
     userStateStore,
