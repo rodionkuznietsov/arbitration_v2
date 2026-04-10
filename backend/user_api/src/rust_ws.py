@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import structlog
 import traceback
 
-from .services import SafeUserState
+from .services import UserState
 
 from .schemas.bot import OrderTypeEnum
 
@@ -39,19 +39,22 @@ async def run_ws(
     short_exchange: ExchangeEnum,
     symbol: str,
     
-    user_state: SafeUserState,
+    user_state: UserState,
     tg_user_id: int,
     message: MessageData,
 ):
     log.info("Подключение к RustWebsocket")
 
-    user_state.change_status(
-        tg_user_id=tg_user_id,
-        status=AppStatusEnum.Online,
-        isBotRunning=AppStatusEnum.Running,
-    )
+    try:
+        user_state.change_status(
+            tg_user_id=tg_user_id,
+            status=AppStatusEnum.Online,
+            isBotRunning=AppStatusEnum.Running,
+        )
 
-    log.info("Status changed")
+        log.info("Status changed")
+    except Exception as e:
+        log.error(f"RustWebsocket(UserState(ChangeStatus)) -> {e}")
 
     # try:
     #     while True:
