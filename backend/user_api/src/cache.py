@@ -41,7 +41,7 @@ async def get_queue(
         return subscribes[tg_user_id]["success_queue"]
     return None
 
-async def check_active_users():
+async def check_active_subscribes():
     while True:
         try:
             for user in user_state.values():
