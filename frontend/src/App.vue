@@ -67,7 +67,6 @@
           
           if (event_data.type == "log") {
             try {
-              // userStateStore.isBotRunning = event_data.payload.isBotRunning
               userStateStore.symbol = event_data.payload.symbol.replace("USDT", ""),
               homeStore.longExchange = event_data.payload.longExchange,
               userStateStore.longOrderType = event_data.payload.longOrderType,
@@ -136,7 +135,7 @@
             userStateStore.changeStatus(event_data.payload.status)
             userStateStore.isBotRunning = event_data.payload.isBotRunning
 
-            if (!event_data.payload.isBotRunning) {
+            if (event_data.payload.event == "bot_stop") {
               tg.showAlert(userStateStore.isBotRunning, () => {})
             }
 
