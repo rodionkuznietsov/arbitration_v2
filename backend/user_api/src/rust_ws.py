@@ -101,7 +101,9 @@ async def run_ws(
     #                 except Exception as e:
     #                     log.error(f"RustWebsocket -> {e}")                    
     except websockets.exceptions.InvalidStatus as e:
-        log.error(f"RustWebsocket(WebSocketError) -> {e.response.status_code}")
+        if e.response.status_code == 502:
+            log.error(f"RustWebsocket {{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")
+            log.error(f"RustWebsocket {{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
 
     #             try:
     #                 message = MessageData(
