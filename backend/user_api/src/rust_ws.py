@@ -61,7 +61,7 @@ async def run_ws(
                         isBotRunning=AppStatusEnum.Running,
                     )
 
-                    log.info(f"Изменили статус для: {tg_user_id}")
+                    log.info(f"{{ rust_websocket.user_state.change_status }} -> {tg_user_id}")
                 except AttributeError as e:
                     log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
                     log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
