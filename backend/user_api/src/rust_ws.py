@@ -152,27 +152,27 @@ async def run_ws(
         except Exception as e:
             log.error(f"RustWebsocket -> {e}")
         except asyncio.CancelledError: # Юзер отключил WS
-            # message = MessageData(
-            #     event_data=MessageEventData(
-            #         type=EventDataTypeEnum.Websocket,
-            #         timestamp=int(time()),
-            #         payload=MessageEventPayload(
-            #             event=EventTypeEnum.BotStop,
-            #             symbol=symbol,
-            #             longExchange=long_exchange,
-            #             longOrderType=OrderTypeEnum.Spot,
-            #             shortExchange=short_exchange,
-            #             shortOrderType=OrderTypeEnum.Spot,
-            #             isBotRunning=AppStatusEnum.Stopped,
-            #             status=AppStatusEnum.Offline
-            #         )
-            #     ),
-            #     context=MessageContext(
-            #         method=MessageMethod.WebsocketClosed,
-            #         tg_user_id=tg_user_id,
-            #     )
-            # )
-            # push_to_subscribes(message)
+            message = MessageData(
+                event_data=MessageEventData(
+                    type=EventDataTypeEnum.Websocket,
+                    timestamp=int(time()),
+                    payload=MessageEventPayload(
+                        event=EventTypeEnum.BotStop,
+                        symbol=symbol,
+                        longExchange=long_exchange,
+                        longOrderType=OrderTypeEnum.Spot,
+                        shortExchange=short_exchange,
+                        shortOrderType=OrderTypeEnum.Spot,
+                        isBotRunning=AppStatusEnum.Stopped,
+                        status=AppStatusEnum.Offline
+                    )
+                ),
+                context=MessageContext(
+                    method=MessageMethod.WebsocketClosed,
+                    tg_user_id=tg_user_id,
+                )
+            )
+            push_to_subscribes(message)
             log.info("RustWebsocket -> успешно остановлен")
 
         
