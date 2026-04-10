@@ -61,8 +61,6 @@ async def run_ws(
             except Exception as e:
                 log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
 
-            log.info(user_state.get(tg_user_id))
-
             await websocket.send(json.dumps({
                 "action": action,
                 "channel": channel,
@@ -71,10 +69,10 @@ async def run_ws(
                 "ticker": symbol
             }))
 
-    #             while True:
+            # while True:
 
-    #                 response = await websocket.recv()
-    #                 data = json.loads(response)
+                    # response = await websocket.recv()
+                    # data = json.loads(response)
 
     #                 try:
     #                     ws_message = MessageData(
@@ -157,3 +155,5 @@ async def run_ws(
         )
         push_to_subscribes(message)
         log.info("RustWebsocket -> успешно остановлен")
+
+    

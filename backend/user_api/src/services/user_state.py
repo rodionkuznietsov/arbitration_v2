@@ -124,3 +124,4 @@ class UserState:
 
     def exists_users(self):
         return self.__user_state__
+    
