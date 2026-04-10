@@ -31,7 +31,6 @@ export async function getBotLogs(token) {
         }
 
         const data = await response.json()
-        alert(JSON.stringify(data))
         return data.message.logs
     } catch(err) {
         console.log("Ошибка при получении логов")
