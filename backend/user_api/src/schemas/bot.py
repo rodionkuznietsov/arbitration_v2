@@ -20,6 +20,8 @@ class AppStatusEnum(str, Enum):
 
     Running = True
     Stopped = False
+
+    NotSleeping = "not_sleeping"
     Sleeping = "sleeping"
 
 class LogStatusEnum(str, Enum):

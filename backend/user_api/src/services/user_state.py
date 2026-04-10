@@ -20,7 +20,7 @@ class UserState:
                     event_data=MessageEventData(
                         type=EventDataTypeEnum.UserState,
                         payload=UserStatePayload(
-                            isSleeping=AppStatusEnum.Sleeping,
+                            isSleeping=AppStatusEnum.NotSleeping,
                             symbol="BTC",
                             longExchange=ExchangeEnum.Bybit,
                             longOrderType=OrderTypeEnum.Spot,
@@ -137,3 +137,14 @@ class UserState:
         self
     ) -> AppStatusEnum:
         return self.__user_state__.event_data.payload.isSleeping
+    
+    def change_sleeping_status(
+        self,
+        tg_user_id: int,
+        new_status: AppStatusEnum
+    ):
+        try:
+            if tg_user_id in self.__user_state__:
+                self.__user_state__[tg_user_id].event_data.payload.isSleeping = new_status
+        except Exception as e:
+            log.error(f"{{user_state.change_sleeping_status}} -> {e}")

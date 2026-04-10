@@ -5,6 +5,8 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 import structlog
+
+from ..schemas import AppStatusEnum
 from ..cache import push_to_subscribes, subscribes, user_state
 
 router = APIRouter()
@@ -24,7 +26,7 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
 
     finally:
         # Обновляем статус isSleeping, чтобы защитить от удаления нужных очередей, пока бот активен 
-        log.info(subscribes[tg_user_id])
+        user_state.change_sleeping_status(tg_user_id=tg_user_id, new_status=AppStatusEnum.Sleeping)
 
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
