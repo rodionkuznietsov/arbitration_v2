@@ -68,15 +68,15 @@ async def run_ws(
                 except Exception as e:
                     log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
 
-                while True:
-                    await websocket.send(json.dumps({
-                        "action": action,
-                        "channel": channel,
-                        "longExchange": long_exchange,
-                        "shortExchange": short_exchange,
-                        "ticker": symbol
-                    }))
+                await websocket.send(json.dumps({
+                    "action": action,
+                    "channel": channel,
+                    "longExchange": long_exchange,
+                    "shortExchange": short_exchange,
+                    "ticker": symbol
+                }))
 
+                while True:
                     response = await websocket.recv()
                     data = json.loads(response)
                     log.info(data)
