@@ -147,6 +147,9 @@
               })
             }
           } else if (event_data.type == "websocket") {
+            userStateStore.changeStatus(event_data.payload.status)
+            userStateStore.isBotRunning = event_data.payload.status.isBotRunning
+            
             if (event_data.ws_data.channel == "order_book") {
               orderBookStore.longLastPrice = event_data.ws_data.result.data.order_book.long.last_price
               orderBookStore.shortLastPrice = event_data.ws_data.result.data.order_book.short.last_price
@@ -158,8 +161,8 @@
               orderBookStore.shortBids = event_data.ws_data.result.data.order_book.short.bids
             }
           } else if (event_data.type == "user_state") {
-            userStateStore.changeStatus(event_data.payload.status)
-            userStateStore.isBotRunning = event_data.payload.status.isBotRunning
+            // userStateStore.changeStatus(event_data.payload.status)
+            // userStateStore.isBotRunning = event_data.payload.status.isBotRunning
 
             if (userStateStore.isBotRunning) {
               orderBookStore.updateHeader(
