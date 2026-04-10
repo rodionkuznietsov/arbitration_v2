@@ -48,19 +48,20 @@ async def auth_telegram(request: Request):
     )
 
     # Создаем Default - состояние для юзера
-    user_state[int(user.get('id'))] = MessageData(
-        event_data=MessageEventData(
-            type=EventTypeEnum.UserState,
-            payload=UserStatePayload(
-                logs=[]
+    if int(user.get('id')) not in user_state:
+        user_state[int(user.get('id'))] = MessageData(
+            event_data=MessageEventData(
+                type=EventTypeEnum.UserState,
+                payload=UserStatePayload(
+                    logs=[]
+                ),
+                timestamp=int(time.time())
             ),
-            timestamp=int(time.time())
-        ),
-        context=MessageContext(
-            method=MessageMethod.User,
-            tg_user_id=int(user.get('id'))
+            context=MessageContext(
+                method=MessageMethod.User,
+                tg_user_id=int(user.get('id'))
+            )
         )
-    )
 
     return ResultSchema(
         status_code=200,
