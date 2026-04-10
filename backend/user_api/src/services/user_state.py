@@ -53,13 +53,8 @@ class UserState:
         self,
         tg_user_id: int
     ):
-        try:
-            if tg_user_id in self.__user_state__:
-                return self.__user_state__[tg_user_id].event_data.payload.isBotRunning
-        
-            raise UserStateError(status_code=404, message=f"Не удалось найти пользователя с id: {tg_user_id}")
-        except UserStateError as e:
-            log.error(f"UserState(isBotRunning) -> {e}")
+        if tg_user_id in self.__user_state__:
+            return self.__user_state__[tg_user_id].event_data.payload.isBotRunning
 
     def long_size(
         self,
