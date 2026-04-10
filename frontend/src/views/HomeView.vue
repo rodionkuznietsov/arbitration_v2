@@ -24,6 +24,15 @@
         const data = await response.json()
 
         configStore.exchanges = data.exchanges
+
+        if (!userState.longExchange || userState.longExchange != "unknown") {
+          userState.longExchange = configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
+        }
+        
+        if (!userState.shortExchange || userState.shortExchange != "unknown") {
+          userState.shortExchange = configStore.exchanges[1] ? configStore.exchanges[1] : configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
+        }
+        
       } catch(err) {
         if (tgStore.tgObject) {
           tgStore.tgObject.showAlert("Системный сбой. Пожайлуйста сообщите об этом в службу поддержки.", () => {
