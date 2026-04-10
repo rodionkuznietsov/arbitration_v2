@@ -119,8 +119,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 
                 push_to_subscribes(message)
 
-                log.info(f"Для клиента: {tg_user_id}, был отключен RustWebsocket")
-
     return ResultSchema(
         status_code=200,
         success=True,
