@@ -75,8 +75,6 @@ async def run_ws(
                     "shortExchange": short_exchange,
                     "ticker": symbol
                 }))
-                
-
 
             while True:
                 log.info("Какие-то данные")
@@ -112,6 +110,20 @@ async def run_ws(
     #                 except Exception as e:
     #                     log.error(f"RustWebsocket -> {e}")                    
         except websockets.exceptions.InvalidStatus as e:            
+            try:
+                user_state.change_status(
+                    tg_user_id=tg_user_id,
+                    status=AppStatusEnum.Warning,
+                    isBotRunning=AppStatusEnum.Stopped,
+                )
+
+                log.info(f"Изменили статус для: {tg_user_id}")
+            except AttributeError as e:
+                log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
+                log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
+            except Exception as e:
+                log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
+            
             if e.response.status_code == 502:
                 if attempt == max_attempts:
                     log.error(f"{{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")

@@ -57,6 +57,13 @@ class UserState:
         if tg_user_id in self.__user_state__:
             return self.__user_state__[tg_user_id].event_data.payload.isBotRunning
 
+    def status(
+        self,
+        tg_user_id: int
+    ):
+        if tg_user_id in self.__user_state__:
+            return self.__user_state__[tg_user_id].event_data.payload.status
+
     def long_size(
         self,
         tg_user_id: int

@@ -31,7 +31,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
         case EventTypeEnum.BotStart:
             log.info(user_state.isBotRunning(tg_user_id))
 
-            if user_state.isBotRunning(tg_user_id) == AppStatusEnum.Stopped:
+            if user_state.isBotRunning(tg_user_id) == AppStatusEnum.Stopped and user_state.status(tg_user_id) != AppStatusEnum.Warning:
                 
                 # Вынести это сообщение в ws
                 message = MessageData(
