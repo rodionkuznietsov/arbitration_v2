@@ -46,12 +46,12 @@ async def run_ws(
 
     try:
         async with websockets.connect(WEBSOCKET_URL) as websocket:
-            # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
-            user_state.change_status(
-                tg_user_id,
-                status=AppStatusEnum.Online,
-                isBotRunning=AppStatusEnum.Running,
-            )
+            # # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
+            # user_state.change_status(
+            #     tg_user_id,
+            #     status=AppStatusEnum.Online,
+            #     isBotRunning=AppStatusEnum.Running,
+            # )
 
             while True:
                 try:
