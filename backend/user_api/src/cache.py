@@ -2,6 +2,8 @@ import asyncio
 from collections import defaultdict
 import structlog
 
+from .services import UserState
+
 from .schemas import AppStatusEnum, MessageData, MessageMethod
 
 log: structlog.PrintLogger = structlog.get_logger()
@@ -11,6 +13,7 @@ subscribes = defaultdict(lambda: {
     "error_queue": []
 })
 user_state = {}
+user_state1 = UserState()
 
 def push_to_subscribes(
     message: MessageData
