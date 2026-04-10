@@ -193,7 +193,9 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
                         logs=user_state.get_logs(tg_user_id)
                     )
                 )
-            
+    except Exception as e:
+        log.error(f"LogRouter -> {e}")
+
         return ResultSchema(
             status_code=404,
             success=False,
@@ -201,8 +203,6 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
                 logs=[]
             )
         )
-    except Exception as e:
-        log.error(f"LogRouter -> {e}")
 
 def authothicate(token):
     credentials_exception = HTTPException(
