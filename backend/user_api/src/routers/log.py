@@ -29,66 +29,61 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
 
     match data.event:
         case EventTypeEnum.BotStart:
-            try:
+            log.info(user_state.isBotRunning(tg_user_id))
 
-                log.info(user_state.isBotRunning(tg_user_id))
-
-                if user_state.isBotRunning(tg_user_id) == AppStatusEnum.Stopped:
-                    
-                    # Вынести это сообщение в ws
-                    message = MessageData(
-                        event_data=MessageEventData(
-                            type=EventDataTypeEnum.Log,
-                            timestamp=data.timestamp,
-                            payload=LogPayload(
-                                event=data.event,
-                                symbol=f"{data.data.symbol.upper()}",
-                                longExchange=data.data.longExchange,
-                                longOrderType=data.data.longOrderType,
-                                shortExchange=data.data.shortExchange,
-                                shortOrderType=data.data.shortOrderType,
-                                status=LogStatusEnum.Success
-                            )
-                        ),
-                        context=MessageContext(
-                            method=MessageMethod.User,
-                            tg_user_id=tg_user_id,
+            if user_state.isBotRunning(tg_user_id) == AppStatusEnum.Stopped:
+                
+                # Вынести это сообщение в ws
+                message = MessageData(
+                    event_data=MessageEventData(
+                        type=EventDataTypeEnum.Log,
+                        timestamp=data.timestamp,
+                        payload=LogPayload(
+                            event=data.event,
+                            symbol=f"{data.data.symbol.upper()}",
+                            longExchange=data.data.longExchange,
+                            longOrderType=data.data.longOrderType,
+                            shortExchange=data.data.shortExchange,
+                            shortOrderType=data.data.shortOrderType,
+                            status=LogStatusEnum.Success
                         )
+                    ),
+                    context=MessageContext(
+                        method=MessageMethod.User,
+                        tg_user_id=tg_user_id,
                     )
+                )
+                
+                # Сохраняем насстройки для остальных устройств
+                user_state.update_payload(
+                    tg_user_id=tg_user_id, 
+                    symbol=message.event_data.payload.symbol,
                     
-                    # Сохраняем насстройки для остальных устройств
-                    user_state.update_payload(
-                        tg_user_id=tg_user_id, 
-                        symbol=message.event_data.payload.symbol,
-                        
-                        longExchange=message.event_data.payload.longExchange,
-                        longOrderType=message.event_data.payload.longOrderType,
+                    longExchange=message.event_data.payload.longExchange,
+                    longOrderType=message.event_data.payload.longOrderType,
 
-                        shortExchange=message.event_data.payload.shortExchange,
-                        shortOrderType=message.event_data.payload.shortOrderType,
+                    shortExchange=message.event_data.payload.shortExchange,
+                    shortOrderType=message.event_data.payload.shortOrderType,
 
-                        status=AppStatusEnum.Offline,
-                        isBotRunning=AppStatusEnum.Stopped,
-                    )
+                    status=AppStatusEnum.Offline,
+                    isBotRunning=AppStatusEnum.Stopped,
+                )
 
-                    # Подключаем клиента
-                    try:
-                        task = asyncio.create_task(run_ws(
-                            action=WebSocketActionEnum.Subscribe,
-                            channel=WebSocketChannelEnum.OrderBook,
-                            long_exchange=data.data.longExchange,
-                            short_exchange=data.data.shortExchange,
-                            symbol=data.data.symbol,
-                            user_state=user_state.get(tg_user_id),
-                            tg_user_id=tg_user_id,
-                            message=message
-                        ))
-                        ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
-                    except AttributeError as e:
-                        log.error(f"LogRouter -> {e}")
-
-            except Exception as e:
-                log.error(f"LogRouter(BotStart) -> {e}")
+                # Подключаем клиента
+                try:
+                    task = asyncio.create_task(run_ws(
+                        action=WebSocketActionEnum.Subscribe,
+                        channel=WebSocketChannelEnum.OrderBook,
+                        long_exchange=data.data.longExchange,
+                        short_exchange=data.data.shortExchange,
+                        symbol=data.data.symbol,
+                        user_state=user_state.get(tg_user_id),
+                        tg_user_id=tg_user_id,
+                        message=message
+                    ))
+                    ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
+                except AttributeError as e:
+                    log.error(f"LogRouter -> {e}")
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
             
