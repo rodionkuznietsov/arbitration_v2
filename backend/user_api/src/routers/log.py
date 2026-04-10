@@ -179,38 +179,14 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
                     logs=user_state[tg_user_id].event_data.payload.logs
                 )
             )
-    else: 
-        log.info("LogRouter -> Инициализация историй с базы данных без id")
-
-        logs = await database.get_user_logs(tg_user_id)
-
-        if not logs:
-            raise HTTPException(
-                status_code=404,
-                detail="Не удалось найти логов"
-            )
-
-        # Создаем состояние юзера
-        user_state[tg_user_id] = MessageData(
-            event_data=MessageEventData(
-                type=EventTypeEnum.UserState,
-                timestamp=int(time())
-            ),
-            context=MessageContext(
-                method=MessageMethod.User,
-                tg_user_id=tg_user_id
-            )
+        
+    return ResultSchema(
+        status_code=404,
+        success=False,
+        message=LogMessageSchema(
+            logs=[]
         )
-
-        user_state[tg_user_id].event_data.payload.logs = logs
-
-        return ResultSchema(
-            status_code=200,
-            success=True,
-            message=LogMessageSchema(
-                logs=logs
-            )
-        )
+    )
 
 def authothicate(token):
     credentials_exception = HTTPException(

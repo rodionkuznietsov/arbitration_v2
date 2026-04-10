@@ -11,9 +11,10 @@ import time
 from ...jwt_func import ACCESS_TOKEN_EXPIRE_MINUTES
 from src import create_access_token
 
-from ...schemas import ResultSchema, TokenSchema, MessageSchema
+from ...schemas import EventTypeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, ResultSchema, TokenSchema, MessageSchema, UserStatePayload
 from ...db import database
 from ...tg_bot.app import BOT_TOKEN
+from ...cache import user_state
 
 log = structlog.get_logger()
 
@@ -44,6 +45,18 @@ async def auth_telegram(request: Request):
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": f"{user.get('id')}"}, expires_delta=access_token_expires
+    )
+
+    # Создаем Default - состояние для юзера
+    user_state[int(user.get('id'))] = MessageData(
+        event_data=MessageEventData(
+            type=EventTypeEnum.UserState,
+            timestamp=int(time())
+        ),
+        context=MessageContext(
+            method=MessageMethod.User,
+            tg_user_id=int(user.get('id'))
+        )
     )
 
     return ResultSchema(
