@@ -147,6 +147,8 @@ async def clear_all_logs():
 async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
     tg_user_id = int(authothicate(token))
     
+    logs = []
+
     if tg_user_id in user_state and len(user_state[tg_user_id].event_data.payload.logs) == 0:
         logs = await database.get_user_logs(tg_user_id)
 
@@ -158,13 +160,13 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
 
         user_state[tg_user_id].event_data.payload.logs = logs
 
-        return ResultSchema(
-            status_code=200,
-            success=True,
-            message=LogMessageSchema(
-                logs=user_state[tg_user_id].event_data.payload.logs
-            )
+    return ResultSchema(
+        status_code=200,
+        success=True,
+        message=LogMessageSchema(
+            logs=logs
         )
+    )
 
 def authothicate(token):
     credentials_exception = HTTPException(
