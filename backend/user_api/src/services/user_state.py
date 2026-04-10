@@ -82,3 +82,6 @@ class UserState:
             raise UserStateError(status_code=404, message=f"Не удалось найти пользователя с id: {tg_user_id}")
         except UserStateError as e:
             log.error(f"UserState -> {e}")
+
+    def get_users(self):
+        return self.__user_state__.values()
