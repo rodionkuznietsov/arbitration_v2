@@ -161,46 +161,48 @@ async def clear_all_logs():
 async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
     tg_user_id = int(authothicate(token))
     
-    if tg_user_id in user_state:
-        if len(user_state[tg_user_id].event_data.payload.logs) == 0:
-            log.info("LogRouter -> Инициализация историй с базы данных с id")
+    try:
+        if tg_user_id in user_state:
+            if user_state.long_size() == 0:
+                log.info("LogRouter -> Инициализация историй с базы данных с id")
 
-            logs = await database.get_user_logs(tg_user_id)
+                new_logs = await database.get_user_logs(tg_user_id)
+                if not new_logs:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Не удалось найти логов"
+                    )
 
-            if not logs:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Не удалось найти логов"
+                user_state.set_logs(tg_user_id, new_logs)
+
+                return ResultSchema(
+                    status_code=200,
+                    success=True,
+                    message=LogMessageSchema(
+                        logs=user_state.get_logs(tg_user_id)
+                    )
                 )
-
-            user_state[tg_user_id].event_data.payload.logs = logs
-
-            return ResultSchema(
-                status_code=200,
-                success=True,
-                message=LogMessageSchema(
-                    logs=user_state[tg_user_id].event_data.payload.logs
+                
+            else: 
+                log.info("LogRouter -> Возращения данных из кеша")
+                
+                return ResultSchema(
+                    status_code=200,
+                    success=True,
+                    message=LogMessageSchema(
+                        logs=user_state.get_logs(tg_user_id)
+                    )
                 )
-            )
             
-        else: 
-            log.info("LogRouter -> Возращения данных из кеша")
-            
-            return ResultSchema(
-                status_code=200,
-                success=True,
-                message=LogMessageSchema(
-                    logs=user_state[tg_user_id].event_data.payload.logs
-                )
+        return ResultSchema(
+            status_code=404,
+            success=False,
+            message=LogMessageSchema(
+                logs=[]
             )
-        
-    return ResultSchema(
-        status_code=404,
-        success=False,
-        message=LogMessageSchema(
-            logs=[]
         )
-    )
+    except Exception as e:
+        log.error(f"LogRouter -> {e}")
 
 def authothicate(token):
     credentials_exception = HTTPException(
