@@ -43,12 +43,12 @@ async def run_ws(
     tg_user_id: int,
     message: MessageData,
 ):
-    try:
-        attempt = 0
-        max_attempts = 3
+    attempt = 0
+    max_attempts = 3
 
-        while attempt <= max_attempts:
-            log.info("Подключение к RustWebsocket: {}")
+    while attempt <= max_attempts:
+        try:
+            log.info(f"Подключение к RustWebsocket: {attempt}")
             async with websockets.connect(WEBSOCKET_URL) as websocket:
                 # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
                 try:
@@ -104,44 +104,42 @@ async def run_ws(
     #                     push_to_subscribes(ws_message)
     #                 except Exception as e:
     #                     log.error(f"RustWebsocket -> {e}")                    
-    except websockets.exceptions.InvalidStatus as e:
-        attempt += 1
+        except websockets.exceptions.InvalidStatus as e:            
+            if e.response.status_code == 502:
+                log.error(f"{{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")
+                log.error(f"{{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
 
-        if e.response.status_code == 502:
-            log.error(f"{{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")
-            log.error(f"{{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
-
-            if attempt == max_attempts:
-                log.info("Не удачная попытка")
-        else:
-            log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
-        
-        await asyncio.sleep(3)
-    except Exception as e:
-        log.error(f"RustWebsocket -> {e}")
-        
-    except asyncio.CancelledError:        
-        message = MessageData(
-            event_data=MessageEventData(
-                type=EventDataTypeEnum.Websocket,
-                timestamp=int(time()),
-                payload=MessageEventPayload(
-                    event=EventTypeEnum.Websocket,
-                    symbol=symbol,
-                    longExchange=long_exchange,
-                    longOrderType=OrderTypeEnum.Spot,
-                    shortExchange=short_exchange,
-                    shortOrderType=OrderTypeEnum.Spot,
-                    isBotRunning=AppStatusEnum.Stopped,
-                    status=AppStatusEnum.Offline
+                if attempt == max_attempts:
+                    log.info("Не удачная попытка")
+            else:
+                log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
+            
+            attempt += 1
+            await asyncio.sleep(3)
+        except Exception as e:
+            log.error(f"RustWebsocket -> {e}")
+        except asyncio.CancelledError:        
+            message = MessageData(
+                event_data=MessageEventData(
+                    type=EventDataTypeEnum.Websocket,
+                    timestamp=int(time()),
+                    payload=MessageEventPayload(
+                        event=EventTypeEnum.Websocket,
+                        symbol=symbol,
+                        longExchange=long_exchange,
+                        longOrderType=OrderTypeEnum.Spot,
+                        shortExchange=short_exchange,
+                        shortOrderType=OrderTypeEnum.Spot,
+                        isBotRunning=AppStatusEnum.Stopped,
+                        status=AppStatusEnum.Offline
+                    )
+                ),
+                context=MessageContext(
+                    method=MessageMethod.WebsocketClosed,
+                    tg_user_id=tg_user_id,
                 )
-            ),
-            context=MessageContext(
-                method=MessageMethod.WebsocketClosed,
-                tg_user_id=tg_user_id,
             )
-        )
-        push_to_subscribes(message)
-        log.info("RustWebsocket -> успешно остановлен")
+            push_to_subscribes(message)
+            log.info("RustWebsocket -> успешно остановлен")
 
-    
+        
