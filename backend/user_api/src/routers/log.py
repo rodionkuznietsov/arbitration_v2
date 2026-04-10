@@ -158,6 +158,8 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
 
         user_state[tg_user_id].event_data.payload.logs = logs
 
+        log.info(user_state[tg_user_id].event_data.payload.logs)
+
         return ResultSchema(
             status_code=200,
             success=True,
