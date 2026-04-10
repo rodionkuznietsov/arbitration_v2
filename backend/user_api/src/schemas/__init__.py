@@ -1,9 +1,12 @@
 from .exchange import (
     ExchangeSchema, 
     ExchangeEnum, 
-    ExchangeEvent, 
     ExchangePayload, 
     ExchangeEventData
+)
+
+from .enums import (
+    ExchangeEventEnum
 )
 
 from .result import ResultSchema, LogMessageSchema, MessageSchema

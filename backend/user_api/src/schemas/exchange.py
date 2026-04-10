@@ -2,14 +2,10 @@ from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from .enums import ExchangeEnum, EventDataTypeEnum
-
-class ExchangeEvent(str, Enum):
-    AddExchange = "add_exchange"
-    UpdateExchange = "update_exchange"
+from .enums import ExchangeEnum, EventDataTypeEnum, ExchangeEventEnum
 
 class ExchangePayload(BaseModel):
-    event: ExchangeEvent
+    event: ExchangeEventEnum
     exchange_name: ExchangeEnum
     is_available: Optional[bool] = bool
 

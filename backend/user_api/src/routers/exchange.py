@@ -1,7 +1,7 @@
 import time
 from fastapi import APIRouter, HTTPException
 
-from ..schemas import EventDataTypeEnum, ExchangeEvent, ExchangeEventData, ExchangePayload, MessageData
+from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangePayload, MessageData, ExchangeEventEnum
 from ..cache import push_to_subscribes
 from ..db import database
 from ..schemas.exchange import ExchangeSchema
@@ -32,7 +32,7 @@ async def add_exchange(exchange_data: ExchangeSchema):
         event_data=ExchangeEventData(
             type=EventDataTypeEnum.Exchange,
             payload=ExchangePayload(
-                event=ExchangeEvent.AddExchange,
+                event=ExchangeEventEnum.AddExchange,
                 exchange_name=exchange_data.name.lower(),
                 is_available=exchange_data.is_available
             ),
@@ -63,7 +63,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         event_data=ExchangeEventData(
             type=EventDataTypeEnum.Exchange,
             payload=ExchangePayload(
-                event=ExchangeEvent.UpdateExchange,
+                event=ExchangeEventEnum.UpdateExchange,
                 exchange_name=exchange_data.name.lower(),
                 is_available=exchange_data.is_available
             ),
