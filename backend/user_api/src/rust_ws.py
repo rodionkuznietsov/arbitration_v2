@@ -124,9 +124,7 @@ async def run_ws(
                 break
     except Exception as e:
         log.err(f"RustWebsocket -> {e}")
-    except asyncio.CancelledError:
-        log.info("RustWebsocket -> успешно остановлен")
-        
+    except asyncio.CancelledError:        
         message = MessageData(
             event_data=MessageEventData(
                 type=EventDataTypeEnum.Websocket,
@@ -139,7 +137,7 @@ async def run_ws(
                     shortExchange=short_exchange,
                     shortOrderType=OrderTypeEnum.Spot,
                     isBotRunning=AppStatusEnum.Stopped,
-                    status=AppStatusEnum.Stopped
+                    status=AppStatusEnum.Offline
                 )
             ),
             context=MessageContext(
@@ -148,3 +146,4 @@ async def run_ws(
             )
         )
         push_to_subscribes(message)
+        log.info("RustWebsocket -> успешно остановлен")
