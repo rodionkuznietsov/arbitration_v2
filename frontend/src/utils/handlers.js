@@ -1,12 +1,13 @@
 // import { useOrderBookStore } from "@/stores/orderbook"
-import { useUserState } from "@/stores/user_state"
+// import { useUserState } from "@/stores/user_state"
 
-const userStateStore = useUserState()
+// const userStateStore = useUserState()
 // const orderBookStore = useOrderBookStore()
 
 export function handle_websocket_data(event_data) {
-    userStateStore.changeStatus(event_data.payload.status)
-    userStateStore.isBotRunning = event_data.payload.isBotRunning
+    alert(JSON.stringify(event_data))
+    // userStateStore.changeStatus(event_data.payload.status)
+    // userStateStore.isBotRunning = event_data.payload.isBotRunning
 
     // // Устанавливаем валидные данные для отображения стакана
     // if (userStateStore.isBotRunning) {
