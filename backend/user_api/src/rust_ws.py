@@ -44,30 +44,34 @@ async def run_ws(
     message: MessageData,
 ):
     try:
-        log.info("Подключение к RustWebsocket")
-        async with websockets.connect(WEBSOCKET_URL) as websocket:
-            # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
-            try:
-                user_state.change_status(
-                    tg_user_id=tg_user_id,
-                    status=AppStatusEnum.Online,
-                    isBotRunning=AppStatusEnum.Running,
-                )
+        attempt = 0
+        max_atttemps = 3
 
-                log.info(f"Изменили статус для: {tg_user_id}")
-            except AttributeError as e:
-                log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
-                log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
-            except Exception as e:
-                log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
+        while attempt <= max_atttemps:
+            log.info("Подключение к RustWebsocket: {}")
+            async with websockets.connect(WEBSOCKET_URL) as websocket:
+                # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
+                try:
+                    user_state.change_status(
+                        tg_user_id=tg_user_id,
+                        status=AppStatusEnum.Online,
+                        isBotRunning=AppStatusEnum.Running,
+                    )
 
-            await websocket.send(json.dumps({
-                "action": action,
-                "channel": channel,
-                "longExchange": long_exchange,
-                "shortExchange": short_exchange,
-                "ticker": symbol
-            }))
+                    log.info(f"Изменили статус для: {tg_user_id}")
+                except AttributeError as e:
+                    log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
+                    log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
+                except Exception as e:
+                    log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
+
+                await websocket.send(json.dumps({
+                    "action": action,
+                    "channel": channel,
+                    "longExchange": long_exchange,
+                    "shortExchange": short_exchange,
+                    "ticker": symbol
+                }))
 
             # while True:
 
@@ -101,41 +105,21 @@ async def run_ws(
     #                 except Exception as e:
     #                     log.error(f"RustWebsocket -> {e}")                    
     except websockets.exceptions.InvalidStatus as e:
+        attempt += 1
+
         if e.response.status_code == 502:
             log.error(f"{{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")
             log.error(f"{{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
+
+            if attempt == max_atttemps:
+                log.info("Не удачная попытка")
         else:
             log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
-
-    #             try:
-    #                 message = MessageData(
-    #                     event_data=MessageEventData(
-    #                         type=EventDataTypeEnum.Log,
-    #                         timestamp=int(time()),
-    #                         payload=MessageEventPayload(
-    #                             event=EventTypeEnum.BotStart,
-    #                             symbol=symbol,
-    #                             longExchange=long_exchange,
-    #                             longOrderType=OrderTypeEnum.Spot,
-    #                             shortExchange=short_exchange,
-    #                             shortOrderType=OrderTypeEnum.Spot,
-    #                             isBotRunning=AppStatusEnum.Stopped,
-    #                             status=AppStatusEnum.Warning
-    #                         )
-    #                     ),
-    #                     context=MessageContext(
-    #                         method=MessageMethod.WebsocketErrorConnection,
-    #                         tg_user_id=tg_user_id,
-    #                     )
-    #                 )
-
-    #                 push_to_subscribes(message=message)
-    #             except pydantic.ValidationError as e:
-    #                 log.error(f"RustWebsocket -> {e}")
-
-    #             break
+        
+        await asyncio.sleep(3)
     except Exception as e:
         log.error(f"RustWebsocket -> {e}")
+        
     except asyncio.CancelledError:        
         message = MessageData(
             event_data=MessageEventData(
