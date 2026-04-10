@@ -25,7 +25,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     global log_deque
 
     tg_user_id = int(authothicate(token))
-    # await database.add_log(tg_user_id, data)
+    await database.add_log(tg_user_id, data)
 
     match data.event:
         case EventTypeEnum.BotStart:
