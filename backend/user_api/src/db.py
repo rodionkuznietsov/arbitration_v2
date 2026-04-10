@@ -147,5 +147,11 @@ class AsyncDatabase:
         )
         log.info("Таблица: user_logs, была очищена.")
 
+    async def clear_table_exchanges(self):
+        await self.pool.execute(
+            "TRUNCATE TABLE exchanges"
+        )
+        log.info("Таблица: exchanges, была очищена")
+
 database = AsyncDatabase()
 

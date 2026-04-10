@@ -82,3 +82,12 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         message=f"Статус доступности биржи {exchange_data.name} обновлен в базе данных."
     )
     
+@router.delete('/delete_all_exchanges', response_model=ResultSchema)
+async def delete_all_exchanges():
+    await database.clear_table_exchanges()
+    
+    return ResultSchema(
+        status_code=200,
+        success=True,
+        message=f"Все биржи были удалены из базы данных"
+    )
