@@ -53,6 +53,8 @@ async def run_ws(
         )
 
         log.info("Status changed")
+    except AttributeError as e:
+        log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
     except Exception as e:
         log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
 
