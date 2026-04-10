@@ -104,9 +104,7 @@ class UserState:
                 self.__user_state__[tg_user_id].event_data.payload.shortOrderType = shortOrderType
                 self.__user_state__[tg_user_id].event_data.payload.status = status
                 self.__user_state__[tg_user_id].event_data.payload.isBotRunning = isBotRunning
-        
-            raise UserStateError(status_code=404, message=f"Не удалось найти пользователя с id: {tg_user_id}")
-        except UserStateError as e:
+        except Exception as e:
             log.error(f"UserState(update_payload) -> {e}")
 
     def change_status(
@@ -119,9 +117,7 @@ class UserState:
             if tg_user_id in self.__user_state__:
                 self.__user_state__[tg_user_id].event_data.payload.status = status
                 self.__user_state__[tg_user_id].event_data.payload.isBotRunning = isBotRunning
-        
-            raise UserStateError(status_code=404, message=f"Не удалось найти пользователя с id: {tg_user_id}")
-        except UserStateError as e:
+        except Exception as e:
             log.error(f"UserState(ChangeStatus) -> {e}")
 
     def get_users(self):
