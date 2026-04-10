@@ -32,6 +32,9 @@ def push_to_subscribes(
                         queues.put_nowait(message.event_data)
                     except asyncio.QueueFull:
                         pass
+        else: 
+            for subscribe in subscribes.values():
+                print(subscribe)
 
     except Exception as e:
         log.error(f"Cache: {e}")
