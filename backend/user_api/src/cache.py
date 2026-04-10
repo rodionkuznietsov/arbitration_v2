@@ -49,6 +49,8 @@ async def check_active_users():
                 if user.event_data.payload.isBotRunning != AppStatusEnum.Running and user.event_data.payload.status != AppStatusEnum.Online:
                     subscribes[user.context.tg_user_id]["success_queue"].clear()
                     subscribes[user.context.tg_user_id]["error_queue"].clear()
+                    
+                    log.info(f"Очищены все очереди для: {user.context.tg_user_id}")
 
         except Exception as e:
             log.error(f"Cache -> {e}")
