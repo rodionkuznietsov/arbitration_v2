@@ -58,7 +58,7 @@ async def run_ws(
                     user_state.change_status(
                         tg_user_id=tg_user_id,
                         status=AppStatusEnum.Online,
-                        isBotRunning=AppStatusEnum.Running,
+                        isBotRunning=True,
                     )
 
                     log.info(f"{{ rust_websocket.user_state.change_status }} -> {tg_user_id}")
