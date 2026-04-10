@@ -72,19 +72,20 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
             success=False,
             message=f"Биржа {exchange_data.name} не существует в базе данных."
         )
+
+    message = MessageData(
+        event_data=MessageEventData(
+            type=EventDataTypeEnum.Exchange,
+            payload=ExchangePayload(
+                event=ExchangeEvent.UpdateExchange,
+                exchange_name=exchange_data.name,
+                is_available=exchange_data.is_available
+            ),
+            timestamp=int(time.time())
+        )
+    )
     
-    event_data = {
-        "type": "exchange",
-        "tg_user_id": "all", 
-        "timestamp": time.time(),
-        "payload": {
-            "event": "update_exchange", 
-            "exchange_name": exchange_data.name,
-            "is_available": exchange_data.is_available
-        }
-    }
-    
-    push_to_subscribes(event_data, None)
+    push_to_subscribes(message)
 
     return ResultSchema(
         status_code=200,
