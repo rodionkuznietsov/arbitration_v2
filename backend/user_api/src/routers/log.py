@@ -102,6 +102,30 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     user_state[tg_user_id].event_data.payload.isBotRunning = AppStatusEnum.Stopped
                     user_state[tg_user_id].event_data.payload.status = AppStatusEnum.Offline
 
+
+                message = MessageData(
+                    event_data=MessageEventData(
+                        type=EventDataTypeEnum.Log,
+                        timestamp=data.timestamp,
+                        payload=MessageEventPayload(
+                            event=data.event,
+                            symbol=f"{data.data.symbol.upper()}",
+                            longExchange=data.data.longExchange,
+                            longOrderType=data.data.longOrderType,
+                            shortExchange=data.data.shortExchange,
+                            shortOrderType=data.data.shortOrderType,
+                            isBotRunning=AppStatusEnum.Stopped,
+                            status=AppStatusEnum.Offline
+                        )
+                    ),
+                    context=MessageContext(
+                        method=MessageMethod.User,
+                        tg_user_id=tg_user_id,
+                    )
+                )
+                
+                push_to_subscribes(message)
+
                 log.info(f"Для клиента: {tg_user_id}, был отключен RustWebsocket")
 
     return ResultSchema(
