@@ -1,1 +1,1 @@
-from .user_state import UserState
+from .user_state import SafeUserState

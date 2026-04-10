@@ -1,3 +1,4 @@
+from pyclbr import Class
 import time
 import structlog
 
@@ -123,3 +124,41 @@ class UserState:
 
     def exists_users(self):
         return self.__user_state__
+    
+class SafeUserState(UserState):
+    def __init__(self):
+        super().__init__()
+
+    def change_status(self, tg_user_id, status, isBotRunning):
+        try:
+            return super().change_status(tg_user_id, status, isBotRunning)
+        except Exception as e:
+            log.error(f"UserState -> {e}")
+
+    def push_default(self, tg_user_id):
+        return super().push_default(tg_user_id)
+    
+    def get(self, tg_user_id):
+        return super().get(tg_user_id)
+    
+    def get_logs(self, tg_user_id):
+        return super().get_logs(tg_user_id)
+    
+    def get_users(self):
+        return super().get_users()
+    
+    def exists_users(self):
+        return super().exists_users()
+    
+    def update_payload(self, tg_user_id, symbol, longExchange, longOrderType, shortExchange, shortOrderType, status, isBotRunning):
+        return super().update_payload(tg_user_id, symbol, longExchange, longOrderType, shortExchange, shortOrderType, status, isBotRunning)
+    
+    def isBotRunning(self, tg_user_id):
+        return super().isBotRunning(tg_user_id)
+    
+    def set_logs(self, tg_user_id, logs):
+        return super().set_logs(tg_user_id, logs)
+    
+    def long_size(self, tg_user_id):
+        return super().long_size(tg_user_id)
+    

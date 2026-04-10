@@ -7,6 +7,7 @@ import websockets
 import os
 from dotenv import load_dotenv
 import structlog
+import traceback
 
 from .services import UserState
 
@@ -42,9 +43,9 @@ async def run_ws(
     tg_user_id: int,
     message: MessageData,
 ):
-    try:
-        log.info("Подключение к RustWebsocket")
+    log.info("Подключение к RustWebsocket")
 
+    try:
         user_state.change_status(
             tg_user_id=tg_user_id,
             status=AppStatusEnum.Online,
@@ -53,7 +54,7 @@ async def run_ws(
 
         log.info("Status changed")
     except Exception as e:
-        log.error(f"RustWebsocket -> {e.args}")
+        log.error(f"RustWebsocket(UserState) -> {e.args}")
 
     # try:
     #     while True:

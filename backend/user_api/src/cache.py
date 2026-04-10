@@ -2,7 +2,7 @@ import asyncio
 from collections import defaultdict
 import structlog
 
-from .services import UserState
+from .services import SafeUserState
 
 from .schemas import AppStatusEnum, MessageData, MessageMethod
 
@@ -12,7 +12,7 @@ subscribes = defaultdict(lambda: {
     "success_queue": [], 
     "error_queue": []
 })
-user_state = UserState()
+user_state = SafeUserState()
 
 def push_to_subscribes(
     message: MessageData
