@@ -33,6 +33,7 @@ def push_to_subscribes(
                     except asyncio.QueueFull:
                         pass
         else: 
+            # Пушим обновления всем подписчикам
             for subscribe in subscribes.values():
                 for queues in subscribe["success_queue"]:
                     try:
