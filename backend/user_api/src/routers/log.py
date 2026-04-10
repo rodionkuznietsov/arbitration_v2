@@ -67,29 +67,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     isBotRunning=AppStatusEnum.Stopped,
                 )
 
-                # user_state[tg_user_id] = MessageData(
-                #     event_data=MessageEventData(
-                #         type=EventTypeEnum.UserState,
-                #         payload=UserStatePayload(
-                #             symbol=message.event_data.payload.symbol,
-                            
-                #             longExchange=message.event_data.payload.longExchange,
-                #             longOrderType=message.event_data.payload.longOrderType,
-
-                #             shortExchange=message.event_data.payload.shortExchange,
-                #             shortOrderType=message.event_data.payload.shortOrderType,
-
-                #             status=AppStatusEnum.Offline,
-                #             isBotRunning=AppStatusEnum.Stopped,
-                #         ),
-                #         timestamp=int(time())
-                #     ),
-                #     context=MessageContext(
-                #         method=MessageMethod.User,
-                #         tg_user_id=tg_user_id
-                #     )
-                # )
-                
                 # Подключаем клиента
                 task = asyncio.create_task(run_ws(
                     action=WebSocketActionEnum.Subscribe,
@@ -113,9 +90,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 task.cancel()
                 del ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"]
                 if tg_user_id in user_state:
-                    user_state[tg_user_id].event_data.payload.isBotRunning = AppStatusEnum.Stopped
-                    user_state[tg_user_id].event_data.payload.status = AppStatusEnum.Offline
-
+                    user_state.change_status(tg_user_id, AppStatusEnum.Stopped, AppStatusEnum.Offline)
 
                 message = MessageData(
                     event_data=MessageEventData(
