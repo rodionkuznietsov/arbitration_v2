@@ -31,26 +31,26 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
         case EventTypeEnum.BotStart:
             if user_state.isBotRunning(tg_user_id) == AppStatusEnum.Stopped:
                 
-                # # Вынести это сообщение в ws
-                # message = MessageData(
-                #     event_data=MessageEventData(
-                #         type=EventDataTypeEnum.Log,
-                #         timestamp=data.timestamp,
-                #         payload=LogPayload(
-                #             event=data.event,
-                #             symbol=f"{data.data.symbol.upper()}",
-                #             longExchange=data.data.longExchange,
-                #             longOrderType=data.data.longOrderType,
-                #             shortExchange=data.data.shortExchange,
-                #             shortOrderType=data.data.shortOrderType,
-                #             status=LogStatusEnum.Success
-                #         )
-                #     ),
-                #     context=MessageContext(
-                #         method=MessageMethod.User,
-                #         tg_user_id=tg_user_id,
-                #     )
-                # )
+                # Вынести это сообщение в ws
+                message = MessageData(
+                    event_data=MessageEventData(
+                        type=EventDataTypeEnum.Log,
+                        timestamp=data.timestamp,
+                        payload=LogPayload(
+                            event=data.event,
+                            symbol=f"{data.data.symbol.upper()}",
+                            longExchange=data.data.longExchange,
+                            longOrderType=data.data.longOrderType,
+                            shortExchange=data.data.shortExchange,
+                            shortOrderType=data.data.shortOrderType,
+                            status=LogStatusEnum.Success
+                        )
+                    ),
+                    context=MessageContext(
+                        method=MessageMethod.User,
+                        tg_user_id=tg_user_id,
+                    )
+                )
                 
                 # push_to_subscribes(message)
 
