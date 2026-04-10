@@ -22,10 +22,10 @@ class UserState:
                         payload=UserStatePayload(
                             isSleeping=AppStatusEnum.NotSleeping,
                             symbol="BTC",
-                            longExchange=ExchangeEnum.Bybit,
+                            longExchange=ExchangeEnum.Unknown,
                             longOrderType=OrderTypeEnum.Spot,
 
-                            shortExchange=ExchangeEnum.Gate,
+                            shortExchange=ExchangeEnum.Unknown,
                             shortOrderType=OrderTypeEnum.Spot,
                             logs=[]
                         ),

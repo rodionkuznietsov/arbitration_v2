@@ -5,6 +5,7 @@ class ExchangeEnum(str, Enum):
     Bybit = "bybit"
     Gate = "gate.io"
     Binance = "binance"
+    Unknown = "unknown"
 
 class ExchangeEventEnum(str, Enum):
     AddExchange = "add_exchange"

@@ -25,12 +25,13 @@
 
         configStore.exchanges = data.exchanges
 
-        if (!userState.longExchange) {
+        if (!userState.longExchange || userState.longExchange != "unknown") {
           userState.longExchange = configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
         }
-
-        // homeStore.longExchange = userState.exchanges[0] ? userState.exchanges[0].name : homeStore.longExchange
-        // homeStore.shortExchange = userState.exchanges[1] ? userState.exchanges[1].name : homeStore.longExchange
+        
+        if (!userState.shortExchange || userState.shortExchange != "unknown") {
+          userState.shortExchange = configStore.exchanges[1] ? configStore.exchanges[1] : configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
+        }
       } catch(err) {
         if (tgStore.tgObject) {
           tgStore.tgObject.showAlert("Системный сбой. Пожайлуйста сообщите об этом в службу поддержки.", () => {
