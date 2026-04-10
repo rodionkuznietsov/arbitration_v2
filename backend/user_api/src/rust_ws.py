@@ -45,57 +45,57 @@ async def run_ws(
     log.info("Подключение к RustWebsocket")
 
     try:
-        async with websockets.connect(WEBSOCKET_URL) as websocket:
-            # # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
-            # user_state.change_status(
-            #     tg_user_id,
-            #     status=AppStatusEnum.Online,
-            #     isBotRunning=AppStatusEnum.Running,
-            # )
+        while True:
+            try:
+                async with websockets.connect(WEBSOCKET_URL) as websocket:
+                    # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
+                    user_state.change_status(
+                        tg_user_id=tg_user_id,
+                        status=AppStatusEnum.Online,
+                        isBotRunning=AppStatusEnum.Running,
+                    )
 
-            while True:
-                try:
+                    log.info(user_state.get(tg_user_id))
 
-                    await websocket.send(json.dumps({
-                        "action": action,
-                        "channel": channel,
-                        "longExchange": long_exchange,
-                        "shortExchange": short_exchange,
-                        "ticker": symbol
-                    }))
+                    # await websocket.send(json.dumps({
+                    #     "action": action,
+                    #     "channel": channel,
+                    #     "longExchange": long_exchange,
+                    #     "shortExchange": short_exchange,
+                    #     "ticker": symbol
+                    # }))
 
-                    response = await websocket.recv()
-                    data = json.loads(response)
+                    # response = await websocket.recv()
+                    # data = json.loads(response)
 
-                    try:
-                        ws_message = MessageData(
-                            event_data=MessageEventData(
-                                type=EventDataTypeEnum.Websocket,
-                                payload=MessageEventPayload(
-                                    event=EventTypeEnum.Websocket,
-                                    symbol=symbol,
-                                    longExchange=message.event_data.payload.longExchange,
-                                    longOrderType=message.event_data.payload.longOrderType,
-                                    shortExchange=message.event_data.payload.shortExchange,
-                                    shortOrderType=message.event_data.payload.shortOrderType,
-                                    status=AppStatusEnum.Online,
-                                    isBotRunning=AppStatusEnum.Running
-                                ),
-                                timestamp=int(time()),
-                                ws_data=data
-                            ),
-                            context=MessageContext(
-                                method=MessageMethod.WebsocketConnected,
-                                tg_user_id=tg_user_id
-                            )
-                        )
+                    # try:
+                    #     ws_message = MessageData(
+                    #         event_data=MessageEventData(
+                    #             type=EventDataTypeEnum.Websocket,
+                    #             payload=MessageEventPayload(
+                    #                 event=EventTypeEnum.Websocket,
+                    #                 symbol=symbol,
+                    #                 longExchange=message.event_data.payload.longExchange,
+                    #                 longOrderType=message.event_data.payload.longOrderType,
+                    #                 shortExchange=message.event_data.payload.shortExchange,
+                    #                 shortOrderType=message.event_data.payload.shortOrderType,
+                    #                 status=AppStatusEnum.Online,
+                    #                 isBotRunning=AppStatusEnum.Running
+                    #             ),
+                    #             timestamp=int(time()),
+                    #             ws_data=data
+                    #         ),
+                    #         context=MessageContext(
+                    #             method=MessageMethod.WebsocketConnected,
+                    #             tg_user_id=tg_user_id
+                    #         )
+                    #     )
 
-                        push_to_subscribes(ws_message)
-                    except Exception as e:
-                        log.error(f"RustWebsocket -> {e}")                    
-                        
-                except websockets.exceptions.InvalidStatus as e:
-                    log.error(f"RustWebsocket -> {e}")
+                    #     push_to_subscribes(ws_message)
+                    # except Exception as e:
+                    #     log.error(f"RustWebsocket -> {e}")                    
+            except websockets.exceptions.InvalidStatus as e:
+                log.error(f"RustWebsocket -> {e}")
 
                 try:
                     message = MessageData(
