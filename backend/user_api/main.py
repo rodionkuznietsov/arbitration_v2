@@ -13,7 +13,7 @@ log = structlog.get_logger()
 from src.schemas import ResultSchema
 from src.routers.tg_bot.auth import database, router as auth_router
 from src.routers import log_router
-from src import tg_bot_app
+from src import check_user_bot_working, tg_bot_app
 
 from src.routers import exchange_router
 from src.routers import user_router, events_router
@@ -65,6 +65,7 @@ async def startup():
     await tg_bot_app.initialize()
     await tg_bot_app.start()
     asyncio.create_task(tg_bot_app.updater.start_polling())
+    asyncio.create_task(check_user_bot_working())
 
 @app.on_event("shutdown")
 async def shutdown():

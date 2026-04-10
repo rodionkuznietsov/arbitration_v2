@@ -40,5 +40,14 @@ async def get_queue(
     tg_user_id: int
 ):
     if tg_user_id in subscribes:
-        return subscribes[tg_user_id]["error_queue"]
+        return subscribes[tg_user_id]["success_queue"]
     return None
+
+async def check_user_bot_working():
+    while True:
+        try:
+            for user in user_state.values():
+                log.info(f"CurrentUser: {user}")
+        except Exception as e:
+            log.error(f"Cache -> {e}")
+        await asyncio.sleep(20)
