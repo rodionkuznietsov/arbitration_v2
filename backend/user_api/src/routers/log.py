@@ -56,8 +56,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                         )
                     )
                     
-                    # push_to_subscribes(message)
-
                     # Сохраняем насстройки для остальных устройств
                     user_state.update_payload(
                         tg_user_id=tg_user_id, 
@@ -96,7 +94,11 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                 task.cancel()
                 del ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"]
                 if tg_user_id in user_state.exists_users():
-                    user_state.change_status(tg_user_id, isBotRunning=AppStatusEnum.Stopped, status=AppStatusEnum.Offline)
+                    user_state.change_status(
+                        tg_user_id, 
+                        isBotRunning=AppStatusEnum.Stopped, 
+                        status=AppStatusEnum.Offline
+                    )
 
                 message = MessageData(
                     event_data=MessageEventData(

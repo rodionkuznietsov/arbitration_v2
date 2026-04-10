@@ -45,22 +45,23 @@ async def run_ws(
     log.info("Подключение к RustWebsocket")
 
     try:
-        while True:
-            try:
-                async with websockets.connect(WEBSOCKET_URL) as websocket:
-                    # user_state.change_status(
-                    #     tg_user_id=tg_user_id,
-                    #     status=AppStatusEnum.Online,
-                    #     isBotRunning=AppStatusEnum.Running
-                    # )
-                    
-                    await websocket.send(json.dumps({
-                        "action": action,
-                        "channel": channel,
-                        "longExchange": long_exchange,
-                        "shortExchange": short_exchange,
-                        "ticker": symbol
-                    }))
+        async with websockets.connect(WEBSOCKET_URL) as websocket:
+            await websocket.send(json.dumps({
+                "action": action,
+                "channel": channel,
+                "longExchange": long_exchange,
+                "shortExchange": short_exchange,
+                "ticker": symbol
+            }))
+
+            user_state.change_status(
+                tg_user_id,
+                status=AppStatusEnum.Online,
+                isBotRunning=AppStatusEnum.Running,
+            )
+
+            while True:
+                try:
 
                     response = await websocket.recv()
                     data = json.loads(response)
@@ -92,8 +93,8 @@ async def run_ws(
                     except Exception as e:
                         log.error(f"RustWebsocket -> {e}")                    
                         
-            except websockets.exceptions.InvalidStatus as e:
-                log.error(f"RustWebsocket -> {e}")
+                except websockets.exceptions.InvalidStatus as e:
+                    log.error(f"RustWebsocket -> {e}")
 
                 try:
                     message = MessageData(
@@ -117,7 +118,7 @@ async def run_ws(
                         )
                     )
 
-                    # await push_to_subscribes(message=message)
+                    push_to_subscribes(message=message)
                 except pydantic.ValidationError as e:
                     log.error(f"RustWebsocket -> {e}")
 
