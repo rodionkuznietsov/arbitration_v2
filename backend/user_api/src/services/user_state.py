@@ -2,7 +2,7 @@ from pyclbr import Class
 import time
 import structlog
 
-from ..schemas import AppStatusEnum, EventTypeEnum, ExchangeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStatePayload, UserStateError
+from ..schemas import AppStatusEnum, EventDataTypeEnum, EventTypeEnum, ExchangeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStatePayload, UserStateError
 
 log: structlog.PrintLogger = structlog.get_logger()
 
@@ -18,7 +18,7 @@ class UserState:
             if tg_user_id not in self.__user_state__:
                 self.__user_state__[tg_user_id] = MessageData(
                     event_data=MessageEventData(
-                        type=EventTypeEnum.UserState,
+                        type=EventDataTypeEnum.UserState,
                         payload=UserStatePayload(
                             isSleeping=AppStatusEnum.Sleeping,
                             symbol="BTC",
