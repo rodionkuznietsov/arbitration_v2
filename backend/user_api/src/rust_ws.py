@@ -45,6 +45,9 @@ async def run_ws(
         while True:
             try:
                 async with websockets.connect(WEBSOCKET_URL) as websocket:
+                    user_state.event_data.payload.status = AppStatusEnum.Online
+                    user_state.event_data.payload.isBotRunning = AppStatusEnum.Running
+                    
                     await websocket.send(json.dumps({
                         "action": action,
                         "channel": channel,
