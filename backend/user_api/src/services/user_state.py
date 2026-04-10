@@ -47,7 +47,7 @@ class UserState:
         
             raise UserStateError(status_code=404, message=f"Не удалось найти пользователя с id: {tg_user_id}")
         except UserStateError as e:
-            log.error(f"UserState -> {e}")
+            log.error(f"UserState(get) -> {e}")
     
     def isBotRunning(
         self,
