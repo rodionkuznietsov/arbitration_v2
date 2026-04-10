@@ -32,7 +32,7 @@ class LogPayload(BaseModel):
 
 class UserStatePayload(BaseModel):
     type: EventDataTypeEnum = EventDataTypeEnum.UserState,
-    isActive: bool
+    isSleeping: Optional[bool] = False
     symbol: Optional[str] = None
     longExchange: Optional[ExchangeEnum] = None
     longOrderType: Optional[OrderTypeEnum] = None

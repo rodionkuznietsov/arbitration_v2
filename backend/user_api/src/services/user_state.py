@@ -20,7 +20,7 @@ class UserState:
                     event_data=MessageEventData(
                         type=EventTypeEnum.UserState,
                         payload=UserStatePayload(
-                            isActive=True,
+                            isSleeping=False,
                             symbol="BTC",
                             longExchange=ExchangeEnum.Bybit,
                             longOrderType=OrderTypeEnum.Spot,
@@ -133,3 +133,7 @@ class UserState:
     def exists_users(self):
         return self.__user_state__
     
+    def isSleeping(
+        self
+    ) -> bool:
+        return self.__user_state__.event_data.payload.isSleeping
