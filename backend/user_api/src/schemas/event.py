@@ -35,6 +35,7 @@ class MessageMethod(str, Enum):
     User = "user"
     WebsocketConnected = "websocket_connected"
     WebsocketErrorConnection = "websocket_error_connection"
+    WebsocketClosed = "websocket_closed"
 
 class MessageWebsocketData(BaseModel):
     method: MessageMethod
