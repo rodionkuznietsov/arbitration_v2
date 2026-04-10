@@ -149,6 +149,8 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
     
     if tg_user_id in user_state:
         if len(user_state[tg_user_id].event_data.payload.logs) == 0:
+            log.info("LogRouter -> Инициализация историй с базы данных с id")
+
             logs = await database.get_user_logs(tg_user_id)
 
             if not logs:
@@ -166,7 +168,10 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
                     logs=user_state[tg_user_id].event_data.payload.logs
                 )
             )
+            
         else: 
+            log.info("LogRouter -> Возращения данных из кеша")
+            
             return ResultSchema(
                 status_code=200,
                 success=True,

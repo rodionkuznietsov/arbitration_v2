@@ -126,17 +126,20 @@ class AsyncDatabase:
         return result is not None
 
     async def get_user_logs(self, tg_user_id: int):
-        if not await self.__check_log_exists__(None, tg_user_id):
-            log.warning(f"Не удалось найти логов для пользователя с id: {tg_user_id}")
-            return
-        
-        result = await self.pool.fetch(
-            "SELECT * FROM user_logs WHERE tg_user_id = $1 ORDER BY timestamp DESC",
-            tg_user_id
-        )
+        try:
+            if not await self.__check_log_exists__(None, tg_user_id):
+                log.warning(f"Не удалось найти логов для пользователя с id: {tg_user_id}")
+                return
+            
+            result = await self.pool.fetch(
+                "SELECT * FROM user_logs WHERE tg_user_id = $1 ORDER BY timestamp DESC LIMIT 50",
+                tg_user_id
+            )
 
-        list_of_dicts = [dict(record) for record in result]
-        return list_of_dicts
+            list_of_dicts = [dict(record) for record in result]
+            return list_of_dicts
+        except Exception as e:
+            log.error(e)
 
     async def clear_table_user_logs(self):
         await self.pool.execute(
