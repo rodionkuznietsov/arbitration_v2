@@ -84,7 +84,7 @@ async def run_ws(
                             ),
                             context=MessageContext(
                                 method=MessageMethod.WebsocketConnected,
-                                tg_user_id=user_state.context.tg_user_id
+                                tg_user_id=tg_user_id
                             )
                         )
                         
