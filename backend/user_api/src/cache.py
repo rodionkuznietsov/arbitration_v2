@@ -17,7 +17,7 @@ def push_to_subscribes(
     message: MessageData
 ):
     try:
-        log.info(f"Cache -> Полученно новое собитие: {message.event_data.type}")
+        log.info(f"Cache -> Полученно новое событие: {message.event_data.type}")
         if message.context is not None:
             user_queues = subscribes[message.context.tg_user_id]
             if message.context.method == MessageMethod.WebsocketErrorConnection:
