@@ -26,16 +26,18 @@
   import FetchErrorImg from './assets/img/fetch_error.png'
   import Error401Img from './assets/img/401.png'
   import { ws_handler } from './handlers/websocket.handler';
-import { log_handler } from './handlers/log.handler';
+  import { log_handler } from './handlers/log.handler';
+import { useLogStore } from './stores/log.store';
   
   const authStore = useAuthStore()
   const userStateStore = useUserState()
   const orderBookStore = useOrderBookStore()
   const tgStore = useTgStore()
   const homeStore = useHomeStore()
+  const logStore = useLogStore()
 
   const handlers = {
-    log: (data) => log_handler(data, tgStore, userStateStore, homeStore),
+    log: (data) => log_handler(data, tgStore, logStore),
     websocket: (data) => ws_handler(data, userStateStore, orderBookStore),
     default: (data) => {
       console.warn("Не известное собитие", data.type)

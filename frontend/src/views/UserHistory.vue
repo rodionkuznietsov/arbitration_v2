@@ -1,16 +1,16 @@
 <script setup>
     import { useAuthStore } from '@/stores/auth';
-    import { useUserState } from '@/stores/user_state';
     import { getBotLogs } from '@/utils/logFetch';
     import { onMounted } from 'vue';
     import FixedTransactions from '@/components/history/FixedTransactions.vue'
+    import { useLogStore } from '@/stores/log.store';
 
     const authStore = useAuthStore()
-    const userStateStore = useUserState()
+    const logStore = useLogStore()
 
     onMounted(async () => {
         const logsHistory = await getBotLogs(authStore.token)
-        userStateStore.logs = logsHistory
+        logStore.logs = logsHistory
     })
 </script>
 
@@ -28,7 +28,7 @@
             </div>
             <FixedTransactions />
             <div class="logs">
-                <div class="log-table" v-for="(v, index) in userStateStore.logs" :key="index">
+                <div class="log-table" v-for="(v, index) in logStore.logs" :key="index">
                     <div style="padding: 8px;">
                     {{ 
                         new Date(v.timestamp * 1000)
