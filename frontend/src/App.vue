@@ -136,7 +136,7 @@
             userStateStore.changeStatus(event_data.payload.status)
             userStateStore.isBotRunning = event_data.payload.isBotRunning
 
-            if (event_data.payload.isBotRunningg) {
+            if (!event_data.payload.isBotRunningg) {
               alert(userStateStore.isBotRunning)
             }
 
