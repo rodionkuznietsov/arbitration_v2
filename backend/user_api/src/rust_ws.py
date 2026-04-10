@@ -110,6 +110,8 @@ async def run_ws(
     #                 except Exception as e:
     #                     log.error(f"RustWebsocket -> {e}")                    
         except websockets.exceptions.InvalidStatus as e:            
+            # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
+            # во время попыток подключения
             try:
                 user_state.change_status(
                     tg_user_id=tg_user_id,
@@ -129,8 +131,22 @@ async def run_ws(
                     log.error(f"{{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")
                     log.error(f"{{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
 
-            else:
-                log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
+                    # Сбрасываем status UserState, чтобы позже можно было снова попробовать подключиться к WS
+                    try:
+                        user_state.change_status(
+                            tg_user_id=tg_user_id,
+                            status=AppStatusEnum.Offline,
+                            isBotRunning=AppStatusEnum.Stopped,
+                        )
+
+                        log.info(f"Изменили статус для: {tg_user_id}")
+                    except AttributeError as e:
+                        log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
+                        log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
+                    except Exception as e:
+                        log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
+                    else:
+                        log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
             
             attempt += 1
             await asyncio.sleep(3)
