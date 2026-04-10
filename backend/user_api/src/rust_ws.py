@@ -68,6 +68,7 @@ async def run_ws(
                 except Exception as e:
                     log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
 
+            while True:
                 await websocket.send(json.dumps({
                     "action": action,
                     "channel": channel,
@@ -76,7 +77,7 @@ async def run_ws(
                     "ticker": symbol
                 }))
 
-            while True:
+
                 response = await websocket.recv()
                 data = json.loads(response)
                 try:
@@ -105,7 +106,7 @@ async def run_ws(
                     push_to_subscribes(ws_message)
                 except Exception as e:
                     log.error(f"RustWebsocket -> {e}")   
-    
+
         except websockets.exceptions.InvalidStatus as e:            
             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
             # во время попыток подключения
