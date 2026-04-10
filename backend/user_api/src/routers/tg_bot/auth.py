@@ -51,7 +51,7 @@ async def auth_telegram(request: Request):
     user_state[int(user.get('id'))] = MessageData(
         event_data=MessageEventData(
             type=EventTypeEnum.UserState,
-            timestamp=int(time())
+            timestamp=int(time.time())
         ),
         context=MessageContext(
             method=MessageMethod.User,
