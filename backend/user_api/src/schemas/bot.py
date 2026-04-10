@@ -21,6 +21,10 @@ class AppStatusEnum(str, Enum):
     Running = True
     Stopped = False
 
+class LogStatusEnum(str, Enum):
+    Error = "Не удалось запустить бота",
+    Success = "Бот был успешно запущен"
+
 class LogDataSchema(BaseModel):
     symbol: str
 

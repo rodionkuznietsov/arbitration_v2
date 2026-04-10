@@ -1,7 +1,7 @@
 from .exchange import ExchangeSchema, ExchangeEnum
 from .result import ResultSchema, LogMessageSchema, MessageSchema
-from .bot import UserLogSchema
+from .bot import UserLogSchema, LogStatusEnum
 from .access_token import TokenSchema, TokenDataSchema
 from .bot import EventTypeEnum, AppStatusEnum
 from .rust_ws import WebSocketActionEnum, WebSocketChannelEnum
-from .event import EventDataTypeEnum, MessageData, MessageEventData, MessageEventPayload, MessageContext, MessageMethod, UserStatePayload, MessageWebsocketData
+from .event import EventDataTypeEnum, MessageData, MessageEventData, MessageEventPayload, MessageContext, MessageMethod, UserStatePayload, MessageWebsocketData, LogPayload

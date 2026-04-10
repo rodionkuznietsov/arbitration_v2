@@ -3,7 +3,7 @@ from typing import Optional, Union
 from pydantic import BaseModel
 
 from ..schemas import ExchangeEnum
-from .bot import AppStatusEnum, EventTypeEnum, OrderTypeEnum
+from .bot import AppStatusEnum, EventTypeEnum, LogStatusEnum, OrderTypeEnum
 
 class EventDataTypeEnum(str, Enum):
     Log = "log"
@@ -20,6 +20,15 @@ class MessageEventPayload(BaseModel):
     shortOrderType: OrderTypeEnum
     status: AppStatusEnum = AppStatusEnum.Offline
     isBotRunning: AppStatusEnum = AppStatusEnum.Stopped
+
+class LogPayload(BaseModel):
+    event: EventTypeEnum
+    symbol: str
+    longExchange: ExchangeEnum
+    longOrderType: OrderTypeEnum
+    shortExchange: ExchangeEnum
+    shortOrderType: OrderTypeEnum
+    status: LogStatusEnum = AppStatusEnum.Running
 
 class UserStatePayload(BaseModel):
     type: EventDataTypeEnum = EventDataTypeEnum.UserState
@@ -44,7 +53,7 @@ class MessageWebsocketData(BaseModel):
 class MessageEventData(BaseModel):
     type: EventDataTypeEnum
     timestamp: int
-    payload: Union[MessageEventPayload, UserStatePayload]
+    payload: Union[MessageEventPayload, UserStatePayload, LogPayload]
     ws_data: Optional[dict] = None
 
 class MessageContext(BaseModel):
