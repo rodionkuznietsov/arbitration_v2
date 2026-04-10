@@ -20,7 +20,7 @@ class UserState:
                     event_data=MessageEventData(
                         type=EventTypeEnum.UserState,
                         payload=UserStatePayload(
-                            isSleeping=False,
+                            isSleeping=AppStatusEnum.Sleeping,
                             symbol="BTC",
                             longExchange=ExchangeEnum.Bybit,
                             longOrderType=OrderTypeEnum.Spot,
