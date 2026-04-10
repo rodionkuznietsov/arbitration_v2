@@ -43,7 +43,7 @@ async def run_ws(
     tg_user_id: int,
     message: MessageData,
 ):
-    attempt = 0
+    attempt = 1
     max_attempts = 3
 
     while attempt <= max_attempts:
@@ -106,11 +106,10 @@ async def run_ws(
     #                     log.error(f"RustWebsocket -> {e}")                    
         except websockets.exceptions.InvalidStatus as e:            
             if e.response.status_code == 502:
-                log.error(f"{{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")
-                log.error(f"{{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
-
                 if attempt == max_attempts:
-                    log.info("Не удачная попытка")
+                    log.error(f"{{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")
+                    log.error(f"{{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
+
             else:
                 log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
             
