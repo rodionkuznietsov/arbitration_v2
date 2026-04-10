@@ -180,6 +180,8 @@ async def get_logs(token: Annotated[str, Depends(oauth2_scheme)]):
                 )
             )
     else: 
+        log.info("LogRouter -> Инициализация историй с базы данных без id")
+
         logs = await database.get_user_logs(tg_user_id)
 
         if not logs:
