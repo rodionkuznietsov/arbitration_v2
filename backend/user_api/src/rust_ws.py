@@ -145,8 +145,9 @@ async def run_ws(
                         log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
                     except Exception as e:
                         log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
-                else:
-                    log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
+
+            else:
+                log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
             
             attempt += 1
             await asyncio.sleep(3)
