@@ -1,19 +1,18 @@
 export function exchange_handler(
     event_data,
-    // configStore
+    configStore
 ) {
-    // const handlers = {
-    //     update_exchange: (data) => configStore.updateExchange(data),
-    //     add_exchange: (data) => configStore.addExchange(data),
-    //     default: (data) => {
-    //         console.log(`Неизвестное событие: ${data}`)
-    //     }
-    // }
+    const handlers = {
+        update_exchange: (data) => configStore.updateExchange(data),
+        add_exchange: (data) => configStore.addExchange(data),
+        default: (data) => {
+            console.log(`Неизвестное событие: ${data}`)
+        }
+    }
 
-    // const handler = handlers[event_data.payload.event] || handlers.default
-    // handler(event_data)
+    const handler = handlers[event_data.payload.event] || handlers.default
+    handler(event_data)
 
-    alert(JSON.stringify(event_data))
     // if (event_data.payload.event == "update_exchange") {
     //     if (!event_data.payload.is_available) {
     //         // Удаляем биржу
