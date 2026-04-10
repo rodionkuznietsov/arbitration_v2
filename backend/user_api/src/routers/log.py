@@ -35,15 +35,14 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     event_data=MessageEventData(
                         type=EventDataTypeEnum.Log,
                         timestamp=data.timestamp,
-                        payload=MessageEventPayload(
+                        payload=LogPayload(
                             event=data.event,
                             symbol=f"{data.data.symbol.upper()}",
                             longExchange=data.data.longExchange,
                             longOrderType=data.data.longOrderType,
                             shortExchange=data.data.shortExchange,
                             shortOrderType=data.data.shortOrderType,
-                            isBotRunning=AppStatusEnum.Running,
-                            status=AppStatusEnum.Online
+                            status=LogStatusEnum.Success
                         )
                     ),
                     context=MessageContext(
