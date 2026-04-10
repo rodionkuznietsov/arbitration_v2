@@ -104,6 +104,8 @@ async def run_ws(
         if e.response.status_code == 502:
             log.error(f"{{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")
             log.error(f"{{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
+        else:
+            log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
 
     #             try:
     #                 message = MessageData(
