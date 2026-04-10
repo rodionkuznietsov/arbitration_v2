@@ -72,8 +72,11 @@ async def run_ws(
                     "shortExchange": short_exchange,
                     "ticker": symbol
                 }))
+                
 
-            # while True:
+
+            while True:
+                log.info("Какие-то данные")
 
                     # response = await websocket.recv()
                     # data = json.loads(response)
