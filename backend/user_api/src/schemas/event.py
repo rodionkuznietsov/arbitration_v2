@@ -55,7 +55,7 @@ class MessageWebsocketData(BaseModel):
 class MessageEventData(BaseModel):
     type: EventDataTypeEnum
     timestamp: int
-    payload: Union[MessageEventPayload, UserStatePayload, LogPayload, ExchangePayload] = None
+    payload: Union[MessageEventPayload, UserStatePayload, LogPayload] = None
     ws_data: Optional[dict] = None
 
 class MessageContext(BaseModel):
