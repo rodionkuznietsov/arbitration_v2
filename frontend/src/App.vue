@@ -25,7 +25,7 @@
   import { useOrderBookStore } from './stores/orderbook';
   import FetchErrorImg from './assets/img/fetch_error.png'
   import Error401Img from './assets/img/401.png'
-import { handle_websocket_data } from './utils/handlers';
+  import { handle_websocket_data } from './utils/handlers';
   
   const authStore = useAuthStore()
   const userStateStore = useUserState()
@@ -34,7 +34,7 @@ import { handle_websocket_data } from './utils/handlers';
   const homeStore = useHomeStore()
 
   const handlers = {
-    websocket: (data) => handle_websocket_data(data),
+    websocket: (data) => handle_websocket_data(data, userStateStore, orderBookStore),
     default: (data) => {
       console.warn("Не известное собитие", data.type)
     }
