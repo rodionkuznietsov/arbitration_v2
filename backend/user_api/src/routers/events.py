@@ -27,7 +27,7 @@ async def event_streamer(data: asyncio.Queue, tg_user_id):
     finally:
         # Обновляем статус isSleeping, чтобы защитить от удаления нужных очередей, пока бот активен 
         user_state.change_sleeping_status(tg_user_id=tg_user_id, new_status=AppStatusEnum.Sleeping)
-        log.info(f"{{events_router.user_state.change_sleeping_status}} -> {tg_user_id}")
+        log.info(f"{{ events_router.user_state.change_sleeping_status }} -> {tg_user_id}")
 
 @router.get("/subscribe/events/{tg_user_id}", tags=["events"])
 async def subscribe_events(tg_user_id: int):
