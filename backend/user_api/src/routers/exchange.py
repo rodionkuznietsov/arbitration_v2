@@ -24,7 +24,7 @@ router = APIRouter()
 async def get_exchanges():
     return {
         "status": 200,
-        "exchanges": await get_available_exchanges_service()
+        "exchanges": available_exchanges
     }
 
 @router.post("/add_exchange", response_model=ResultSchema, tags=["exchanges"])
