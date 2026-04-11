@@ -9,7 +9,7 @@ class MessageSchema(BaseModel):
     token_data: TokenSchema
 
 class ExchangeMessageResponse(BaseModel):
-    exchanges: dict
+    exchanges: list
 
 class ResultSchema(BaseModel):
     status_code: int
