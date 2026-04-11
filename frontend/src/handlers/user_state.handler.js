@@ -14,10 +14,10 @@ export function user_state_handler(
     }
 
     userStateStore.symbol = event_data.payload.symbol
-    userStateStore.longExchange = event_data.payload.longExchange != "unknown" ? event_data.payload.longExchange : "Нет доступной биржи"
+    userStateStore.longExchange = event_data.payload.longExchange
     userStateStore.longOrderType = event_data.payload.longOrderType 
 
-    userStateStore.shortExchange = event_data.payload.shortExchange != "unknown" ? event_data.payload.shortExchange : "Нет доступной биржи"
+    userStateStore.shortExchange = event_data.payload.shortExchange
     userStateStore.shortOrderType = event_data.payload.shortOrderType
 
 }
