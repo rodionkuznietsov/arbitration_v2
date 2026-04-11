@@ -1,6 +1,6 @@
 import structlog
-
 from ..schemas import ExchangeSchema
+from ..cache.exchange import available_exchanges
 
 log: structlog.PrintLogger = structlog.get_logger()
 
@@ -21,11 +21,10 @@ def update_available_exchanges_in_cache(
 ):
     try:
         if exchange_data.is_available:
-            pass
-        #     available_exchanges[exchange_data.name] = exchange_data.is_available
-        # else: 
-        #     available_exchanges.pop(exchange_data.name)
-
-        # log.info(f"Exchanges: {available_exchanges}")
+            available_exchanges[exchange_data.name] = exchange_data.is_available
+        else: 
+            available_exchanges.pop(exchange_data.name)
+        
+        log.info(f"Exchanges: {available_exchanges}")
     except Exception as e:
         log.error(f"{{ exchange_router.update_exchange_availability.is_available }} -> {e}")

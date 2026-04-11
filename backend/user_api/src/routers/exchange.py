@@ -60,7 +60,7 @@ async def add_exchange(exchange_data: ExchangeSchema):
 
 @router.put("/update_exchange_availability", response_model=ResultSchema, tags=["exchanges"])
 async def update_exchange_availability(exchange_data: ExchangeSchema):
-    global exchange_cache
+    global available_exchanges
     updated = await database.update_exchange_availability(exchange_data.name.lower(), exchange_data.is_available)
     if not updated:
         return ResultSchema(
@@ -69,7 +69,6 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
             message=f"Биржа {exchange_data.name} не существует в базе данных."
         )
     
-    # Изменяем кеш доступных бирж
     update_available_exchanges_in_cache(exchange_data=exchange_data)
 
     # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
