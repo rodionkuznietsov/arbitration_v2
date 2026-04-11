@@ -29,13 +29,13 @@ class ExchangeCache:
     async def get(self):
         try:
             if exchange_cache.get_size() == 0:
-                log.info(f"{{ get_available_exchanges_service.database }}")
+                log.info(f"{{ exchange_cache.get.from_database }}")
                 raw_exchanges = await self.__database__.get_available_exchanges()
                 mapped = self.exchange_mapper(raw_exchanges)
 
                 exchange_cache.set_data(mapped)
             else:
-                log.info(f"{{ get_available_exchanges_service.cache }}")
+                log.info(f"{{ exchange_cache.get.from_cache }}")
         except Exception as e:
             log.error(f"{{ exchange_service.get_available_exchanges_service }} -> {e}")
     
