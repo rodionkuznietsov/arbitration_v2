@@ -45,4 +45,4 @@ async def get_available_exchanges_service():
         else:
             log.info(f"{{ get_available_exchanges_service.cache }}")
     except Exception as e:
-        log.error(f"{{ get_available_exchanges_service }} -> {e}")
+        log.error(f"{{ exchange_service.get_available_exchanges_service }} -> {e}")
