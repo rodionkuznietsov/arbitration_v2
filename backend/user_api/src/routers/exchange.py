@@ -22,6 +22,7 @@ log: structlog.PrintLogger = structlog.get_logger()
 router = APIRouter()
 @router.get("/available", tags=["exchanges"])
 async def get_exchanges():
+    global available_exchanges
     return {
         "status": 200,
         "exchanges": available_exchanges
