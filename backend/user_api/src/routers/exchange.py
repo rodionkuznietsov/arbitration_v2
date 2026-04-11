@@ -13,8 +13,6 @@ from ..schemas.result import ResultSchema
 
 import structlog
 
-from backend.user_api.src.cache import exchange
-
 log: structlog.PrintLogger = structlog.get_logger()
 
 router = APIRouter()
