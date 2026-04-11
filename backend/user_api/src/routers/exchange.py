@@ -25,6 +25,8 @@ async def get_exchanges():
     global available_exchanges
 
     await get_available_exchanges_service()
+    
+    log.info(available_exchanges)
 
     return {
         "status": 200,
@@ -71,8 +73,6 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         )
     
     update_available_exchanges_in_cache(exchange_data=exchange_data)
-
-    log.info(f"Exchanges: {available_exchanges}")
 
     # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
     try:

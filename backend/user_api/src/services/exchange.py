@@ -14,8 +14,6 @@ def exchange_mapper(
             name = raw_exchange["name"].lower()
             mapped[name] = raw_exchange["is_available"]
 
-        log.info(mapped)
-
         return mapped
     except Exception as e:
         log.error(f"{{ exchange_mapper }}  -> {e}")
