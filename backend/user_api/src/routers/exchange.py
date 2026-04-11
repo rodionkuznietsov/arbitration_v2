@@ -68,13 +68,17 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
             message=f"Биржа {exchange_data.name} не существует в базе данных."
         )
     
-    if (
-        exchange_data.is_available and 
-        exchange_data not in available_exchanges
-    ):
-        available_exchanges.append(exchange_data.name.lower())
+    try:
+        if (
+            exchange_data.is_available
+        ):
+            available_exchanges.insert(exchange_data, exchange_data)
+        else: 
+            available_exchanges.remove(exchange_data)
 
-    log.info(f"Exchanges: {available_exchanges}")
+        log.info(f"Exchanges: {available_exchanges}")
+    except Exception as e:
+        log.error(f"{{ exchange_router.update_exchange_availability.is_available }} -> {e}")
 
     # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
     try:
