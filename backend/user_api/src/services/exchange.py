@@ -11,7 +11,7 @@ def exchange_mapper(
     try:
         mapped = {}
         for raw_exchange in raw_exchanges:
-            mapped[raw_exchange["name"]] = raw_exchange["is_available"]
+            mapped[raw_exchange["name"].lower()] = raw_exchange["is_available"]
 
         return mapped
     except Exception as e:
