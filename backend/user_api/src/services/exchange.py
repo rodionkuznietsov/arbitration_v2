@@ -35,11 +35,14 @@ def update_available_exchanges_in_cache(
         log.error(f"{{ update_available_exchanges_in_cache }} -> {e}")
 
 async def get_available_exchanges_service():
-    if len(exchange_cache.get_size()) == 0:
-        log.info(f"{{ get_available_exchanges_service.database }}")
-        raw_exchanges = await database.get_available_exchanges()
-        mapped = exchange_mapper(raw_exchanges)
+    try:
+        if exchange_cache.get_size() == 0:
+            log.info(f"{{ get_available_exchanges_service.database }}")
+            raw_exchanges = await database.get_available_exchanges()
+            mapped = exchange_mapper(raw_exchanges)
 
-        exchange_cache.set_data(mapped)
-    else:
-        log.info(f"{{ get_available_exchanges_service.cache }}")
+            exchange_cache.set_data(mapped)
+        else:
+            log.info(f"{{ get_available_exchanges_service.cache }}")
+    except Exception as e:
+        log.error(f"{{ get_available_exchanges_service }} -> {e}")
