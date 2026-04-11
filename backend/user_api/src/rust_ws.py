@@ -2,18 +2,15 @@ import asyncio
 import json
 from time import time
 
-import pydantic
 import websockets
 import os
 from dotenv import load_dotenv
 import structlog
-import traceback
 
 from .services import UserState
-
 from .schemas.bot import OrderTypeEnum
-
-from .cache import MessageData, MessageMethod, push_to_subscribes
+from .schemas import MessageData, MessageMethod
+from .cache.cache import push_to_subscribes
 
 from .schemas import (
     AppStatusEnum,
