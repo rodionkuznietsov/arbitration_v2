@@ -103,7 +103,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         message=f"Статус доступности биржи {exchange_data.name} обновлен в базе данных."
     )
 
-@router.delete('/delete_all_exchanges', response_model=ResultSchema)
+@router.delete('/delete_all_exchanges', response_model=ResultSchema, tags=["exchanges"])
 async def delete_all_exchanges():
     await database.clear_table_exchanges()
     

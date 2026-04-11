@@ -37,11 +37,11 @@ def update_available_exchanges_in_cache(
 async def get_available_exchanges_service():
     global available_exchanges
 
-    log.info(len(available_exchanges))
-
     if len(available_exchanges) == 0:
         log.info(f"{{ get_available_exchanges_service.database }}")
         raw_exchanges = await database.get_available_exchanges()
         available_exchanges = exchange_mapper(raw_exchanges)
     else:
         log.info(f"{{ get_available_exchanges_service.cache }}")
+
+    log.info(len(available_exchanges))
