@@ -16,16 +16,6 @@ export const useUserState = defineStore('userState', {
     }),
 
     actions: {
-        set_data(
-            symbol, 
-            longExchange,
-            shortExchange,
-        ) {
-            this.symbol = symbol.toLowerCase()
-            this.longExchange = longExchange.toLowerCase()
-            this.shortExchange = shortExchange.toLowerCase()
-        },
-
         changeStatus(status) {
             this.currentStatus = status
         },

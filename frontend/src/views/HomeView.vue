@@ -23,11 +23,11 @@
 
         configStore.exchanges = data.exchanges
 
-        if (!userState.longExchange || userState.longExchange != "unknown") {
+        if (!userState.longExchange || userState.longExchange == "unknown") {
           userState.longExchange = configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
         }
         
-        if (!userState.shortExchange || userState.shortExchange != "unknown") {
+        if (!userState.shortExchange || userState.shortExchange == "unknown") {
           userState.shortExchange = configStore.exchanges[1] ? configStore.exchanges[1] : configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
         }
         
