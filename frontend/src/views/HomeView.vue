@@ -8,12 +8,10 @@
     import { useOrderBookStore } from '@/stores/orderbook';
     import { useAuthStore } from '@/stores/auth';
     import { API_URL } from '@/config';
-    import { useHomeStore } from '@/stores/home';
     import { useConfigStore } from '@/stores/config';
 
     const authStore = useAuthStore()
     const userState = useUserState()
-    const homeStore = useHomeStore()
     const configStore = useConfigStore()
 
     onMounted(async () => {
