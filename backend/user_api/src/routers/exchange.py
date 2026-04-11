@@ -1,7 +1,7 @@
 import time
 from fastapi import APIRouter, HTTPException
 
-from ..services import exchange_mapper
+from ..services import exchange_mapper, update_available_exchanges_in_cache
 from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangePayload, MessageData, ExchangeEventEnum
 from ..cache.exchange import available_exchanges
 from ..cache.cache import push_to_subscribes
@@ -69,17 +69,8 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
             message=f"Биржа {exchange_data.name} не существует в базе данных."
         )
     
-    try:
-        if (
-            exchange_data.is_available
-        ):
-            available_exchanges[exchange_data.name] = exchange_data.is_available
-        else: 
-            available_exchanges.pop(exchange_data.name)
-
-        log.info(f"Exchanges: {available_exchanges}")
-    except Exception as e:
-        log.error(f"{{ exchange_router.update_exchange_availability.is_available }} -> {e}")
+    # Изменяем кеш доступных бирж
+    update_available_exchanges_in_cache(exchange_data=exchange_data)
 
     # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
     try:
@@ -109,7 +100,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         success=True,
         message=f"Статус доступности биржи {exchange_data.name} обновлен в базе данных."
     )
-    
+
 @router.delete('/delete_all_exchanges', response_model=ResultSchema)
 async def delete_all_exchanges():
     await database.clear_table_exchanges()
