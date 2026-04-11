@@ -44,21 +44,20 @@ class UserState:
         tg_user_id: int,
         new_exchange: ExchangeEnum,
     ):
-        pass
-        # if tg_user_id in self.__user_state__:
-        #     log.info(available_exchanges)
+        if tg_user_id in self.__user_state__:
+            log.info(available_exchanges)
 
-        #     if self.__user_state__[tg_user_id].event_data.payload.longExchange == new_exchange:
-        #         self.__user_state__[tg_user_id].event_data.payload.longExchange = (
-        #             available_exchanges[0] if available_exchanges
-        #             else"unknown"
-        #         ) 
+            if self.__user_state__[tg_user_id].event_data.payload.longExchange == new_exchange:
+                self.__user_state__[tg_user_id].event_data.payload.longExchange = (
+                    available_exchanges[0] if available_exchanges
+                    else"unknown"
+                ) 
 
-        #     elif self.__user_state__[tg_user_id].event_data.payload.shortExchange == new_exchange:
-        #         self.__user_state__[tg_user_id].event_data.payload.shortExchange = (
-        #             available_exchanges[1] if len(available_exchanges) > 1
-        #             else self.__user_state__[tg_user_id].event_data.payload.longExchange
-        #         ) 
+            elif self.__user_state__[tg_user_id].event_data.payload.shortExchange == new_exchange:
+                self.__user_state__[tg_user_id].event_data.payload.shortExchange = (
+                    available_exchanges[1] if len(available_exchanges) > 1
+                    else self.__user_state__[tg_user_id].event_data.payload.longExchange
+                ) 
 
     def get(
         self, 
