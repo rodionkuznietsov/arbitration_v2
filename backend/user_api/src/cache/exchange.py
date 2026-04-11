@@ -56,7 +56,7 @@ class ExchangeCache():
             if exchange_data.is_available:
                 self.__available_exchanges__[exchange_name] = exchange_data.is_available
             else: 
-                if exchange_name in available_exchanges:
+                if exchange_name in self.__available_exchanges__:
                     self.__available_exchanges__.pop(exchange_name)        
         except Exception as e:
             log.error(f"{{ exchange_cache.update_available_exchanges_in_cache }} -> {e}")
