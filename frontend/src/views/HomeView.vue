@@ -20,7 +20,6 @@
         const data = await response.json()
 
         configStore.exchanges = data.message.exchanges
-        alert(JSON.stringify(configStore.exchanges))
       } catch(err) {
         console.log(err)
       }
@@ -73,7 +72,7 @@
                 <label for="order" id="form_label">Лонг:</label>
                 <img src="../assets/icons/up.svg" alt="" draggable="false">
               </div>
-              <FormCombobox v-model="userStore.longExchange" :options="configStore.exchanges.map(c => c.name)"/>
+              <FormCombobox v-model="userStore.longExchange" :options="configStore.exchanges"/>
             </div>
 
             <div class="form-group">
@@ -97,7 +96,7 @@
                 <label for="order" id="form_label">Шорт:</label>
                 <img class="img_reverse" src="../assets/icons/up.svg" alt="" draggable="false">
               </div>
-              <FormCombobox v-model="userStore.shortExchange" :options="configStore.exchanges.map(c => c.name)"/>
+              <FormCombobox v-model="userStore.shortExchange" :options="configStore.exchanges"/>
             </div>
 
             <div class="form-group">

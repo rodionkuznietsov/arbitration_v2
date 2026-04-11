@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 
 export const useConfigStore = defineStore("configStore", {
     state: () => ({
-        exchanges: {},
+        exchanges: [],
         marketTypes: ["Спот", "Фьючерс"]
     }),
 
