@@ -46,6 +46,7 @@ class UserState:
         tg_user_id: int,
         new_exchange: ExchangeEnum,
     ):
+        pass
         # if tg_user_id in self.__user_state__:
         #     log.info(available_exchanges)
 
