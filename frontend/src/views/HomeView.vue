@@ -49,11 +49,6 @@
     }
 
     async function start() {
-      userState.set_data(
-        userStore.symbol, 
-        homeStore.longExchange, 
-        homeStore.shortExchange,
-      )
       chartStore.finished = false
 
       orderBook.value.start()
