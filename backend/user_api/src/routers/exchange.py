@@ -1,7 +1,11 @@
 import time
 from fastapi import APIRouter, HTTPException
 
-from ..services import exchange_mapper, update_available_exchanges_in_cache
+from ..services import (
+    update_available_exchanges_in_cache,
+    get_available_exchanges_service
+)
+
 from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangePayload, MessageData, ExchangeEventEnum
 from ..cache.exchange import available_exchanges
 from ..cache.cache import push_to_subscribes
@@ -22,13 +26,6 @@ async def get_exchanges():
         "status": 200,
         "exchanges": await get_available_exchanges_service()
     }
-
-async def get_available_exchanges_service():
-    global available_exchanges
-    raw_exchanges = await database.get_available_exchanges()
-    available_exchanges = exchange_mapper(raw_exchanges)
-
-    return available_exchanges
 
 @router.post("/add_exchange", response_model=ResultSchema, tags=["exchanges"])
 async def add_exchange(exchange_data: ExchangeSchema):

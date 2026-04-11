@@ -1,6 +1,7 @@
 import structlog
 from ..schemas import ExchangeSchema
 from ..cache.exchange import available_exchanges
+from ..db import database
 
 log: structlog.PrintLogger = structlog.get_logger()
 
@@ -28,3 +29,10 @@ def update_available_exchanges_in_cache(
                 available_exchanges.pop(exchange_data.name)        
     except Exception as e:
         log.error(f"{{ update_available_exchanges_in_cache }} -> {e}")
+
+async def get_available_exchanges_service():
+    global available_exchanges
+    raw_exchanges = await database.get_available_exchanges()
+    available_exchanges = exchange_mapper(raw_exchanges)
+
+    return available_exchanges
