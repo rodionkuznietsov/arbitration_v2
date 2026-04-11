@@ -19,12 +19,12 @@ def exchange_mapper(
 def update_available_exchanges_in_cache(
     exchange_data: ExchangeSchema
 ):
+    global available_exchanges
     try:
         if exchange_data.is_available:
-            available_exchanges[exchange_data.name] = exchange_data.is_available
+            available_exchanges[exchange_data.name.lower()] = exchange_data.is_available
         else: 
-            available_exchanges.pop(exchange_data.name)
-        
-        log.info(f"Exchanges: {available_exchanges}")
+            if exchange_data.name.lower() in available_exchanges:
+                available_exchanges.pop(exchange_data.name)        
     except Exception as e:
-        log.error(f"{{ exchange_router.update_exchange_availability.is_available }} -> {e}")
+        log.error(f"{{ update_available_exchanges_in_cache }} -> {e}")
