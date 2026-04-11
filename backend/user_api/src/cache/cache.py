@@ -2,7 +2,7 @@ import asyncio
 from collections import defaultdict
 import structlog
 
-from .user_state import user_state
+from ..core.state import user_state
 from ..schemas import AppStatusEnum, MessageData, MessageMethod
 
 log: structlog.PrintLogger = structlog.get_logger()
