@@ -13,10 +13,6 @@ export function exchange_handler(
     const handler = handlers[event_data.payload.event] || handlers.default
     handler(event_data)
 
-    // if (event_data.payload.event == "update_exchange") {
-
-    //     }
-    // }
             // } else if (event_data.payload.event == "add_exchange") {
             //   // Добавляем биржу
             //   userStateStore.exchanges.push({

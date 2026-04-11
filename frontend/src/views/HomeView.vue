@@ -20,15 +20,6 @@
         const data = await response.json()
 
         configStore.exchanges = data.exchanges
-
-        if (!userStore.longExchange || userStore.longExchange == "unknown") {
-          userStore.longExchange = configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
-        }
-        
-        if (!userStore.shortExchange || userStore.shortExchange == "unknown") {
-          userStore.shortExchange = configStore.exchanges[1] ? configStore.exchanges[1] : configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
-        }
-        
       } catch(err) {
         console.log(err)
       }

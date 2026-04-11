@@ -1,11 +1,17 @@
 import time
 from fastapi import APIRouter, HTTPException
 
+from ...src import user_state
+
 from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangePayload, MessageData, ExchangeEventEnum
 from ..cache import push_to_subscribes
 from ..db import database
 from ..schemas.exchange import ExchangeSchema
 from ..schemas.result import ResultSchema
+
+import structlog
+
+log: structlog.PrintLogger = structlog.get_logger()
 
 router = APIRouter()
 @router.get("/available", tags=["exchanges"])
@@ -58,6 +64,10 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
             success=False,
             message=f"Биржа {exchange_data.name} не существует в базе данных."
         )
+
+    # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
+    for (tg_user_id, user) in user_state.exists_users():
+        log.info(tg_user_id, user)
 
     message = MessageData(
         event_data=ExchangeEventData(

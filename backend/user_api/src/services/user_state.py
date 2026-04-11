@@ -1,5 +1,6 @@
 from pyclbr import Class
 import time
+from typing import Literal
 import structlog
 
 from ..schemas import AppStatusEnum, EventDataTypeEnum, EventTypeEnum, ExchangeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStatePayload, UserStateError
@@ -39,6 +40,20 @@ class UserState:
         except Exception as e:
             log.error(f"UserState -> {e}")
     
+    def update_exchange(
+        self,
+        new_exchange: ExchangeEnum,
+        type: Literal["long", "short"],
+        tg_user_id: int
+    ):
+        if tg_user_id in self.__user_state__:
+            match type:
+                case "long":
+                    self.__user_state__[tg_user_id].event_data.payload.longExchange = new_exchange
+
+                case "short":
+                    self.__user_state__[tg_user_id].event_data.payload.shortExchange = new_exchange
+
     def get(
         self, 
         tg_user_id: int
