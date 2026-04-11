@@ -23,6 +23,9 @@ router = APIRouter()
 @router.get("/available", tags=["exchanges"])
 async def get_exchanges():
     global available_exchanges
+
+    await get_available_exchanges_service()
+
     return {
         "status": 200,
         "exchanges": available_exchanges
