@@ -20,7 +20,7 @@
         const data = await response.json()
 
         configStore.exchanges = data.message.exchanges
-        alert(JSON.stringify())
+        alert(JSON.stringify(configStore.exchanges))
       } catch(err) {
         console.log(err)
       }
