@@ -70,7 +70,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
     
     if (
         exchange_data.is_available and 
-        exchange_data.name.lower() not in available_exchanges
+        exchange_data not in available_exchanges
     ):
         available_exchanges.append(exchange_data.name.lower())
 
