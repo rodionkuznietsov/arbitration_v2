@@ -2,12 +2,10 @@ import asyncio
 from collections import defaultdict
 import structlog
 
-from .services import UserState
-from .schemas import AppStatusEnum, MessageData, MessageMethod
+from ..services import UserState
+from ..schemas import AppStatusEnum, MessageData, MessageMethod
 
 log: structlog.PrintLogger = structlog.get_logger()
-
-available_exchanges = []
 
 subscribes = defaultdict(lambda: {
     "success_queue": [], 
