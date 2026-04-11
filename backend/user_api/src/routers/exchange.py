@@ -75,6 +75,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
     except Exception as e:
         log.error(f"{{ exchange_router.update_exchange_availability.user_state.exists_users }} -> {e}")
 
+    # Пушим событие юзерам, чтобы их ui обновился
     message = MessageData(
         event_data=ExchangeEventData(
             type=EventDataTypeEnum.Exchange,

@@ -5,7 +5,7 @@ available_exchanges = {}
 import structlog
 log: structlog.PrintLogger = structlog.get_logger()
 
-class ExchangeCache():
+class ExchangeCache:
     def __init__(self, database: AsyncDatabase):
         self.__available_exchanges__ = []
         self.__database__ = database

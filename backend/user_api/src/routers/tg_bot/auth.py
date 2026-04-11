@@ -11,7 +11,7 @@ import time
 from ...jwt_func import ACCESS_TOKEN_EXPIRE_MINUTES
 from src import create_access_token
 
-from ...schemas import EventTypeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, ResultSchema, TokenSchema, MessageSchema, UserStatePayload
+from ...schemas import ResultSchema, TokenSchema, MessageSchema
 from ...db import database
 from ...tg_bot.app import BOT_TOKEN
 from ...core.state import user_state

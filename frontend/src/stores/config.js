@@ -11,7 +11,7 @@ export const useConfigStore = defineStore("configStore", {
             if (!event_data.payload.is_available) {
                 // Удаляем биржу
                 this.exchanges = this.exchanges.filter(
-                    ex => ex.name !== event_data.payload.exchange_name
+                    e => e !== event_data.payload.exchange_name
                 )
             } else {
                 const index = this.exchanges.findIndex(
