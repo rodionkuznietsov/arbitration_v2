@@ -11,7 +11,7 @@
     import { useConfigStore } from '@/stores/config';
 
     const authStore = useAuthStore()
-    const userState = useUserState()
+    const userStore = useUserState()
     const configStore = useConfigStore()
 
     onMounted(async () => {
@@ -21,12 +21,12 @@
 
         configStore.exchanges = data.exchanges
 
-        if (!userState.longExchange || userState.longExchange == "unknown") {
-          userState.longExchange = configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
+        if (!userStore.longExchange || userStore.longExchange == "unknown") {
+          userStore.longExchange = configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
         }
         
-        if (!userState.shortExchange || userState.shortExchange == "unknown") {
-          userState.shortExchange = configStore.exchanges[1] ? configStore.exchanges[1] : configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
+        if (!userStore.shortExchange || userStore.shortExchange == "unknown") {
+          userStore.shortExchange = configStore.exchanges[1] ? configStore.exchanges[1] : configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
         }
         
       } catch(err) {
@@ -38,7 +38,6 @@
 
     const orderBook = ref(null)
     const orderBookStore = useOrderBookStore()
-    const userStore = useUserState()
 
     const chartStore = useChartStore()
 
@@ -55,8 +54,8 @@
         chartStore.shortExchangeLogo = orderBookStore.shortExchangeLogo
       }, 50)
 
-      chartStore.longExchange = userState.longExchange
-      chartStore.shortExchange = userState.shortExchange
+      chartStore.longExchange = userStore.longExchange
+      chartStore.shortExchange = userStore.shortExchange
     }    
     
     async function stop() {

@@ -129,6 +129,7 @@
     text-align: left;
     border-radius: var(--default-border-radius);
     padding: var(--default-padding);
+    text-transform: capitalize;
   }
 
   #combobox_element:hover {
