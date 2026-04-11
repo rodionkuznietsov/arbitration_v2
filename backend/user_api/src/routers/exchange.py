@@ -74,6 +74,8 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
     
     update_available_exchanges_in_cache(exchange_data=exchange_data)
 
+    log.info(f"Exchanges: {available_exchanges}")
+
     # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
     try:
         if not exchange_data.is_available:
