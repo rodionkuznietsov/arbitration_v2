@@ -13,13 +13,18 @@ from ..schemas.result import ResultSchema
 
 import structlog
 
+from backend.user_api.src.cache import exchange
+
 log: structlog.PrintLogger = structlog.get_logger()
 
 router = APIRouter()
 @router.get("/available", tags=["exchanges"])
 async def get_exchanges():
     global available_exchanges
-    available_exchanges = await get_available_exchanges()
+    exchanges = await get_available_exchanges()
+
+    log.info(f"Loadied exchanges: {exchanges}")
+    
     return {
         "status": 200,
         "exchanges": available_exchanges
