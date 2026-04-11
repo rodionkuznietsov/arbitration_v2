@@ -19,8 +19,8 @@
         const response = await fetch(`${API_URL}/exchanges/available`)
         const data = await response.json()
 
-        configStore.exchanges = data.exchanges
-        alert(JSON.stringify(data.exchanges))
+        configStore.exchanges = data.message.exchanges
+        alert(JSON.stringify())
       } catch(err) {
         console.log(err)
       }
