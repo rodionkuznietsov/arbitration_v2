@@ -1,10 +1,6 @@
 import time
 from fastapi import APIRouter, HTTPException
 
-from ..services import (
-    get_available_exchanges_service
-)
-
 from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangePayload, MessageData, ExchangeEventEnum
 from ..cache.exchange import available_exchanges, exchange_cache
 from ..cache.cache import push_to_subscribes
@@ -23,9 +19,9 @@ router = APIRouter()
 async def get_exchanges():
     global available_exchanges
 
-    await get_available_exchanges_service()
+    available_exchanges = await exchange_cache.get()
     
-    log.info(f"After: {exchange_cache.get()}")
+    log.info(f"After: {available_exchanges}")
 
     return {
         "status": 200,

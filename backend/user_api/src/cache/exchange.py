@@ -1,17 +1,43 @@
+from ..db import AsyncDatabase, database
 from ..schemas import ExchangeSchema
 available_exchanges = {}
 
 import structlog
-
 log: structlog.PrintLogger = structlog.get_logger()
 
-class ExchangeCache:
-    def __init__(self):
+class ExchangeCache():
+    def __init__(self, database: AsyncDatabase):
         self.__available_exchanges__ = {}
+        self.__database__ = database
 
-    def get(self):
-        return self.__available_exchanges__
+    def exchange_mapper(
+        self,
+        raw_exchanges: list
+    ):
+        try:
+            mapped = {}
+            for raw_exchange in raw_exchanges:
+                name = raw_exchange["name"].lower()
+                mapped[name] = raw_exchange["is_available"]
+
+            return mapped
+        except Exception as e:
+            log.error(f"{{ exchange_mapper }}  -> {e}")
+
+    async def get(self):
+        try:
+            if exchange_cache.get_size() == 0:
+                log.info(f"{{ get_available_exchanges_service.database }}")
+                raw_exchanges = await self.__database__.get_available_exchanges()
+                mapped = self.exchange_mapper(raw_exchanges)
+
+                exchange_cache.set_data(mapped)
+            else:
+                log.info(f"{{ get_available_exchanges_service.cache }}")
+        except Exception as e:
+            log.error(f"{{ exchange_service.get_available_exchanges_service }} -> {e}")
     
+        return self.__available_exchanges__
     def get_size(self):
         return len(self.__available_exchanges__)
 
@@ -35,4 +61,4 @@ class ExchangeCache:
         except Exception as e:
             log.error(f"{{ exchange_cache.update_available_exchanges_in_cache }} -> {e}")
 
-exchange_cache = ExchangeCache()
+exchange_cache = ExchangeCache(database=database)
