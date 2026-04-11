@@ -4,7 +4,10 @@ from fastapi import APIRouter, HTTPException
 from ..cache import user_state
 
 from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangePayload, MessageData, ExchangeEventEnum
-from ..cache import push_to_subscribes
+from ..cache import (
+    push_to_subscribes,
+    available_exchanges
+)
 from ..db import database
 from ..schemas.exchange import ExchangeSchema
 from ..schemas.result import ResultSchema
@@ -64,11 +67,19 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
             success=False,
             message=f"Биржа {exchange_data.name} не существует в базе данных."
         )
+    
+    if (
+        exchange_data.is_available and 
+        exchange_data.name.lower() not in available_exchanges
+    ):
+        available_exchanges.append(exchange_data.name.lower())
 
     # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
     try:
-        for tg_user_id, user in user_state.exists_users().items():
-            log.info(f"{tg_user_id} -> {user}")
+        if not exchange_data.is_available:
+            for tg_user_id in user_state.exists_users().keys():
+                user_state.update_exchange(tg_user_id, exchange_data.name.lower())
+
     except Exception as e:
         log.error(f"{{ exchange_router.update_exchange_availability.user_state.exists_users }} -> {e}")
 

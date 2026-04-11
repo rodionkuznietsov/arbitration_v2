@@ -3,6 +3,8 @@ import time
 from typing import Literal
 import structlog
 
+from backend.user_api.src import available_exchanges
+
 from ..schemas import AppStatusEnum, EventDataTypeEnum, EventTypeEnum, ExchangeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStatePayload, UserStateError
 
 log: structlog.PrintLogger = structlog.get_logger()
@@ -42,17 +44,21 @@ class UserState:
     
     def update_exchange(
         self,
+        tg_user_id: int,
         new_exchange: ExchangeEnum,
-        type: Literal["long", "short"],
-        tg_user_id: int
     ):
         if tg_user_id in self.__user_state__:
-            match type:
-                case "long":
-                    self.__user_state__[tg_user_id].event_data.payload.longExchange = new_exchange
+            if self.__user_state__[tg_user_id].event_data.payload.longExchange == new_exchange:
+                self.__user_state__[tg_user_id].event_data.payload.longExchange = (
+                    available_exchanges[0] if available_exchanges
+                    else"unknown"
+                ) 
 
-                case "short":
-                    self.__user_state__[tg_user_id].event_data.payload.shortExchange = new_exchange
+            elif self.__user_state__[tg_user_id].event_data.payload.shortExchange == new_exchange:
+                self.__user_state__[tg_user_id].event_data.payload.shortExchange = (
+                    available_exchanges[1] if len(available_exchanges) > 1
+                    else self.__user_state__[tg_user_id].event_data.payload.longExchange
+                ) 
 
     def get(
         self, 
