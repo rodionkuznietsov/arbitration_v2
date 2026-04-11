@@ -2,7 +2,7 @@ from re import L
 
 import structlog
 from ..schemas import ExchangeSchema
-from ..cache.exchange import available_exchanges
+from ..cache.exchange import exchange_cache
 from ..db import database
 
 log: structlog.PrintLogger = structlog.get_logger()
@@ -35,11 +35,11 @@ def update_available_exchanges_in_cache(
         log.error(f"{{ update_available_exchanges_in_cache }} -> {e}")
 
 async def get_available_exchanges_service():
-    global available_exchanges
-
-    if len(available_exchanges) == 0:
+    if len(exchange_cache.get_size()) == 0:
         log.info(f"{{ get_available_exchanges_service.database }}")
         raw_exchanges = await database.get_available_exchanges()
-        available_exchanges = exchange_mapper(raw_exchanges)
+        mapped = exchange_mapper(raw_exchanges)
+
+        exchange_cache.set_data(mapped)
     else:
         log.info(f"{{ get_available_exchanges_service.cache }}")

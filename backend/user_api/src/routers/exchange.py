@@ -7,7 +7,7 @@ from ..services import (
 )
 
 from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangePayload, MessageData, ExchangeEventEnum
-from ..cache.exchange import available_exchanges
+from ..cache.exchange import available_exchanges, exchange_cache
 from ..cache.cache import push_to_subscribes
 from ..core.state import user_state
 
@@ -26,7 +26,7 @@ async def get_exchanges():
 
     await get_available_exchanges_service()
     
-    log.info(f"After: {available_exchanges}")
+    log.info(f"After: {exchange_cache.get()}")
 
     return {
         "status": 200,
