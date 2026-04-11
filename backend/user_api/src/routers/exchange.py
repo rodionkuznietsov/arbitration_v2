@@ -18,20 +18,19 @@ log: structlog.PrintLogger = structlog.get_logger()
 router = APIRouter()
 @router.get("/available", tags=["exchanges"])
 async def get_exchanges():
-    global available_exchanges
-    exchanges = await get_available_exchanges()
-    available_exchanges = exchange_mapper(exchanges)
-
-    log.info(f"Loadied exchanges: {available_exchanges}")
-    
     return {
         "status": 200,
-        "exchanges": available_exchanges
+        "exchanges": await get_available_exchanges_service()
     }
 
-async def get_available_exchanges():
-    exchanges = await database.get_available_exchanges()
-    return exchanges
+async def get_available_exchanges_service():
+    global available_exchanges
+    raw_exchanges = await database.get_available_exchanges()
+    available_exchanges = exchange_mapper(raw_exchanges)
+
+    log.info(available_exchanges)
+
+    return available_exchanges
 
 @router.post("/add_exchange", response_model=ResultSchema, tags=["exchanges"])
 async def add_exchange(exchange_data: ExchangeSchema):

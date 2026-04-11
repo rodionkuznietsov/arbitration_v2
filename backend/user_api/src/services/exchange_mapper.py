@@ -1,4 +1,9 @@
 def exchange_mapper(
-    exchanges: list
+    raw_exchanges: list
 ):
-    return exchanges
+    mapped = {}
+
+    for raw_exchange in raw_exchanges:
+        mapped[raw_exchange.name]
+
+    return mapped

@@ -1,1 +1,1 @@
-available_exchanges = []
+available_exchanges = {}
