@@ -1,4 +1,9 @@
+from ..schemas import ExchangeSchema
 available_exchanges = {}
+
+import structlog
+
+log: structlog.PrintLogger = structlog.get_logger()
 
 class ExchangeCache:
     def __init__(self):
@@ -15,11 +20,19 @@ class ExchangeCache:
         data,
     ):
         self.__available_exchanges__ = data
-    
-    def remove(
+
+    def remove_or_insert(
         self,
-        exchange_name: str
+        exchange_data: ExchangeSchema
     ):
-        self.__available_exchanges__.pop(exchange_name)
+        try:
+            exchange_name: str = exchange_data.name.lower()
+            if exchange_data.is_available:
+                self.__available_exchanges__[exchange_name] = exchange_data.is_available
+            else: 
+                if exchange_name in available_exchanges:
+                    self.__available_exchanges__.pop(exchange_name)        
+        except Exception as e:
+            log.error(f"{{ exchange_cache.update_available_exchanges_in_cache }} -> {e}")
 
 exchange_cache = ExchangeCache()
