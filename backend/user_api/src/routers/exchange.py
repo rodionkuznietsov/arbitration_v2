@@ -73,6 +73,8 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
     ):
         available_exchanges.append(exchange_data.name.lower())
 
+    log.info(available_exchanges)
+
     # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
     try:
         if not exchange_data.is_available:
