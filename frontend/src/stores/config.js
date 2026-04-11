@@ -15,16 +15,14 @@ export const useConfigStore = defineStore("configStore", {
                 )
             } else {
                 const index = this.exchanges.findIndex(
-                    ex => ex.name === event_data.payload.exchange_name
+                    ex => ex === event_data.payload.exchange_name
                 )
 
                 // Добавляем биржу
                 if (index === -1) {
-                    this.exchanges.push({
-                        id: this.exchanges.length + 1,
-                        name: event_data.payload.exchange_name,
-                        is_available: true
-                    })
+                    if (!this.exchanges.includes(event_data.payload.exchange_name)) {
+                        this.exchanges.push(event_data.payload.exchange_name)
+                    }
                 }
             }
         },
