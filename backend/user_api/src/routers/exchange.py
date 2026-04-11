@@ -66,8 +66,11 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         )
 
     # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
-    for (tg_user_id, user) in user_state.exists_users().items():
-        log.info(tg_user_id, user)
+    try:
+        for (tg_user_id, user) in user_state.exists_users().items():
+            log.info(tg_user_id, user)
+    except Exception as e:
+        log.error(f"{{exchange_router.update_exchange_availability.user_state.exists_users}} -> {e}")
 
     message = MessageData(
         event_data=ExchangeEventData(
