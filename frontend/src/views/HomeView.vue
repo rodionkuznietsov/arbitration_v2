@@ -20,6 +20,7 @@
         const data = await response.json()
 
         configStore.exchanges = data.exchanges
+        alert(JSON.stringify(configStore.exchanges))
       } catch(err) {
         console.log(err)
       }
