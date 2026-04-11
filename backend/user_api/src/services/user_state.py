@@ -50,7 +50,7 @@ class UserState:
             if self.__user_state__[tg_user_id].event_data.payload.longExchange == new_exchange:
                 self.__user_state__[tg_user_id].event_data.payload.longExchange = (
                     available_exchanges[0] if available_exchanges
-                    else"unknown"
+                    else ExchangeEnum.Unknown
                 ) 
 
             elif self.__user_state__[tg_user_id].event_data.payload.shortExchange == new_exchange:
