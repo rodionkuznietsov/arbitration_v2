@@ -74,12 +74,12 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         )
     
     try:
-        if (
-            exchange_data.is_available
-        ):
-            available_exchanges.insert(exchange_data, exchange_data)
-        else: 
-            available_exchanges.remove(exchange_data)
+        # if (
+        #     exchange_data.is_available
+        # ):
+        #     # available_exchanges.insert(exchange_data, exchange_data)
+        # else: 
+        #     available_exchanges.remove(exchange_data)
 
         log.info(f"Exchanges: {available_exchanges}")
     except Exception as e:
