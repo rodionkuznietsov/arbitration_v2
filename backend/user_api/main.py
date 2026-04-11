@@ -13,7 +13,8 @@ log = structlog.get_logger()
 from src.schemas import ResultSchema
 from src.routers.tg_bot.auth import database, router as auth_router
 from src.routers import log_router
-from src import check_active_subscribes, tg_bot_app
+from src.cache import check_active_subscribes
+from src import tg_bot_app
 
 from src.routers import exchange_router
 from src.routers import user_router, events_router
