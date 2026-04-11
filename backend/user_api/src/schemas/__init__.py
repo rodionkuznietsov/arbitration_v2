@@ -9,7 +9,12 @@ from .enums import (
     ExchangeEventEnum
 )
 
-from .result import ResultSchema, LogMessageSchema, MessageSchema
+from .result import (
+    ResultSchema, 
+    LogMessageSchema, 
+    MessageSchema, 
+    ExchangeMessageResponse
+)
 from .bot import UserLogSchema, LogStatusEnum
 from .access_token import TokenSchema, TokenDataSchema
 from .bot import EventTypeEnum, AppStatusEnum, OrderTypeEnum

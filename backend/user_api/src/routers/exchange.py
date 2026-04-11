@@ -1,7 +1,7 @@
 import time
 from fastapi import APIRouter, HTTPException
 
-from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangePayload, MessageData, ExchangeEventEnum
+from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangeMessageResponse, ExchangePayload, MessageData, ExchangeEventEnum
 from ..cache.exchange import available_exchanges, exchange_cache
 from ..cache.cache import push_to_subscribes
 from ..core.state import user_state
@@ -17,16 +17,13 @@ log: structlog.PrintLogger = structlog.get_logger()
 router = APIRouter()
 @router.get("/available", tags=["exchanges"])
 async def get_exchanges():
-    global available_exchanges
-
-    available_exchanges = await exchange_cache.get()
-    
-    log.info(f"After: {available_exchanges}")
-
-    return {
-        "status": 200,
-        "exchanges": {}
-    }
+    return ResultSchema(
+        status_code=200,
+        success=True,
+        message=ExchangeMessageResponse(
+            exchanges=await exchange_cache.get()
+        )
+    )
 
 @router.post("/add_exchange", response_model=ResultSchema, tags=["exchanges"])
 async def add_exchange(exchange_data: ExchangeSchema):
@@ -68,8 +65,6 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         )
     
     exchange_cache.remove_or_insert(exchange_data=exchange_data)
-
-    log.info(f"Exchanges: {available_exchanges}")
 
     # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
     try:

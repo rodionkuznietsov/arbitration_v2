@@ -38,6 +38,7 @@ class ExchangeCache():
             log.error(f"{{ exchange_service.get_available_exchanges_service }} -> {e}")
     
         return self.__available_exchanges__
+        
     def get_size(self):
         return len(self.__available_exchanges__)
 
