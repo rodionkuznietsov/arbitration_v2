@@ -8,13 +8,11 @@
     import { useOrderBookStore } from '@/stores/orderbook';
     import { useAuthStore } from '@/stores/auth';
     import { API_URL } from '@/config';
-    import { useTgStore } from '@/stores/tg';
     import { useHomeStore } from '@/stores/home';
     import { useConfigStore } from '@/stores/config';
 
     const authStore = useAuthStore()
     const userState = useUserState()
-    const tgStore = useTgStore()
     const homeStore = useHomeStore()
     const configStore = useConfigStore()
 
@@ -34,11 +32,7 @@
         }
         
       } catch(err) {
-        if (tgStore.tgObject) {
-          tgStore.tgObject.showAlert("Системный сбой. Пожайлуйста сообщите об этом в службу поддержки.", () => {
-            console.log("")
-          })
-        }
+        console.log(err)
       }
     })
 

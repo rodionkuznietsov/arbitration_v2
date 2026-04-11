@@ -21,7 +21,6 @@
   import { API_URL } from './config';
   import { useUserState } from './stores/user_state';
   import { useTgStore } from './stores/tg';
-  // import { useHomeStore } from './stores/home';
   import { useOrderBookStore } from './stores/orderbook';
   import FetchErrorImg from './assets/img/fetch_error.png'
   import Error401Img from './assets/img/401.png'
@@ -30,12 +29,12 @@
   import { useLogStore } from './stores/log.store';
   import { exchange_handler } from './handlers/exchange.handler';
   import { useConfigStore } from './stores/config';
+  import { user_state_handler } from './handlers/user_state.handler';
   
   const authStore = useAuthStore()
   const userStateStore = useUserState()
   const orderBookStore = useOrderBookStore()
   const tgStore = useTgStore()
-  // const homeStore = useHomeStore()
   const logStore = useLogStore()
   const configStore = useConfigStore()
 
@@ -43,6 +42,7 @@
     log: (data) => log_handler(data, tgStore, logStore),
     exchange: (data) => exchange_handler(data, configStore),
     websocket: (data) => ws_handler(data, userStateStore, orderBookStore),
+    user_state: (data) => user_state_handler(data, userStateStore, orderBookStore),
     default: (data) => {
       console.warn("Не известное собитие", data.type)
     }
@@ -84,24 +84,8 @@
           const handler = handlers[event_data.type] || handlers.default
           handler(event_data)
           
-          if (event_data.type == "user_state") {
-            if (userStateStore.isBotRunning) {
-              orderBookStore.updateHeader(
-                event_data.payload.symbol,
-                event_data.payload.longExchange,
-                event_data.payload.longOrderType,
-                event_data.payload.shortExchange,
-                event_data.payload.shortOrderType
-              )
-            }
-
-            userStateStore.symbol = event_data.payload.symbol
-            userStateStore.longExchange = event_data.payload.longExchange != "unknown" ? event_data.payload.longExchange : "Нет доступной биржи"
-            userStateStore.longOrderType = event_data.payload.longOrderType 
-
-            userStateStore.shortExchange = event_data.payload.shortExchange != "unknown" ? event_data.payload.shortExchange : "Нет доступной биржи"
-            userStateStore.shortOrderType = event_data.payload.shortOrderType
-          }
+          // if (event_data.type == "user_state") {
+          // }
         }
 
         es.onerror = (event) => {
