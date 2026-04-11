@@ -2,7 +2,6 @@ import time
 from fastapi import APIRouter, HTTPException
 
 from ..services import (
-    update_available_exchanges_in_cache,
     get_available_exchanges_service
 )
 
@@ -72,7 +71,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
             message=f"Биржа {exchange_data.name} не существует в базе данных."
         )
     
-    update_available_exchanges_in_cache(exchange_data=exchange_data)
+    exchange_cache.remove_or_insert(exchange_data=exchange_data)
 
     log.info(f"Exchanges: {available_exchanges}")
 
