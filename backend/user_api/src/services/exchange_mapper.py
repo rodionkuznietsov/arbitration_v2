@@ -4,6 +4,6 @@ def exchange_mapper(
     mapped = {}
 
     for raw_exchange in raw_exchanges:
-        mapped[raw_exchange.name]
+        mapped[raw_exchange["name"]] = raw_exchange["is_available"]
 
     return mapped
