@@ -26,7 +26,7 @@ def update_available_exchanges_in_cache(
             available_exchanges[exchange_data.name.lower()] = exchange_data.is_available
         else: 
             if exchange_data.name.lower() in available_exchanges:
-                available_exchanges.pop(exchange_data.name)        
+                available_exchanges.pop(exchange_data.name.lower())        
     except Exception as e:
         log.error(f"{{ update_available_exchanges_in_cache }} -> {e}")
 
