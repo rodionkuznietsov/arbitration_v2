@@ -28,8 +28,6 @@ async def get_available_exchanges_service():
     raw_exchanges = await database.get_available_exchanges()
     available_exchanges = exchange_mapper(raw_exchanges)
 
-    log.info(available_exchanges)
-
     return available_exchanges
 
 @router.post("/add_exchange", response_model=ResultSchema, tags=["exchanges"])
@@ -72,12 +70,12 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
         )
     
     try:
-        # if (
-        #     exchange_data.is_available
-        # ):
-        #     # available_exchanges.insert(exchange_data, exchange_data)
-        # else: 
-        #     available_exchanges.remove(exchange_data)
+        if (
+            exchange_data.is_available
+        ):
+            available_exchanges[exchange_data.name] = exchange_data.is_available
+        else: 
+            available_exchanges.pop(exchange_data.name)
 
         log.info(f"Exchanges: {available_exchanges}")
     except Exception as e:
