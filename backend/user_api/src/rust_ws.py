@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 import structlog
 
-from src.services.user_state import UserState
+from .services.user_state import UserState
 from .schemas.bot import OrderTypeEnum
 from .schemas import MessageData, MessageMethod
 from .cache.cache import push_to_subscribes
