@@ -43,5 +43,3 @@ async def get_available_exchanges_service():
         available_exchanges = exchange_mapper(raw_exchanges)
     else:
         log.info(f"{{ get_available_exchanges_service.cache }}")
-
-    log.info(available_exchanges)

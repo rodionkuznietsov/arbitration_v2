@@ -26,16 +26,16 @@ async def get_exchanges():
 
     await get_available_exchanges_service()
     
-    log.info(available_exchanges)
+    log.info(f"After: {available_exchanges}")
 
     return {
         "status": 200,
-        "exchanges": available_exchanges
+        "exchanges": {}
     }
 
 @router.post("/add_exchange", response_model=ResultSchema, tags=["exchanges"])
 async def add_exchange(exchange_data: ExchangeSchema):
-    global exchange_cache
+    global available_exchanges
     added = await database.add_exchange(exchange_data.name.lower(), exchange_data.is_available)
 
     if not added:
