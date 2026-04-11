@@ -44,4 +44,4 @@ async def get_available_exchanges_service():
     else:
         log.info(f"{{ get_available_exchanges_service.cache }}")
 
-    log.info(len(available_exchanges))
+    log.info(available_exchanges)
