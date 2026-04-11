@@ -14,7 +14,7 @@ from src import create_access_token
 from ...schemas import EventTypeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, ResultSchema, TokenSchema, MessageSchema, UserStatePayload
 from ...db import database
 from ...tg_bot.app import BOT_TOKEN
-from ...cache import user_state
+from ...core.state import user_state
 
 log = structlog.get_logger()
 

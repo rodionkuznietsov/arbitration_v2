@@ -10,7 +10,8 @@ from jwt.exceptions import InvalidTokenError, InvalidSubjectError
 
 from ..rust_ws import run_ws
 from ..schemas import EventDataTypeEnum, EventTypeEnum, AppStatusEnum, LogPayload, LogStatusEnum, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod, UserStatePayload, WebSocketActionEnum, WebSocketChannelEnum
-from ..cache import push_to_subscribes, user_state
+from ..cache import push_to_subscribes
+from ..core.state import user_state
 from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
 from ..db import database
 from ..schemas import LogMessageSchema, ResultSchema, UserLogSchema

@@ -2,7 +2,6 @@ import asyncio
 from collections import defaultdict
 import structlog
 
-from ..core.state import user_state
 from ..schemas import AppStatusEnum, MessageData, MessageMethod
 
 log: structlog.PrintLogger = structlog.get_logger()
@@ -43,6 +42,8 @@ def push_to_subscribes(
         log.error(f"Cache: {e}")
 
 async def check_active_subscribes():
+    from ..core.state import user_state
+
     while True:
         try:
             # Добавить удаления старых очередей, которые в течении 1 минуты, не было изменены

@@ -7,7 +7,8 @@ from fastapi.responses import StreamingResponse
 import structlog
 
 from ..schemas import AppStatusEnum
-from ..cache import push_to_subscribes, subscribes, user_state
+from ..cache import push_to_subscribes, subscribes
+from ..core.state import user_state
 
 router = APIRouter()
 
