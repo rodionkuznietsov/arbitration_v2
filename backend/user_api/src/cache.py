@@ -61,10 +61,14 @@ async def check_active_subscribes():
                     user.event_data.payload.isBotRunning is False
                     and user.event_data.payload.isSleeping == AppStatusEnum.Sleeping
                 ):
-                    subscribes[user.context.tg_user_id]["success_queue"].clear()
-                    subscribes[user.context.tg_user_id]["error_queue"].clear()
+                    if (subscribes[user.context.tg_user_id]["success_queue"]) > 0:
+                        subscribes[user.context.tg_user_id]["success_queue"].clear()
+
+                        log.info(f"{{cache.check_active_subscribes.success_queue.clear}} -> {user.context.tg_user_id} ")
+                    if (subscribes[user.context.tg_user_id]["error_queue"]) > 0:
+                        subscribes[user.context.tg_user_id]["error_queue"].clear()
+                        log.info(f"{{cache.check_active_subscribes.error_queue.clear}} -> {user.context.tg_user_id} ")
                     
-                    log.info(f"Очищены все очереди для: {user.context.tg_user_id}")
 
         except Exception as e:
             log.error(f"Cache -> {e}")
