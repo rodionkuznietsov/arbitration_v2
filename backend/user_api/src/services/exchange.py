@@ -1,3 +1,5 @@
+from re import L
+
 import structlog
 from ..schemas import ExchangeSchema
 from ..cache.exchange import available_exchanges
@@ -34,6 +36,8 @@ def update_available_exchanges_in_cache(
 
 async def get_available_exchanges_service():
     global available_exchanges
+
+    log.info(len(available_exchanges))
 
     if len(available_exchanges) == 0:
         log.info(f"{{ get_available_exchanges_service.database }}")
