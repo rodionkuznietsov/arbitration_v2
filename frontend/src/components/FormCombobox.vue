@@ -7,8 +7,9 @@
 
     const props = defineProps({
         modelValue: String,
-        options: Array,
-        event: String
+        values: Array,
+        event: String,
+        market_type: String,
     })
 
     const show = ref(false)
@@ -25,10 +26,8 @@
         await send_cmd(
           authStore.token,
           props.event,
-          {
-            exchange_name: value,
-            market_type: 'long'
-          }
+          props.market_type,
+          value
         )
     }
 
@@ -80,7 +79,7 @@
       </div>
 
       <ul class="combobox-list" id="optionsList" v-show="show" ref="comboboxList">
-          <li id="combobox_element" v-for="opt in props.options" :key="opt" @mousedown="select(opt)">{{ opt }}</li>
+          <li id="combobox_element" v-for="opt in props.values" :key="opt" @mousedown="select(opt)">{{ opt }}</li>
       </ul>
   </div>
 </template>
