@@ -39,7 +39,9 @@ async def subscribe_events(tg_user_id: int):
         subscribes[tg_user_id]["success_queue"].append(success_queue)
         subscribes[tg_user_id]["error_queue"].append(error_queue)
         
+        # Возращаем состояние юзера
         if tg_user_id in user_state.exists_users():
+            log.info(f"{{ events_router.subscribe.events.init_data }} -> {tg_user_id}")
             push_to_subscribes(user_state.get(tg_user_id))
 
         return StreamingResponse(
