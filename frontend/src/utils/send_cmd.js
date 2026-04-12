@@ -5,11 +5,11 @@ export async function send_cmd(
     event,
     data
 ) {
-    alert(token)
     event
     data
     
-    // try {
+    try {
+        alert(event)
     //     await fetch(`${API_URL}/user/state/update`, {
     //         method: 'POST',
     //         headers: {
@@ -18,7 +18,7 @@ export async function send_cmd(
     //         },
     //         body: JSON.stringify({ event, data })
     //     })
-    // } catch(err) {
-    //     alert(`Ошибка при отправке команды ${err}`)
-    // }
+    } catch(err) {
+        console.log(err)
+    }
 }
