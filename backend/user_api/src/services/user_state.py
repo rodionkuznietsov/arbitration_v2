@@ -50,16 +50,16 @@ class UserState:
         if tg_user_id in self.__user_state__:
             log.info(available_exchanges)
             # Доработать
-            if self.__user_state__[tg_user_id].event_data.payload.longExchange == new_exchange:
-                self.__user_state__[tg_user_id].event_data.payload.longExchange = (
+            if self.__user_state__[tg_user_id].event_data.payload.data.longExchange == new_exchange:
+                self.__user_state__[tg_user_id].event_data.payload.data.longExchange = (
                     available_exchanges[0] if available_exchanges
                     else ExchangeEnum.Unknown
                 ) 
 
-            elif self.__user_state__[tg_user_id].event_data.payload.shortExchange == new_exchange:
-                self.__user_state__[tg_user_id].event_data.payload.shortExchange = (
+            elif self.__user_state__[tg_user_id].event_data.payload.data.shortExchange == new_exchange:
+                self.__user_state__[tg_user_id].event_data.payload.data.shortExchange = (
                     available_exchanges[1] if len(available_exchanges) > 1
-                    else self.__user_state__[tg_user_id].event_data.payload.longExchange
+                    else self.__user_state__[tg_user_id].event_data.payload.data.longExchange
                 ) 
 
     def get(
