@@ -73,7 +73,6 @@ async fn handle_connection(
                 tokio::select! {
                     Some(error_msg) = error_rx.recv() => {
                         ws_sender.send(error_msg).await.ok();
-                        cancel_token.cancel();
                     }
 
                     Some(payload) = lines_rx.recv() => {
