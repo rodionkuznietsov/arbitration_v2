@@ -1,7 +1,7 @@
 import time
 from fastapi import APIRouter, HTTPException
 
-from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangeMessageResponse, ExchangePayload, MessageContext, MessageData, ExchangeEventEnum, MessageEventData, MessageMethod, UserStateEventPayload, UserStateEventTypeEnum
+from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangeMessageResponse, ExchangePayload, MessageContext, MessageData, ExchangeEventEnum, MessageEventData, MessageMethod, UserStatePayload, UserStateEventTypeEnum, UserStateUpdateData
 from ..cache.exchange import available_exchanges, exchange_cache
 from ..cache.cache import push_to_subscribes
 from ..core.state import user_state
@@ -92,10 +92,12 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
                     event_data=MessageEventData(
                         type=EventDataTypeEnum.UserState,
                         timestamp=int(time.time()),
-                        payload=UserStateEventPayload(
-                            event=UserStateEventTypeEnum.UserExchangeInvalidated,
-                            exchange_name=exchange_data.name.lower(),
-                            fallback_exchange=exchange_cache.get_first_available_exchange()
+                        payload=UserStatePayload(
+                            event=UserStateEventTypeEnum.ExchangeInvalidated,
+                            data=UserStateUpdateData(
+                                exchange_name=exchange_data.name.lower(),
+                                fallback_exchange=exchange_cache.get_first_available_exchange()
+                            )
                         )
                     ),
                     context=MessageContext(

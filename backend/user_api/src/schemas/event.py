@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from ..schemas import ExchangeEnum, ExchangeEventData
 from .bot import AppStatusEnum, EventTypeEnum, LogStatusEnum, OrderTypeEnum
 from .enums import EventDataTypeEnum, ExchangeEnum
-from .user_state import UserStateEventPayload
+from .user_state import UserStatePayload
 
 class MessageEventPayload(BaseModel):
     event: EventTypeEnum
@@ -26,17 +26,6 @@ class LogPayload(BaseModel):
     shortOrderType: OrderTypeEnum
     status: LogStatusEnum = LogStatusEnum.Success
 
-class UserStatePayload(BaseModel):
-    isSleeping: Optional[AppStatusEnum] = AppStatusEnum.Sleeping
-    symbol: Optional[str] = None
-    longExchange: Optional[ExchangeEnum] = None
-    longOrderType: Optional[OrderTypeEnum] = None
-    shortExchange: Optional[ExchangeEnum] = None
-    shortOrderType: Optional[OrderTypeEnum] = None
-    status: Optional[AppStatusEnum] = AppStatusEnum.Offline
-    isBotRunning: Optional[bool] = False
-    logs: Optional[list] = []
-
 class MessageMethod(str, Enum):
     User = "user"
     WebsocketConnected = "websocket_connected"
@@ -50,7 +39,7 @@ class MessageWebsocketData(BaseModel):
 class MessageEventData(BaseModel):
     type: EventDataTypeEnum
     timestamp: int
-    payload: Union[MessageEventPayload, UserStatePayload, UserStateEventPayload, LogPayload] = None
+    payload: Union[MessageEventPayload, UserStatePayload, LogPayload] = None
     ws_data: Optional[dict] = None
 
 class MessageContext(BaseModel):

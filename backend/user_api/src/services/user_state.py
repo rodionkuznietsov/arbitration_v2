@@ -2,7 +2,7 @@ import time
 import structlog
 
 from ..cache.exchange import available_exchanges
-from ..schemas import AppStatusEnum, EventDataTypeEnum, ExchangeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStatePayload, UserStateError
+from ..schemas import AppStatusEnum, EventDataTypeEnum, ExchangeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStateEventTypeEnum, UserStateInitializationData, UserStatePayload, UserStateError
 
 log: structlog.PrintLogger = structlog.get_logger()
 
@@ -20,14 +20,17 @@ class UserState:
                     event_data=MessageEventData(
                         type=EventDataTypeEnum.UserState,
                         payload=UserStatePayload(
-                            isSleeping=AppStatusEnum.NotSleeping,
-                            symbol="BTC",
-                            longExchange=ExchangeEnum.Unknown,
-                            longOrderType=OrderTypeEnum.Spot,
+                            event=UserStateEventTypeEnum.InitData,
+                            data=UserStateInitializationData(
+                                isSleeping=AppStatusEnum.NotSleeping,
+                                symbol="BTC",
+                                longExchange=ExchangeEnum.Unknown,
+                                longOrderType=OrderTypeEnum.Spot,
 
-                            shortExchange=ExchangeEnum.Unknown,
-                            shortOrderType=OrderTypeEnum.Spot,
-                            logs=[]
+                                shortExchange=ExchangeEnum.Unknown,
+                                shortOrderType=OrderTypeEnum.Spot,
+                                logs=[]
+                            )
                         ),
                         timestamp=int(time.time())
                     ),
@@ -46,7 +49,7 @@ class UserState:
     ):
         if tg_user_id in self.__user_state__:
             log.info(available_exchanges)
-
+            # Доработать
             if self.__user_state__[tg_user_id].event_data.payload.longExchange == new_exchange:
                 self.__user_state__[tg_user_id].event_data.payload.longExchange = (
                     available_exchanges[0] if available_exchanges

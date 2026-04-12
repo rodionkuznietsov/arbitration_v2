@@ -1,5 +1,7 @@
 from enum import Enum
 
+from backend.user_api.src.schemas import UserStateInitializationData
+
 
 class ExchangeEnum(str, Enum):
     Bybit = "bybit"
@@ -28,4 +30,5 @@ class EventTypeEnum(str, Enum):
 
 
 class UserStateEventTypeEnum(str, Enum):
-    UserExchangeInvalidated = "user_exchange_invalidated"
+    InitData = "init_data"
+    ExchangeInvalidated = "exchange_invalidated"

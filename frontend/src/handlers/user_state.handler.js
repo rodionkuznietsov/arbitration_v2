@@ -4,12 +4,29 @@ export function user_state_handler(
     orderBookStore,
     configStore
 ) {
+    const handlers = {
+        init_data: (data) => {
+            data
+        },
+        exchange_invalidated: (data) => {
+            data
+        },
+        default: (data) => {
+            console.log(`Неизвестное событие: ${data}`)
+        }
+    }
+
+    const handler = handlers[event_data.payload.event] || handlers.default
+    handler(event_data.payload.event)
+
     event_data
     userStateStore
     orderBookStore
     configStore
     alert(JSON.stringify(event_data.payload))
     
+
+
     // if (userStateStore.isBotRunning) {
     //     orderBookStore.updateHeader(
     //         event_data.payload.symbol,
