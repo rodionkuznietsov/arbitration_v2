@@ -16,6 +16,8 @@ class UserState:
     ):
         try:
             if tg_user_id not in self.__user_state__:
+                log.info(f"{{ user_state.push_default }} -> {tg_user_id}")
+
                 self.__user_state__[tg_user_id] = MessageData(
                     event_data=MessageEventData(
                         type=EventDataTypeEnum.UserState,
@@ -29,6 +31,7 @@ class UserState:
 
                                 shortExchange=ExchangeEnum.Unknown,
                                 shortOrderType=OrderTypeEnum.Spot,
+                                isBotRunning=False,
                                 logs=[]
                             )
                         ),
