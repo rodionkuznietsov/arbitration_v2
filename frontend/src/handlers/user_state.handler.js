@@ -5,9 +5,7 @@ export function user_state_handler(
     configStore
 ) {
     const handlers = {
-        init_data: (data) => {
-            data
-        },
+        init_data: (data) => userStateStore.set_init_data(data.payload.data),
         exchange_invalidated: (data) => {
             data
         },

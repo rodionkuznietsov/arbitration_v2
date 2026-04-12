@@ -5,17 +5,36 @@ export const useUserState = defineStore('userState', {
         // Параметры для данных из backend 
         isBotRunning: false,
         symbol: null,
-        longOrderType: null,
-        shortOrderType: null,
         
         longExchange: null,
+        longOrderType: null,
+
         shortExchange: null,
+        shortOrderType: null,
+
         currentStatus: null,
         bybit_api_key: null,
         bybit_api_secret: null
     }),
 
     actions: {
+        set_init_data(data) {
+            this.isBotRunning = data.isBotRunning
+            this.symbol = data.symbol,
+
+            this.longExchange = data.longExchange
+            this.longOrderType = data.longOrderType
+            
+            this.shortExchange = data.shortExchange
+            this.shortOrderType = data.shortOrderType
+
+            this.currentStatus = data.status
+        },
+
+        set_exchange() {
+            
+        }
+
         changeStatus(status) {
             this.currentStatus = status
         },
