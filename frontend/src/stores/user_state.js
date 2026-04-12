@@ -30,7 +30,7 @@ export const useUserState = defineStore('userState', {
 
             // this.currentStatus = data.status
 
-            alert(JSON.stringify(data.event))
+            alert(JSON.stringify(data.status))
         },
 
         set_exchange() {
