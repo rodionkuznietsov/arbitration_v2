@@ -1,7 +1,6 @@
 import asyncio
 import json
 from time import time
-from turtle import st
 
 import websockets
 import os
