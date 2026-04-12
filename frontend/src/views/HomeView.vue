@@ -72,7 +72,7 @@
                 <label for="order" id="form_label">Лонг:</label>
                 <img src="../assets/icons/up.svg" alt="" draggable="false">
               </div>
-              <FormCombobox v-model="userStore.longExchange" :values="configStore.exchanges" :event="'exchange_update'" :market_type="'long'"/>
+              <FormCombobox v-model="userStore.longExchange" :values="configStore.exchanges" :event="'exchange_update'" :market_type="long"/>
             </div>
 
             <div class="form-group">

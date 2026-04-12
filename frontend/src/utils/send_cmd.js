@@ -25,10 +25,10 @@ export async function send_cmd(
 
             if (!response.ok) {
                 const errorData = await response.json()
-                alert(JSON.stringify(errorData))
+                console.log(JSON.stringify(errorData))
             }
         } catch(err) {
-            alert(err)
+            console.log(err)
         }
     }
 }
