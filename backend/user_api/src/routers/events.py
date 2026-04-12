@@ -42,6 +42,9 @@ async def subscribe_events(tg_user_id: int):
         # Возращаем состояние юзера
         if tg_user_id in user_state.exists_users():
             log.info(f"{{ events_router.subscribe.events.init_data }} -> {tg_user_id}")
+            
+            # Обновляем статус на NotSleeping, чтобы в cache.check_active_subscribes не удалялись очереди, если юзер активный
+            user_state.change_sleeping_status(tg_user_id, new_status=AppStatusEnum.NotSleeping)
             push_to_subscribes(user_state.get(tg_user_id))
 
         return StreamingResponse(
