@@ -1,8 +1,5 @@
 from enum import Enum
 
-from backend.user_api.src.schemas import UserStateInitializationData
-
-
 class ExchangeEnum(str, Enum):
     Bybit = "bybit"
     Gate = "gate.io"
