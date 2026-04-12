@@ -27,8 +27,6 @@ export const useConfigStore = defineStore("configStore", {
                     }
                 }
             }
-
-            alert(JSON.stringify(event_data))
         },
         
         addExchange(exchange_data) {
