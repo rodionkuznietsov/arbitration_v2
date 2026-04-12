@@ -57,7 +57,7 @@
 </script>
 
 <template>
-    <div class="page" v-if="authStore.success">
+    <div class="page non-interactive" v-if="authStore.success">
       <AppHeader />
       <div class="scroll">
         <form id="form">
