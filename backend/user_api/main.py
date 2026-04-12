@@ -57,7 +57,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 @app.exception_handler(RequestValidationError)
 async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
-        status_code=exc.status_code,
+        status_code=422,
         content=jsonable_encoder(ResultSchema(
             status_code=exc.status_code,
             success=False,
