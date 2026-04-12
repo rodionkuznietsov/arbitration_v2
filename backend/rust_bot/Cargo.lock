@@ -75,47 +75,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arbitration"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-channel",
- "async-trait",
- "chrono",
- "dashmap",
- "dotenv",
- "flate2",
- "futures-util",
- "get-size",
- "itertools 0.14.0",
- "lru",
- "ordered-float",
- "prost",
- "prost-build",
- "prost-types",
- "rand 0.8.5",
- "regex",
- "reqwest 0.13.1",
- "rustls 0.21.12",
- "rustls-pemfile",
- "serde",
- "serde_json",
- "sqlx",
- "strum",
- "strum_macros",
- "teloxide",
- "tokio",
- "tokio-rustls 0.23.4",
- "tokio-tungstenite",
- "tokio-util",
- "tracing",
- "tracing-subscriber",
- "url",
- "uuid",
- "wiremock",
-]
-
-[[package]]
 name = "assert-json-diff"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2468,6 +2427,47 @@ dependencies = [
  "libc",
  "untrusted 0.9.0",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "rust_bot"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "async-trait",
+ "chrono",
+ "dashmap",
+ "dotenv",
+ "flate2",
+ "futures-util",
+ "get-size",
+ "itertools 0.14.0",
+ "lru",
+ "ordered-float",
+ "prost",
+ "prost-build",
+ "prost-types",
+ "rand 0.8.5",
+ "regex",
+ "reqwest 0.13.1",
+ "rustls 0.21.12",
+ "rustls-pemfile",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "strum",
+ "strum_macros",
+ "teloxide",
+ "tokio",
+ "tokio-rustls 0.23.4",
+ "tokio-tungstenite",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+ "wiremock",
 ]
 
 [[package]]

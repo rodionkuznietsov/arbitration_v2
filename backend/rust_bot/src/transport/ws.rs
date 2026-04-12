@@ -1,7 +1,7 @@
 use std::{collections::{HashMap}, sync::Arc, time::Duration};
 use futures_util::{StreamExt, SinkExt};
 use tokio::{net::TcpListener, sync::{mpsc}};
-use tokio_tungstenite::{accept_async, tungstenite::Message};
+use tokio_tungstenite::{accept_async, tungstenite::{Message, protocol::CloseFrame}};
 use tracing::info;
 use uuid::Uuid;
 
@@ -35,9 +35,11 @@ async fn handle_connection(
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
 
     let new_id = Uuid::new_v4();
-    let (orderbook_tx, mut orderbook_rx) = mpsc::channel::<Arc<WsClientMessage>>(1);
-    let (lines_tx, mut lines_rx) = mpsc::channel::<Arc<WsClientMessage>>(1);
+    let (orderbook_tx, mut orderbook_rx) = mpsc::channel::<Arc<WsClientMessage>>(100);
+    let (lines_tx, mut lines_rx) = mpsc::channel::<Arc<WsClientMessage>>(100);
     let cancel_token = tokio_util::sync::CancellationToken::new();
+
+    let (error_tx, mut error_rx) = mpsc::channel(100);
 
     sender.send(
         ClientAggregatorCmd::Register { 
@@ -69,6 +71,11 @@ async fn handle_connection(
         async move {
             loop {
                 tokio::select! {
+                    Some(error_msg) = error_rx.recv() => {
+                        ws_sender.send(error_msg).await.ok();
+                        cancel_token.cancel();
+                    }
+
                     Some(payload) = lines_rx.recv() => {
                         if let Some(data) = chart_data.get_mut(&ChannelType::Chart) {
                             let key = &payload.result.unique_id;
@@ -123,7 +130,18 @@ async fn handle_connection(
             match msg {
                 Message::Text(msg) => {
                     if let Ok(subscription) = serde_json::from_str::<Subscription>(&msg) {       
-                        println!("{:?}", subscription);
+                        
+                        // Возращаем ошибку
+                        if subscription.long_exchange == subscription.short_exchange {
+                            error_tx.send(Message::Close(
+                                Some(CloseFrame {
+                                    code: tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode::Policy,
+                                    reason: "Не правильно переданы данные. ` long_exchange должен быть не равен short_exchange `".into()
+                                })
+                            )).await.ok();
+                            return ;
+                        }
+
                                          
                         let ticker = Arc::new(format!("{}usdt", subscription.ticker.to_lowercase()));
 
