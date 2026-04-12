@@ -14,7 +14,8 @@ export async function send_cmd(
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ event, 
+                body: JSON.stringify({ 
+                    event: event, 
                     data: {
                         exchange_name: value.toLowerCase(),
                         market_type: market_type.toLowerCase()
@@ -27,7 +28,7 @@ export async function send_cmd(
                 alert(JSON.stringify(errorData))
             }
         } catch(err) {
-            console.log(err)
+            alert(JSON.stringify(err))
         }
     }
 }
