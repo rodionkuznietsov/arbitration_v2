@@ -15,7 +15,7 @@ export function user_state_handler(
     }
 
     const handler = handlers[event_data.payload.event] || handlers.default
-    handler(event_data.payload.event)
+    handler(event_data)
     event_data
     userStateStore
     orderBookStore

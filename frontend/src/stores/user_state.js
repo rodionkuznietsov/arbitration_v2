@@ -19,18 +19,16 @@ export const useUserState = defineStore('userState', {
 
     actions: {
         set_init_data(data) {
-            // this.isBotRunning = data.isBotRunning
-            // this.symbol = data.symbol
+            this.isBotRunning = data.isBotRunning
+            this.symbol = data.symbol
 
-            // this.longExchange = data.longExchange
-            // this.longOrderType = data.longOrderType
+            this.longExchange = data.longExchange
+            this.longOrderType = data.longOrderType
             
-            // this.shortExchange = data.shortExchange
-            // this.shortOrderType = data.shortOrderType
+            this.shortExchange = data.shortExchange
+            this.shortOrderType = data.shortOrderType
 
-            // this.currentStatus = data.status
-
-            alert(JSON.stringify(data.status))
+            this.currentStatus = data.status
         },
 
         set_exchange() {
