@@ -48,7 +48,6 @@ class UserState:
         new_exchange: ExchangeEnum,
     ):
         if tg_user_id in self.__user_state__:
-            log.info(available_exchanges)
             # Доработать
             if self.__user_state__[tg_user_id].event_data.payload.data.longExchange == new_exchange:
                 self.__user_state__[tg_user_id].event_data.payload.data.longExchange = (
