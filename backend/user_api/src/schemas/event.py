@@ -2,9 +2,10 @@ from enum import Enum
 from typing import Optional, Union
 from pydantic import BaseModel
 
-from ..schemas import ExchangeEnum, ExchangeEventData, UserStateEventPayload
+from ..schemas import ExchangeEnum, ExchangeEventData
 from .bot import AppStatusEnum, EventTypeEnum, LogStatusEnum, OrderTypeEnum
 from .enums import EventDataTypeEnum, ExchangeEnum
+from .user_state import UserStateEventPayload
 
 class MessageEventPayload(BaseModel):
     event: EventTypeEnum
