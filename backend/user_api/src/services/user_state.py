@@ -42,6 +42,19 @@ class UserState:
         except Exception as e:
             log.error(f"UserState -> {e}")
     
+    def update_exchange(
+        self,
+        tg_user_id: int,
+        new_exchange: ExchangeEnum,
+        market_type: MarketTypeEnum
+    ):
+        if market_type == MarketTypeEnum.Long:
+            self.__user_state__[tg_user_id].payload.data.longExchange = new_exchange
+        elif market_type == MarketTypeEnum.Short:
+            self.__user_state__[tg_user_id].payload.data.shortExchange = new_exchange
+        else:
+            raise Exception("Неизвестный тип market_type")
+
     def update_exchange_invalidated(
         self,
         tg_user_id: int,

@@ -2,6 +2,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Form, Depends
 
+from ..services import authothicate
+
+from ..core.state import user_state
+
 from ..schemas import ResultSchema, UserStateCmd
 from ..jwt_func import oauth2_scheme
 import structlog
@@ -15,7 +19,9 @@ async def update_user_state(
     data: UserStateCmd,
     token: Annotated[str, Depends(oauth2_scheme)]
 ):
-    log.info(data)
+    
+    tg_user_id = authothicate(token=token)
+    user_state.update_exchange(tg_user_id, data.data.exchange_name, data.data.market_type)
 
     return ResultSchema(
         status_code=200,
