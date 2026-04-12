@@ -17,7 +17,7 @@ export async function send_cmd(
                 body: JSON.stringify({ event, 
                     data: {
                         exchange_name: value.toLowerCase(),
-                        market_type
+                        market_type: market_type.toLowerCase()
                     } 
                 })
             })
