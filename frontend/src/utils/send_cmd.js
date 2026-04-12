@@ -8,11 +8,6 @@ export async function send_cmd(
 ) {
     if (event.toLowerCase() == "exchange_update") {
         try {
-            if (!value || !market_type) {
-                console.log("value или market_type отсуствует")
-                return
-            }
-
             const response = await fetch(`${API_URL}/user/state/update`, {
                 method: 'POST',
                 headers: {

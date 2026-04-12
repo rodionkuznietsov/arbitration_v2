@@ -76,7 +76,7 @@
             </div>
 
             <div class="form-group">
-              <FormCombobox v-model="userStore.longOrderType" :values="market_types"/>
+              <FormCombobox v-model="userStore.longOrderType" :values="market_types" />
             </div>
 
             <div class="form-group">
@@ -96,7 +96,7 @@
                 <label for="order" id="form_label">Шорт:</label>
                 <img class="img_reverse" src="../assets/icons/up.svg" alt="" draggable="false">
               </div>
-              <FormCombobox v-model="userStore.shortExchange" :values="configStore.exchanges"/>
+              <FormCombobox v-model="userStore.shortExchange" :values="configStore.exchanges" :event="'exchange_update'" :market_type="long"/>
             </div>
 
             <div class="form-group">
