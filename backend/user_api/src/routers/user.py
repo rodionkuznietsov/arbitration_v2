@@ -6,7 +6,7 @@ from ..services import authothicate
 
 from ..core.state import user_state
 
-from ..schemas import ResultSchema, UserStateCmd
+from ..schemas import ResultSchema, UserStateCmd, UserStateEventTypeEnum
 from ..jwt_func import oauth2_scheme
 import structlog
 
@@ -21,7 +21,13 @@ async def update_user_state(
 ):
     
     tg_user_id = authothicate(token=token)
-    user_state.update_exchange(tg_user_id, data.data.exchange_name, data.data.market_type)
+
+    try:
+        if data.event == UserStateEventTypeEnum.ExchangeUpdate:
+            user_state.update_exchange(tg_user_id, data.data.exchange_name, data.data.market_type)
+            log.info(f"{{ user_router.update_user_state.update_exchange }}")
+    except Exception as e:
+        log.error(f"{{ user_router.update_user_state.update_exchange }} -> {e}")
 
     return ResultSchema(
         status_code=200,
