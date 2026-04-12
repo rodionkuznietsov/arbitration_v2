@@ -70,9 +70,11 @@ class ExchangeCache:
             exchange_name: str = exchange_data.name.lower()
             if exchange_data.is_available and exchange_name not in self.__available_exchanges__:
                 self.__available_exchanges__.append(exchange_name)
+                log.info(f"{{ exchange_cache.remove_or_insert.insert }} -> {exchange_name}")
             else: 
-                if exchange_name in self.__available_exchanges__:
-                    self.__available_exchanges__.remove(exchange_name)        
+                self.__available_exchanges__.remove(exchange_name) 
+                log.info(f"{{ exchange_cache.remove_or_insert.remove }} -> {exchange_name}")
+
         except Exception as e:
             log.error(f"{{ exchange_cache.update_available_exchanges_in_cache }} -> {e}")
 
