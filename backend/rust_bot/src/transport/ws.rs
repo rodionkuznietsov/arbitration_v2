@@ -136,7 +136,7 @@ async fn handle_connection(
                             error_tx.send(Message::Close(
                                 Some(CloseFrame {
                                     code: tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode::Policy,
-                                    reason: "Не правильно переданы данные. ` long_exchange должен быть не равен short_exchange `".into()
+                                    reason: "invalid_subscirptions".into()
                                 })
                             )).await.ok();
                             return ;
