@@ -29,11 +29,13 @@ export const useUserState = defineStore('userState', {
             this.shortOrderType = data.shortOrderType
 
             this.currentStatus = data.status
+
+            alert(JSON.stringify(data.payload))
         },
 
         set_exchange() {
-            
-        }
+            console.log("")
+        },
 
         changeStatus(status) {
             this.currentStatus = status

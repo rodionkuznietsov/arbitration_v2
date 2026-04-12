@@ -21,7 +21,6 @@ export function user_state_handler(
     userStateStore
     orderBookStore
     configStore
-    alert(JSON.stringify(event_data.payload))
     
 
 
