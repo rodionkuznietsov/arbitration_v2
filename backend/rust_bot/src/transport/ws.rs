@@ -5,7 +5,7 @@ use tokio_tungstenite::{accept_async, tungstenite::{Message, protocol::CloseFram
 use tracing::info;
 use uuid::Uuid;
 
-use crate::{models::{aggregator::{ClientAggregatorUse, JsonPairUniqueId, KeyMarketType}, websocket::{ChannelSubscription, ChannelType, ClientCmd, ClientData, Subscription, WsClientMessage}}, transport::client_aggregator::ClientAggregatorCmd};
+use crate::{models::{aggregator::{ClientAggregatorUse, KeyMarketType}, websocket::{ChannelSubscription, ChannelType, ClientCmd, ClientData, Subscription, WsClientMessage}}, transport::client_aggregator::ClientAggregatorCmd};
 
 const PING_DELAY: u64 = 20; // в секундах
 const WEBSOCKET_NAME: &'static str = "ArbitrationWebsocket";
