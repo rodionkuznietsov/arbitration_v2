@@ -20,7 +20,7 @@ export const useUserState = defineStore('userState', {
     actions: {
         set_init_data(data) {
             this.isBotRunning = data.isBotRunning
-            this.symbol = data.symbol,
+            this.symbol = data.symbol
 
             this.longExchange = data.longExchange
             this.longOrderType = data.longOrderType
