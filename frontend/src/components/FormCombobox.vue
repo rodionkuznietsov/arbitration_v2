@@ -1,9 +1,11 @@
 <script setup>
     import { ref, defineProps, defineEmits, onMounted, onUnmounted } from "vue"
 
+
     const props = defineProps({
         modelValue: String,
-        options: Array
+        options: Array,
+        event: String
     })
 
     const show = ref(false)
@@ -16,6 +18,8 @@
         emit('update:modelValue', value)
         show.value = false
         arrow_class.value = "arrow"
+
+        alert(props.event)
     }
 
     const inside_div = ref({x: 0.0, y: 0.0})

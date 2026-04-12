@@ -10,8 +10,8 @@ log: structlog.PrintLogger = structlog.get_logger()
 
 router = APIRouter()
 
-@router.post("/user/update", tags=["user"])
-async def update_exchanges_keys(
+@router.post("/state/update", tags=["user"])
+async def update_user_state(
     data: UserStateCmd
 ):
     log.info(data)

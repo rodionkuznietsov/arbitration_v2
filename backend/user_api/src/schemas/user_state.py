@@ -32,8 +32,11 @@ class UserStatePayload(BaseModel):
     event: UserStateEventTypeEnum
     data: Union[UserStateInitializationData, UserStateUpdateData]
 
-class UserStateCmd(BaseModel):
-    event: UserStateEventTypeEnum
+class UserStateCmdUpdateExchange(BaseModel):
     exchange_name: ExchangeEnum
     market_type: MarketTypeEnum
+
+class UserStateCmd(BaseModel):
+    event: UserStateEventTypeEnum
+    data: Union[UserStateCmdUpdateExchange]
     timestamp: Optional[int] = int(time.time())
