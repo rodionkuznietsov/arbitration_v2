@@ -17,12 +17,12 @@
       'update:modelValue',
     ])
 
-    const select = (value) => {
+    const select = async (value) => {
         emit('update:modelValue', value)
         show.value = false
         arrow_class.value = "arrow"
 
-        send_cmd(
+        await send_cmd(
           authStore.token,
           props.event,
           {
