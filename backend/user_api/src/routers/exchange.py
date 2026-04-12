@@ -85,33 +85,33 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
     try:
         if not exchange_data.is_available:
             for tg_user_id in user_state.exists_users().keys():
-                market_type = user_state.update_exchange(tg_user_id, exchange_data.name.lower())
+                market_types = user_state.update_exchange_invalidated(tg_user_id, exchange_data.name.lower())
 
-                log.info(market_type)
+                log.info(market_types)
 
-                if market_type is not None:
+                # if market_type is not None:
                     
-                    # Пушим изменения для реального времени
-                    message = MessageData(
-                        event_data=MessageEventData(
-                            type=EventDataTypeEnum.UserState,
-                            timestamp=int(time.time()),
-                            payload=UserStatePayload(
-                                event=UserStateEventTypeEnum.ExchangeInvalidated,
-                                data=UserStateUpdateData(
-                                    exchange_name=exchange_data.name.lower(),
-                                    fallback_exchange=exchange_cache.get_first_available_exchange(),
-                                    market_type=market_type
-                                )
-                            )
-                        ),
-                        context=MessageContext(
-                            method=MessageMethod.User,
-                            tg_user_id=tg_user_id
-                        )
-                    )
+                    # # Пушим изменения для реального времени
+                    # message = MessageData(
+                    #     event_data=MessageEventData(
+                    #         type=EventDataTypeEnum.UserState,
+                    #         timestamp=int(time.time()),
+                    #         payload=UserStatePayload(
+                    #             event=UserStateEventTypeEnum.ExchangeInvalidated,
+                    #             data=UserStateUpdateData(
+                    #                 exchange_name=exchange_data.name.lower(),
+                    #                 fallback_exchange=exchange_cache.get_first_available_exchange(),
+                    #                 market_type=market_type
+                    #             )
+                    #         )
+                    #     ),
+                    #     context=MessageContext(
+                    #         method=MessageMethod.User,
+                    #         tg_user_id=tg_user_id
+                    #     )
+                    # )
 
-                    push_to_subscribes(message)
+                    # push_to_subscribes(message)
 
     except Exception as e:
         log.error(f"{{ exchange_router.update_exchange_availability.user_state.exists_users }} -> {e}")

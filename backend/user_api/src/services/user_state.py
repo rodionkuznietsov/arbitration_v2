@@ -42,29 +42,25 @@ class UserState:
         except Exception as e:
             log.error(f"UserState -> {e}")
     
-    def update_exchange(
+    def update_exchange_invalidated(
         self,
         tg_user_id: int,
         new_exchange: ExchangeEnum,
     ):
-        if tg_user_id in self.__user_state__:
-            # Доработать
-            if self.__user_state__[tg_user_id].event_data.payload.data.longExchange == new_exchange:
-                self.__user_state__[tg_user_id].event_data.payload.data.longExchange = (
-                    exchange_cache.get_first_available_exchange() if exchange_cache
-                    else ExchangeEnum.Unknown
-                ) 
+        """Делает проверку на выбранную ими биржу, если она являеться не валидной, заменяет её на первую или последнюю доступную"""
 
-                return MarketTypeEnum.Long
+        if tg_user_id in self.__user_state__:
+            types = []
+            
+            if self.__user_state__[tg_user_id].event_data.payload.data.longExchange == new_exchange:
+                self.__user_state__[tg_user_id].event_data.payload.data.longExchange = exchange_cache.get_first_available_exchange()
+                types.append(MarketTypeEnum.Long)
 
             if self.__user_state__[tg_user_id].event_data.payload.data.shortExchange == new_exchange:
-                self.__user_state__[tg_user_id].event_data.payload.data.shortExchange = (
-                    exchange_cache.get_last_available_exchange() if exchange_cache.get_size() > 1
-                    else self.__user_state__[tg_user_id].event_data.payload.data.longExchange
-                ) 
+                self.__user_state__[tg_user_id].event_data.payload.data.shortExchange = exchange_cache.get_last_available_exchange()
+                types.append(MarketTypeEnum.Short)
 
-                return MarketTypeEnum.Short
-
+            return types
     def get(
         self, 
         tg_user_id: int
