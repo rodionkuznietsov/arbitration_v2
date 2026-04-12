@@ -49,7 +49,7 @@ class ExchangeCache:
         
     def get_last_available_exchange(self):
         if self.get_size() > 1:
-            return self.__available_exchanges__[self.get_size()-1]
+            return self.__available_exchanges__[self.get_size()]
         else:
             return ExchangeEnum.Unknown
 
