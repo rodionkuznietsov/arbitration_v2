@@ -2,6 +2,7 @@ import asyncio
 from urllib.request import Request
 
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
@@ -42,7 +43,7 @@ async def start_page():
         message="Api is working"
     )
 
-@app.exception_handler(HTTPException)
+@app.exception_handler(HTTPException, RequestValidationError)
 async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
