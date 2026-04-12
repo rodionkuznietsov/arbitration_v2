@@ -8,7 +8,7 @@ export function user_state_handler(
     userStateStore
     orderBookStore
     configStore
-    alert(event_data.payload)
+    alert(JSON.stringify(event_data.payload))
     
     // if (userStateStore.isBotRunning) {
     //     orderBookStore.updateHeader(
