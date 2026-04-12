@@ -55,13 +55,13 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 @app.exception_handler(RequestValidationError)
-async def http_exception_handler(request: Request, exc: HTTPException):
+async def http_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=422,
         content=jsonable_encoder(ResultSchema(
             status_code=exc.status_code,
             success=False,
-            message=exc.detail,
+            message=f"Получены не валидные данные: {exc.args}",
         ))
     )
 
