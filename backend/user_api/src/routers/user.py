@@ -12,6 +12,7 @@ router = APIRouter()
 
 @router.post("/state/update", tags=["user"])
 async def update_user_state(
-    data: UserStateCmd
+    data: UserStateCmd,
+    token: Annotated[str, Depends(oauth2_scheme)]
 ):
     log.info(data)
