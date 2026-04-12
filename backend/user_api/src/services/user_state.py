@@ -49,9 +49,9 @@ class UserState:
         market_type: MarketTypeEnum
     ):
         if market_type == MarketTypeEnum.Long:
-            self.__user_state__[tg_user_id].payload.data.longExchange = new_exchange
+            self.__user_state__[tg_user_id].event_data.payload.data.longExchange = new_exchange
         elif market_type == MarketTypeEnum.Short:
-            self.__user_state__[tg_user_id].payload.data.shortExchange = new_exchange
+            self.__user_state__[tg_user_id].event_data.payload.data.shortExchange = new_exchange
         else:
             raise Exception("Неизвестный тип market_type")
 
