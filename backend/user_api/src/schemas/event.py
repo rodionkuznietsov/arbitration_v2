@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional, Union
 from pydantic import BaseModel
 
-from ..schemas import ExchangeEnum, ExchangeEventData
+from ..schemas import ExchangeEnum, ExchangeEventData, WebsocketClosedContext
 from .bot import AppStatusEnum, EventTypeEnum, LogStatusEnum, OrderTypeEnum
 from .enums import EventDataTypeEnum, ExchangeEnum
 from .user_state import UserStatePayload
@@ -48,4 +48,4 @@ class MessageContext(BaseModel):
 
 class MessageData(BaseModel):
     event_data: Union[MessageEventData, ExchangeEventData]
-    context: Optional[MessageContext] = None
+    context: Union[MessageContext, WebsocketClosedContext] = None

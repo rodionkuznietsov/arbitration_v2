@@ -1,6 +1,7 @@
 import asyncio
 import json
 from time import time
+from turtle import st
 
 import websockets
 import os
@@ -9,7 +10,7 @@ import structlog
 
 from .services.user_state import UserState
 from .schemas.bot import OrderTypeEnum
-from .schemas import MessageData, MessageMethod
+from .schemas import MessageData, MessageMethod, WebSocketStatuEnum, WebsocketClosedContext
 from .cache.cache import push_to_subscribes
 
 from .schemas import (
@@ -147,7 +148,29 @@ async def run_ws(
             attempt += 1
             await asyncio.sleep(3)
         except Exception as e:
-            log.error(f"RustWebsocket -> {e}")
+            message = MessageData(
+                event_data=MessageEventData(
+                    type=EventDataTypeEnum.Websocket,
+                    timestamp=int(time()),
+                    payload=MessageEventPayload(
+                        event=EventTypeEnum.BotStop,
+                        symbol=symbol,
+                        longExchange=long_exchange,
+                        longOrderType=OrderTypeEnum.Spot,
+                        shortExchange=short_exchange,
+                        shortOrderType=OrderTypeEnum.Spot,
+                        isBotRunning=False,
+                        status=AppStatusEnum.Offline
+                    )
+                ),
+                context=WebsocketClosedContext(
+                    tg_user_id=tg_user_id,
+                    status=WebSocketStatuEnum.Error
+                )
+            )
+            push_to_subscribes(message)
+
+            log.info(f"{{ rust_websocket.error }} -> принудительно остановлен")
         except asyncio.CancelledError: # Юзер отключил WS
             message = MessageData(
                 event_data=MessageEventData(
