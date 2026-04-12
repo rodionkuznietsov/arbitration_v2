@@ -26,5 +26,6 @@ from .user_state import (
     UserStateError,
     UserStatePayload,
     UserStateInitializationData,
-    UserStateUpdateData
+    UserStateUpdateData,
+    UserStateCmd
 )

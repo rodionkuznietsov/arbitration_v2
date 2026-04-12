@@ -1,3 +1,4 @@
+import time
 from typing import Optional, Union
 
 from pydantic import BaseModel
@@ -30,3 +31,9 @@ class UserStateUpdateData(BaseModel):
 class UserStatePayload(BaseModel):
     event: UserStateEventTypeEnum
     data: Union[UserStateInitializationData, UserStateUpdateData]
+
+class UserStateCmd(BaseModel):
+    event: UserStateEventTypeEnum
+    exchange_name: ExchangeEnum
+    market_type: MarketTypeEnum
+    timestamp: Optional[int] = int(time.time())

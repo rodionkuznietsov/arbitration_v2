@@ -89,7 +89,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
 
                 log.info(market_types)
 
-                # if market_type is not None:
+                # if len(market_types) > 0:
                     
                     # # Пушим изменения для реального времени
                     # message = MessageData(

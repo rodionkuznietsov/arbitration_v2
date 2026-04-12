@@ -33,3 +33,4 @@ class EventTypeEnum(str, Enum):
 class UserStateEventTypeEnum(str, Enum):
     InitData = "init_data"
     ExchangeInvalidated = "exchange_invalidated"
+    ExchangeUpdate = "exchange_update"
