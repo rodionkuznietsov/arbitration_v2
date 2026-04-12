@@ -87,7 +87,10 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
             for tg_user_id in user_state.exists_users().keys():
                 market_type = user_state.update_exchange(tg_user_id, exchange_data.name.lower())
 
+                log.info(market_type)
+
                 if market_type is not None:
+                    
                     # Пушим изменения для реального времени
                     message = MessageData(
                         event_data=MessageEventData(
