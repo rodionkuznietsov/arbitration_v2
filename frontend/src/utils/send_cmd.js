@@ -15,6 +15,6 @@ export async function send_cmd(
             body: JSON.stringify({ event, data })
         })
     } catch(err) {
-        console.log('Ошибка при отправке команды', err)
+        alert(`Ошибка при отправке команды ${err}`)
     }
 }
