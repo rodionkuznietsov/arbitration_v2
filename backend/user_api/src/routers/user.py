@@ -20,7 +20,7 @@ async def update_user_state(
     token: Annotated[str, Depends(oauth2_scheme)]
 ):
     
-    tg_user_id = authothicate(token=token)
+    tg_user_id = int(authothicate(token))
 
     try:
         if data.event == UserStateEventTypeEnum.ExchangeUpdate:
