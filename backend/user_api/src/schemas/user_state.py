@@ -38,5 +38,4 @@ class UserStateCmdUpdateExchange(BaseModel):
 
 class UserStateCmd(BaseModel):
     event: UserStateEventTypeEnum
-    data: Union[UserStateCmdUpdateExchange]
-    timestamp: Optional[int] = int(time.time())
+    data: UserStateCmdUpdateExchange
