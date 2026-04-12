@@ -43,7 +43,18 @@ async def start_page():
         message="Api is working"
     )
 
-@app.exception_handler(HTTPException, RequestValidationError)
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=jsonable_encoder(ResultSchema(
+            status_code=exc.status_code,
+            success=False,
+            message=exc.detail,
+        ))
+    )
+
+@app.exception_handler(RequestValidationError)
 async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
