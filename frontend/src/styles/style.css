@@ -45,7 +45,7 @@
 --log-table-bg-color: #DFDFDF80;
 }
 
-.disabled {
+.non-interactive {
     user-select: none;
     pointer-events: none;
 }
