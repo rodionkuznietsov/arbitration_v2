@@ -1,6 +1,7 @@
 from enum import Enum
 from pydantic import BaseModel
 
+
 class WebSocketActionEnum(str, Enum):
     Subscribe = "subscribe"
     UnSubscribe = "unsubscribe"

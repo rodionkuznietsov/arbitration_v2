@@ -17,18 +17,11 @@ def push_to_subscribes(
     try:
         if message.context is not None:
             user_queues = subscribes[message.context.tg_user_id]
-            if message.context.method == MessageMethod.WebsocketErrorConnection:
-                for queues in user_queues["error_queue"]:
-                    try:
-                        queues.put_nowait(message.event_data)
-                    except asyncio.QueueFull:
-                        pass
-            else:
-                for queues in user_queues["success_queue"]:
-                    try:
-                        queues.put_nowait(message.event_data)
-                    except asyncio.QueueFull:
-                        pass
+            for queues in user_queues["success_queue"]:
+                try:
+                    queues.put_nowait(message.event_data)
+                except asyncio.QueueFull:
+                    pass
         else: 
             # Пушим обновления всем подписчикам
             for subscribe in subscribes.values():

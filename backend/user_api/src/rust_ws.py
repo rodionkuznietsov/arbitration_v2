@@ -164,7 +164,7 @@ async def run_ws(
                 ),
                 context=WebsocketClosedContext(
                     tg_user_id=tg_user_id,
-                    status=WebSocketStatuEnum.Error
+                    status=WebSocketStatuEnum.Error,
                 )
             )
             push_to_subscribes(message)
