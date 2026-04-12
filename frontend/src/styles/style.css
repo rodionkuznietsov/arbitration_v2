@@ -45,6 +45,11 @@
 --log-table-bg-color: #DFDFDF80;
 }
 
+.disabled {
+    user-select: none;
+    pointer-events: none;
+}
+
 .page {
 width: 100%;
 height: 100%;
