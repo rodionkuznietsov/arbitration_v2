@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 from pydantic import BaseModel
 
-from .enums import EventTypeEnum, ExchangeEnum, UserStateEventTypeEnum
+from .enums import EventTypeEnum, ExchangeEnum, MarketTypeEnum, UserStateEventTypeEnum
 from .event import AppStatusEnum, EventDataTypeEnum, OrderTypeEnum
 
 class UserStateError(Exception):
@@ -25,6 +25,7 @@ class UserStateInitializationData(BaseModel):
 class UserStateUpdateData(BaseModel):
     exchange_name: ExchangeEnum
     fallback_exchange: ExchangeEnum
+    market_type: MarketTypeEnum
 
 class UserStatePayload(BaseModel):
     event: UserStateEventTypeEnum

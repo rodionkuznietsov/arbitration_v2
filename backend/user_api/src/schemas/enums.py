@@ -7,6 +7,10 @@ class ExchangeEnum(str, Enum):
     Unknown = "unknown"
 
 
+class MarketTypeEnum(str, Enum):
+    Long = "long"
+    Short = "short"
+
 class ExchangeEventEnum(str, Enum):
     AddExchange = "add_exchange"
     UpdateExchange = "update_exchange"

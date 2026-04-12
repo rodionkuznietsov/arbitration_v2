@@ -2,7 +2,7 @@ import time
 import structlog
 
 from ..cache.exchange import available_exchanges
-from ..schemas import AppStatusEnum, EventDataTypeEnum, ExchangeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStateEventTypeEnum, UserStateInitializationData, UserStatePayload, UserStateError
+from ..schemas import AppStatusEnum, EventDataTypeEnum, ExchangeEnum, MarketTypeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStateEventTypeEnum, UserStateInitializationData, UserStatePayload, UserStateError
 
 log: structlog.PrintLogger = structlog.get_logger()
 
@@ -56,11 +56,15 @@ class UserState:
                     else ExchangeEnum.Unknown
                 ) 
 
-            elif self.__user_state__[tg_user_id].event_data.payload.data.shortExchange == new_exchange:
+                return MarketTypeEnum.Long
+
+            if self.__user_state__[tg_user_id].event_data.payload.data.shortExchange == new_exchange:
                 self.__user_state__[tg_user_id].event_data.payload.data.shortExchange = (
                     available_exchanges[1] if len(available_exchanges) > 1
                     else self.__user_state__[tg_user_id].event_data.payload.data.longExchange
                 ) 
+
+                return MarketTypeEnum.Short
 
     def get(
         self, 

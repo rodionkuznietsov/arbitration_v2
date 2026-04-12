@@ -1,7 +1,7 @@
 import time
 from fastapi import APIRouter, HTTPException
 
-from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangeMessageResponse, ExchangePayload, MessageContext, MessageData, ExchangeEventEnum, MessageEventData, MessageMethod, UserStatePayload, UserStateEventTypeEnum, UserStateUpdateData
+from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangeMessageResponse, ExchangePayload, MarketTypeEnum, MessageContext, MessageData, ExchangeEventEnum, MessageEventData, MessageMethod, UserStatePayload, UserStateEventTypeEnum, UserStateUpdateData
 from ..cache.exchange import available_exchanges, exchange_cache
 from ..cache.cache import push_to_subscribes
 from ..core.state import user_state
@@ -85,7 +85,7 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
     try:
         if not exchange_data.is_available:
             for tg_user_id in user_state.exists_users().keys():
-                user_state.update_exchange(tg_user_id, exchange_data.name.lower())
+                market_type = user_state.update_exchange(tg_user_id, exchange_data.name.lower())
 
                 # Пушим изменения для реального времени
                 message = MessageData(
@@ -96,7 +96,8 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
                             event=UserStateEventTypeEnum.ExchangeInvalidated,
                             data=UserStateUpdateData(
                                 exchange_name=exchange_data.name.lower(),
-                                fallback_exchange=exchange_cache.get_first_available_exchange()
+                                fallback_exchange=exchange_cache.get_first_available_exchange(),
+                                market_type=market_type
                             )
                         )
                     ),

@@ -7,7 +7,8 @@ from .exchange import (
 
 from .enums import (
     ExchangeEventEnum,
-    UserStateEventTypeEnum
+    UserStateEventTypeEnum,
+    MarketTypeEnum
 )
 
 from .result import (

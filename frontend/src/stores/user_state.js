@@ -18,7 +18,7 @@ export const useUserState = defineStore('userState', {
     }),
 
     actions: {
-        set_init_data(data) {
+        set_init_data(data, orderBookStore) {
             this.isBotRunning = data.isBotRunning
             this.symbol = data.symbol
 
@@ -29,10 +29,20 @@ export const useUserState = defineStore('userState', {
             this.shortOrderType = data.shortOrderType
 
             this.currentStatus = data.status
+
+            if (this.isBotRunning) {
+                orderBookStore.updateHeader(
+                    data.symbol,
+                    data.longExchange,
+                    data.longOrderType,
+                    data.shortExchange,
+                    data.shortOrderType
+                )
+            }
         },
 
-        set_exchange() {
-            console.log("")
+        set_exchange(data) {
+            alert(JSON.stringify(data))
         },
 
         changeStatus(status) {

@@ -5,33 +5,16 @@ export function user_state_handler(
     configStore
 ) {
     const handlers = {
-        init_data: (data) => userStateStore.set_init_data(data.payload.data),
-        exchange_invalidated: (data) => {
-            console.log(data)
-        },
+        init_data: (data) => userStateStore.set_init_data(data.payload.data, orderBookStore),
+        exchange_invalidated: (data) => userStateStore.set_exchange(data.payload.data),
         default: (data) => {
             console.log(`Неизвестное событие: ${data}`)
         }
     }
 
+    configStore
     const handler = handlers[event_data.payload.event] || handlers.default
     handler(event_data)
-    event_data
-    userStateStore
-    orderBookStore
-    configStore
-    
-
-
-    // if (userStateStore.isBotRunning) {
-    //     orderBookStore.updateHeader(
-    //         event_data.payload.symbol,
-    //         event_data.payload.longExchange,
-    //         event_data.payload.longOrderType,
-    //         event_data.payload.shortExchange,
-    //         event_data.payload.shortOrderType
-    //     )
-    // }
 
     // userStateStore.symbol = event_data.payload.symbol
     // userStateStore.longExchange = event_data.payload.longExchange != "unknown" ? event_data.payload.longExchange : configStore.exchanges[0] ? configStore.exchanges[0] : "Нет доступной биржи"
