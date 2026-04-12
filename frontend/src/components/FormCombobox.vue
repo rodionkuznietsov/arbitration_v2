@@ -1,6 +1,9 @@
 <script setup>
+    import { useAuthStore } from "@/stores/auth"
+    import { send_cmd } from "@/utils/send_cmd"
     import { ref, defineProps, defineEmits, onMounted, onUnmounted } from "vue"
 
+    const authStore = useAuthStore()
 
     const props = defineProps({
         modelValue: String,
@@ -19,7 +22,14 @@
         show.value = false
         arrow_class.value = "arrow"
 
-        alert(props.event)
+        send_cmd(
+          authStore.token,
+          props.event,
+          {
+            exchange_name: value,
+            market_type: 'long'
+          }
+        )
     }
 
     const inside_div = ref({x: 0.0, y: 0.0})
