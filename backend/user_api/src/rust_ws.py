@@ -169,7 +169,7 @@ async def run_ws(
             )
             push_to_subscribes(message)
 
-            log.info(f"{{ rust_websocket.error }} -> принудительно остановлен")
+            log.error(f"{{ rust_websocket.error }} -> принудительно остановлен")
         except asyncio.CancelledError: # Юзер отключил WS
             message = MessageData(
                 event_data=MessageEventData(
