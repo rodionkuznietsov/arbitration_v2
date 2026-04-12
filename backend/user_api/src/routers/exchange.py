@@ -1,7 +1,7 @@
 import time
 from fastapi import APIRouter, HTTPException
 
-from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangeMessageResponse, ExchangePayload, MessageData, ExchangeEventEnum
+from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangeMessageResponse, ExchangePayload, MessageContext, MessageData, ExchangeEventEnum, MessageEventData, MessageMethod, UserStateEventPayload, UserStateEventTypeEnum
 from ..cache.exchange import available_exchanges, exchange_cache
 from ..cache.cache import push_to_subscribes
 from ..core.state import user_state
@@ -66,15 +66,6 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
     
     exchange_cache.remove_or_insert(exchange_data=exchange_data)
 
-    # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
-    try:
-        if not exchange_data.is_available:
-            for tg_user_id in user_state.exists_users().keys():
-                user_state.update_exchange(tg_user_id, exchange_data.name.lower())
-
-    except Exception as e:
-        log.error(f"{{ exchange_router.update_exchange_availability.user_state.exists_users }} -> {e}")
-
     # Пушим событие юзерам, чтобы их ui обновился
     message = MessageData(
         event_data=ExchangeEventData(
@@ -89,6 +80,34 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
     )
     
     push_to_subscribes(message)
+
+    # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
+    try:
+        if not exchange_data.is_available:
+            for tg_user_id in user_state.exists_users().keys():
+                user_state.update_exchange(tg_user_id, exchange_data.name.lower())
+
+                # Пушим изменения для реального времени
+                message = MessageData(
+                    event_data=MessageEventData(
+                        type=EventDataTypeEnum.UserState,
+                        timestamp=int(time.time()),
+                        payload=UserStateEventPayload(
+                            event=UserStateEventTypeEnum.UserExchangeInvalidated,
+                            exchange_name=exchange_data.name.lower(),
+                            fallback_exchange=exchange_cache.get_first_available_exchange()
+                        )
+                    ),
+                    context=MessageContext(
+                        method=MessageMethod.User,
+                        tg_user_id=tg_user_id
+                    )
+                )
+
+                push_to_subscribes(message)
+
+    except Exception as e:
+        log.error(f"{{ exchange_router.update_exchange_availability.user_state.exists_users }} -> {e}")
 
     return ResultSchema(
         status_code=200,

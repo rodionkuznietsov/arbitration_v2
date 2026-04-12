@@ -1,5 +1,5 @@
 from ..db import AsyncDatabase, database
-from ..schemas import ExchangeSchema
+from ..schemas import ExchangeEnum, ExchangeSchema
 available_exchanges = {}
 
 import structlog
@@ -40,6 +40,12 @@ class ExchangeCache:
             log.error(f"{{ exchange_service.get_available_exchanges_service }} -> {e}")
     
         return self.__available_exchanges__
+
+    def get_first_available_exchange(self):
+        if self.get_size() > 0:
+            return self.__available_exchanges__[0]
+        else:
+            return ExchangeEnum.Unknown
 
     def get_size(self):
         return len(self.__available_exchanges__)

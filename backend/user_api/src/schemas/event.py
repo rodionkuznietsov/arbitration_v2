@@ -26,7 +26,6 @@ class LogPayload(BaseModel):
     status: LogStatusEnum = LogStatusEnum.Success
 
 class UserStatePayload(BaseModel):
-    type: EventDataTypeEnum = EventDataTypeEnum.UserState
     isSleeping: Optional[AppStatusEnum] = AppStatusEnum.Sleeping
     symbol: Optional[str] = None
     longExchange: Optional[ExchangeEnum] = None
