@@ -15,7 +15,7 @@ export async function send_cmd(
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ 
-                    event: event, 
+                    event: event.toLowerCase(), 
                     data: {
                         exchange_name: value?.toLowerCase(),
                         market_type: market_type?.toLowerCase()
