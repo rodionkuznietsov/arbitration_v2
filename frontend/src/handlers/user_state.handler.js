@@ -4,19 +4,19 @@ export function user_state_handler(
     orderBookStore,
     configStore
 ) {
-    const handlers = {
-        init_data: (data) => userStateStore.set_init_data(data.payload.data),
-        exchange_invalidated: (data) => {
-            data
-        },
-        default: (data) => {
-            console.log(`Неизвестное событие: ${data}`)
-        }
-    }
+    // const handlers = {
+    //     init_data: (data) => userStateStore.set_init_data(data.payload.data),
+    //     exchange_invalidated: (data) => {
+    //         data
+    //     },
+    //     default: (data) => {
+    //         console.log(`Неизвестное событие: ${data}`)
+    //     }
+    // }
 
-    const handler = handlers[event_data.payload.event] || handlers.default
-    handler(event_data.payload.event)
-
+    // const handler = handlers[event_data.payload.event] || handlers.default
+    // handler(event_data.payload.event)
+    alert(JSON.stringify(event_data.payload))
     event_data
     userStateStore
     orderBookStore
