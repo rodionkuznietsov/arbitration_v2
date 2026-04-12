@@ -61,7 +61,7 @@ async def http_exception_handler(request: Request, exc: RequestValidationError):
         content=jsonable_encoder(ResultSchema(
             status_code=422,
             success=False,
-            message=f"Получены не валидные данные: {exc.args}",
+            message=f"Получены не валидные данные",
         ))
     )
 
