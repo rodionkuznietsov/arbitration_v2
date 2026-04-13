@@ -16,7 +16,6 @@ class NotifyMassager:
         self,
         tg_user_id: int
     ):
-        log.info(user_state.get(tg_user_id))
         push_to_subscribes(user_state.get(tg_user_id))
 
     def push_websocket_message(
