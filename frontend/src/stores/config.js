@@ -31,6 +31,10 @@ export const useConfigStore = defineStore("configStore", {
         
         addExchange(exchange_data) {
             alert(`AddExchange: ${JSON.stringify(exchange_data)}`)
+        },
+
+        clearExchanges() {
+            this.exchanges = []
         }
     }
 })

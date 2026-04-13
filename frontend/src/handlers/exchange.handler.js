@@ -5,6 +5,7 @@ export function exchange_handler(
     const handlers = {
         update_exchange: (data) => configStore.updateExchange(data),
         add_exchange: (data) => configStore.addExchange(data),
+        clear_exchanges: () => configStore.clearExchanges(),
         default: (data) => {
             console.log(`Неизвестное событие: ${data}`)
         }

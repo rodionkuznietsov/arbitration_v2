@@ -43,6 +43,6 @@ class NotifyMassager:
 
             push_to_subscribes(message=message)
 
-            log.info(f"{{ notify_manager.push_exchange_message.{event} }} -> очищено")
+            log.info(f"{{ notify_manager.push_exchange_message.{event} }} -> успешно")
         
 notify_manager = NotifyMassager()
