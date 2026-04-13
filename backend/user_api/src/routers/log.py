@@ -23,7 +23,7 @@ router = APIRouter()
 ws_task = {}
 
 @router.post("/add/log", response_model=ResultSchema, tags=["logs"])
-async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_scheme)], ):
+async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_scheme)]):
     global log_deque
 
     tg_user_id = int(authothicate(token))

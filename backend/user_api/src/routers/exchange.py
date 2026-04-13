@@ -6,6 +6,8 @@ from ..cache.exchange import available_exchanges, exchange_cache
 from ..cache.cache import push_to_subscribes
 from ..core.state import user_state
 
+from ..services.notify_manager import notify_manager
+
 from ..db import database
 from ..schemas.exchange import ExchangeSchema
 from ..schemas.result import ResultSchema
@@ -33,19 +35,24 @@ async def add_exchange(exchange_data: ExchangeSchema):
     if not added:
         raise HTTPException(status_code=400, detail=f"Биржа {exchange_data.name} уже существует в базе данных.")
 
-    message = MessageData(
-        event_data=ExchangeEventData(
-            type=EventDataTypeEnum.Exchange,
-            payload=ExchangePayload(
-                event=ExchangeEventEnum.AddExchange,
-                exchange_name=exchange_data.name.lower(),
-                is_available=exchange_data.is_available
-            ),
-            timestamp=int(time.time())
-        )
-    )
+    # message = MessageData(
+    #     event_data=ExchangeEventData(
+    #         type=EventDataTypeEnum.Exchange,
+    #         payload=ExchangePayload(
+    #             event=ExchangeEventEnum.AddExchange,
+    #             exchange_name=exchange_data.name.lower(),
+    #             is_available=exchange_data.is_available
+    #         ),
+    #         timestamp=int(time.time())
+    #     )
+    # )
 
-    push_to_subscribes(message)
+    # push_to_subscribes(message)
+
+    notify_manager.push_exchange_message(
+        exchange_data=exchange_data,
+        event=ExchangeEventEnum.AddExchange
+    )
 
     return ResultSchema(
         status_code=200,
