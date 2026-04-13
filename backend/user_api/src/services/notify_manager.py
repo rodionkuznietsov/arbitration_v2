@@ -36,7 +36,7 @@ class NotifyMassager:
                         status=AppStatusEnum.Online,
                         isBotRunning=True
                     ),
-                    timestamp=int(time()),
+                    timestamp=int(time.time()),
                     ws_data=data
                 ),
                 context=MessageContext(
