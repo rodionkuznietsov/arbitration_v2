@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 import structlog
 
-from backend.user_api.src.routers.exchange import notify_manager
+from .services.notify_manager import notify_manager
 
 from .services.user_state import UserState
 from .schemas.bot import OrderTypeEnum
