@@ -7,8 +7,6 @@ export function ws_handler(
 
     userStateStore.changeStatus(event_data.payload.status)
     userStateStore.isBotRunning = event_data.payload.isBotRunning
-
-    alert(userStateStore.isBotRunning)
     
     // Устанавливаем валидные данные для отображения стакана
     if (userStateStore.isBotRunning) {
