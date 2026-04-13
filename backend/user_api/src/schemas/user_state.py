@@ -36,8 +36,8 @@ class BotConfigData(BaseModel):
     shortOrderType: Optional[OrderTypeEnum] = None
 
 class BotConfig(BaseModel):
-    active: Optional[BotConfigData] = None
-    draft: Optional[BotConfigData] = None
+    active: BotConfigData
+    draft: BotConfigData
 
 class UserStatePayload(BaseModel):
     event: UserStateEventTypeEnum

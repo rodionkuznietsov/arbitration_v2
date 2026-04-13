@@ -2,7 +2,7 @@ import time
 import structlog
 
 from ..cache.exchange import exchange_cache
-from ..schemas import AppStatusEnum, BotConfig, EventDataTypeEnum, ExchangeEnum, MarketTypeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStateEventTypeEnum, UserStateInitializationData, UserStatePayload, UserStateError
+from ..schemas import AppStatusEnum, BotConfig, BotConfigData, EventDataTypeEnum, ExchangeEnum, MarketTypeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStateEventTypeEnum, UserStateInitializationData, UserStatePayload, UserStateError
 
 log: structlog.PrintLogger = structlog.get_logger()
 
@@ -35,7 +35,8 @@ class UserState:
                                 logs=[]
                             ),
                             bot_config=BotConfig(
-                                active=None
+                                active=BotConfigData(),
+                                draft=BotConfigData()
                             )
                         ),
                         timestamp=int(time.time())
