@@ -14,11 +14,6 @@ class UserStateError(Exception):
 
 class UserStateInitializationData(BaseModel):
     isSleeping: Optional[AppStatusEnum] = AppStatusEnum.Sleeping
-    # symbol: Optional[str] = None
-    # longExchange: Optional[ExchangeEnum] = None
-    # longOrderType: Optional[OrderTypeEnum] = None
-    # shortExchange: Optional[ExchangeEnum] = None
-    # shortOrderType: Optional[OrderTypeEnum] = None
     status: Optional[AppStatusEnum] = AppStatusEnum.Offline
     isBotRunning: Optional[bool] = False
     logs: Optional[list] = []
@@ -48,6 +43,9 @@ class UserStateCmdUpdateExchange(BaseModel):
     exchange_name: ExchangeEnum
     market_type: MarketTypeEnum
 
+class UserStateCmdUpdateSymbol(BaseModel):
+    symbol: str
+
 class UserStateCmd(BaseModel):
     event: UserStateEventTypeEnum
-    data: UserStateCmdUpdateExchange
+    data: Union[UserStateCmdUpdateExchange, UserStateCmdUpdateSymbol]

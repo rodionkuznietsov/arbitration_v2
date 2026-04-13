@@ -9,6 +9,7 @@
     import { useAuthStore } from '@/stores/auth';
     import { API_URL } from '@/config';
     import { useConfigStore } from '@/stores/config';
+import { send_cmd } from '@/utils/send_cmd';
 
     const authStore = useAuthStore()
     const userStore = useUserState()
@@ -32,8 +33,9 @@
 
     const chartStore = useChartStore()
 
-    function filterInput(event) {
+    async function filterInput(event) {
       userStore.symbol = event.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+      await send_cmd(authStore.token, "symbol_update", "", userStore.symbol)
     }
 
     async function start() {

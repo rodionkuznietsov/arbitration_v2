@@ -25,12 +25,6 @@ class UserState:
                             event=UserStateEventTypeEnum.InitData,
                             data=UserStateInitializationData(
                                 isSleeping=AppStatusEnum.NotSleeping,
-                                # symbol="BTC",
-                                # longExchange=ExchangeEnum.Unknown,
-                                # longOrderType=OrderTypeEnum.Spot,
-
-                                # shortExchange=ExchangeEnum.Unknown,
-                                # shortOrderType=OrderTypeEnum.Spot,
                                 isBotRunning=False,
                                 logs=[]
                             ),
@@ -73,6 +67,13 @@ class UserState:
             self.__user_state__[tg_user_id].event_data.payload.bot_config.draft.shortExchange = new_exchange
         else:
             raise Exception("Неизвестный тип market_type")
+
+    def update_draft_symbol(
+        self,
+        tg_user_id,
+        new_symbol
+    ):
+        self.__user_state__[tg_user_id].event_data.payload.bot_config.draft.symbol = new_symbol
 
     def update_exchange_invalidated(
         self,

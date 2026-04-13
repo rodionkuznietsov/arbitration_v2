@@ -30,5 +30,28 @@ export async function send_cmd(
         } catch(err) {
             console.log(err)
         }
+    } else if (event.toLowerCase() == "symbol_update") {
+        try {
+            const response = await fetch(`${API_URL}/user/state/update`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    event: event.toLowerCase(), 
+                    data: {
+                        symbol: value?.toLowerCase()
+                    } 
+                })
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                console.log(JSON.stringify(errorData))
+            }
+        } catch(err) {
+            console.log(err)
+        } 
     }
 }

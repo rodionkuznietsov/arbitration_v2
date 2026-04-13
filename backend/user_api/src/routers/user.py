@@ -29,6 +29,13 @@ async def update_user_state(
     except Exception as e:
         log.error(f"{{ user_router.update_user_state.update_exchange }} -> {e}")
 
+    try:
+        if data.event == UserStateEventTypeEnum.SymbolUpdate:
+            user_state.update_draft_symbol(tg_user_id, data.data.symbol)
+            log.info(f"{{ user_router.update_user_state.update_exchange }}")
+    except Exception as e:
+        log.error(f"{{ user_router.update_user_state.update_exchange }} -> {e}")
+
     log.info(user_state.get(tg_user_id))
 
     return ResultSchema(
