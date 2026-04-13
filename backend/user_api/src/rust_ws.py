@@ -73,11 +73,7 @@ async def run_ws(
                 while True:
                     response = await websocket.recv()
                     data = json.loads(response)
-                
-                    try:
-                        notify_manager.push_websocket_message(tg_user_id, data=data)
-                    except Exception as e:
-                        log.error(f"{{ rust_websocket.notify_manager.push_websocket_message }} -> {e}")   
+                    notify_manager.push_websocket_message(tg_user_id, data=data)
 
         except websockets.exceptions.InvalidStatus as e:            
             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
