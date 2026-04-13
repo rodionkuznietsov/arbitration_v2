@@ -40,7 +40,7 @@ async def run_ws(
     max_attempts = 3
     is_success_running = False
 
-    log.info(f"{user_state.long_active_exchange(tg_user_id)}")
+    log.info(f"longActiveExchange: {user_state.long_active_exchange(tg_user_id)}")
 
 
     # while attempt <= max_attempts and is_success_running is False:
