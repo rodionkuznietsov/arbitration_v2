@@ -69,9 +69,6 @@ class UserState:
         self.__user_state__[tg_user_id].event_data.payload.bot_config.active = \
             self.__user_state__[tg_user_id].event_data.payload.bot_config.draft.model_copy(deep=True)
         
-        log.info(f"active={id(self.__user_state__[tg_user_id].event_data.payload.bot_config.active)}; draft={id(self.__user_state__[tg_user_id].event_data.payload.bot_config.draft)}")
-        log.info(f"active_field={id(self.__user_state__[tg_user_id].event_data.payload.bot_config.active.symbol)}; draft_field={id(self.__user_state__[tg_user_id].event_data.payload.bot_config.draft.symbol)}")
-            
         log.info(f"{{ user_state.set_active_from_draft }} -> успешно")
 
     def update_draft_exchange(
