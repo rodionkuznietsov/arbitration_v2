@@ -62,6 +62,8 @@ async def run_ws(
                 except Exception as e:
                     log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
 
+                log.info(user_state.long_active_exchange(tg_user_id))
+
                 await websocket.send(json.dumps({
                     "action": action,
                     "channel": channel,
@@ -73,8 +75,7 @@ async def run_ws(
                 while True:
                     response = await websocket.recv()
                     data = json.loads(response)
-                    log.info(data)
-                    # notify_manager.push_websocket_message(tg_user_id, data=data)
+                    notify_manager.push_websocket_message(tg_user_id, data=data)
 
         except websockets.exceptions.InvalidStatus as e:            
             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
