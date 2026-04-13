@@ -22,9 +22,7 @@ class NotifyMassager:
         data
     ):
 
-        log.info(data)
-
-        try:
+        # try:
             ws_message = MessageData(
                 event_data=MessageEventData(
                     type=EventDataTypeEnum.Websocket,
@@ -48,8 +46,8 @@ class NotifyMassager:
             )
 
             push_to_subscribes(ws_message)
-        except Exception as e:
-            log.error(f"{{ notify_manager.push_websocket_message }} -> {e}")
+        # except Exception as e:
+        #     log.error(f"{{ notify_manager.push_websocket_message }} -> {e}")
 
     def push_exchange_message(
         self,
