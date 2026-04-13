@@ -133,27 +133,25 @@ async def run_ws(
             except Exception as e:
                 log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
 
-            message = MessageData(
-                event_data=MessageEventData(
-                    type=EventDataTypeEnum.Websocket,
-                    timestamp=int(time()),
-                    payload=MessageEventPayload(
-                        event=EventTypeEnum.BotStop,
-                        symbol=user_state.long_active_symbol(tg_user_id),
-                        longExchange=user_state.long_active_exchange(tg_user_id),
-                        longOrderType=OrderTypeEnum.Spot,
-                        shortExchange=user_state.short_active_exchange(tg_user_id),
-                        shortOrderType=OrderTypeEnum.Spot,
-                        isBotRunning=False,
-                        status=AppStatusEnum.Offline
-                    )
-                ),
-                context=WebsocketClosedContext(
-                    tg_user_id=tg_user_id,
-                    status=WebSocketStatuEnum.Error,
-                )
-            )
-            push_to_subscribes(message)
+            # message = MessageData(
+            #     event_data=MessageEventData(
+            #         type=EventDataTypeEnum.Websocket,
+            #         timestamp=int(time()),
+            #         payload=MessageEventPayload(
+            #             event=EventTypeEnum.BotStop,
+            #             symbol=user_state.long_active_symbol(tg_user_id),
+            #             longExchange=user_state.long_active_exchange(tg_user_id),
+            #             longOrderType=OrderTypeEnum.Spot,
+            #             shortExchange=user_state.short_active_exchange(tg_user_id),
+            #             shortOrderType=OrderTypeEnum.Spot,
+            #         )
+            #     ),
+            #     context=WebsocketClosedContext(
+            #         tg_user_id=tg_user_id,
+            #         status=WebSocketStatuEnum.Error,
+            #     )
+            # )
+            # push_to_subscribes(message)
 
             log.error(f"{{ rust_websocket.error }} -> принудительно остановлен")
         except asyncio.CancelledError: # Юзер отключил WS
@@ -168,8 +166,6 @@ async def run_ws(
                         longOrderType=OrderTypeEnum.Spot,
                         shortExchange=user_state.short_active_exchange(tg_user_id),
                         shortOrderType=OrderTypeEnum.Spot,
-                        isBotRunning=False,
-                        status=AppStatusEnum.Offline
                     )
                 ),
                 context=MessageContext(

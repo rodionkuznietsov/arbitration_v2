@@ -14,8 +14,6 @@ class MessageEventPayload(BaseModel):
     longOrderType: OrderTypeEnum
     shortExchange: ExchangeEnum
     shortOrderType: OrderTypeEnum
-    status: AppStatusEnum = AppStatusEnum.Offline
-    isBotRunning: Optional[bool] = False
 
 class LogPayload(BaseModel):
     event: EventTypeEnum

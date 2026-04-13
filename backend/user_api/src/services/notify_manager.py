@@ -33,8 +33,6 @@ class NotifyMassager:
                         longOrderType=user_state.long_active_order_type(tg_user_id),
                         shortExchange=user_state.short_active_exchange(tg_user_id),
                         shortOrderType=user_state.short_active_order_type(tg_user_id),
-                        status=AppStatusEnum.Online,
-                        isBotRunning=True
                     ),
                     timestamp=int(time.time()),
                     ws_data=data
