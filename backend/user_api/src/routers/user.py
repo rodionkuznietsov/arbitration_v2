@@ -24,10 +24,12 @@ async def update_user_state(
 
     try:
         if data.event == UserStateEventTypeEnum.ExchangeUpdate:
-            user_state.update_exchange(tg_user_id, data.data.exchange_name, data.data.market_type)
+            user_state.update_draft_exchange(tg_user_id, data.data.exchange_name, data.data.market_type)
             log.info(f"{{ user_router.update_user_state.update_exchange }}")
     except Exception as e:
         log.error(f"{{ user_router.update_user_state.update_exchange }} -> {e}")
+
+    log.info(user_state.get(tg_user_id))
 
     return ResultSchema(
         status_code=200,

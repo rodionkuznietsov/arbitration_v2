@@ -66,20 +66,18 @@ class UserState:
     ):
         return self.__user_state__[tg_user_id].event_data.payload.bot_config.draft.shortExchange
 
-    def update_exchange(
+    def update_draft_exchange(
         self,
         tg_user_id: int,
         new_exchange: ExchangeEnum,
         market_type: MarketTypeEnum
     ):
-        log.info(f"{tg_user_id}; {new_exchange} {market_type}")
-    
-        # if market_type == MarketTypeEnum.Long:
-        #     self.__long_exchange__(tg_user_id) = new_exchange
-        # elif market_type == MarketTypeEnum.Short:
-        #     self.__short_exchange__(tg_user_id) = new_exchange
-        # else:
-        #     raise Exception("Неизвестный тип market_type")
+        if market_type == MarketTypeEnum.Long:
+            self.__long_exchange__(tg_user_id) = new_exchange
+        elif market_type == MarketTypeEnum.Short:
+            self.__short_exchange__(tg_user_id) = new_exchange
+        else:
+            raise Exception("Неизвестный тип market_type")
 
     def update_exchange_invalidated(
         self,
