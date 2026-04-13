@@ -64,18 +64,18 @@ async def run_ws(
 
                 log.info(user_state.long_active_exchange(tg_user_id))
 
-                await websocket.send(json.dumps({
-                    "action": action,
-                    "channel": channel,
-                    "longExchange": user_state.long_active_exchange(tg_user_id),
-                    "shortExchange": user_state.short_active_exchange(tg_user_id),
-                    "ticker": user_state.long_active_symbol(tg_user_id)
-                }))
+                # await websocket.send(json.dumps({
+                #     "action": action,
+                #     "channel": channel,
+                #     "longExchange": user_state.long_active_exchange(tg_user_id),
+                #     "shortExchange": user_state.short_active_exchange(tg_user_id),
+                #     "ticker": user_state.long_active_symbol(tg_user_id)
+                # }))
 
-                while True:
-                    response = await websocket.recv()
-                    data = json.loads(response)
-                    notify_manager.push_websocket_message(tg_user_id, data=data)
+                # while True:
+                #     response = await websocket.recv()
+                #     data = json.loads(response)
+                #     notify_manager.push_websocket_message(tg_user_id, data=data)
 
         except websockets.exceptions.InvalidStatus as e:            
             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
