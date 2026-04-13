@@ -18,25 +18,25 @@ export const useUserState = defineStore('userState', {
     }),
 
     actions: {
-        set_init_data(data, orderBookStore) {
-            this.isBotRunning = data.isBotRunning
-            this.symbol = data.symbol
+        set_init_data(payload, orderBookStore) {
+            this.isBotRunning = payload.data.isBotRunning
+            this.symbol = payload.bot_config.draft.symbol
 
-            this.longExchange = data.longExchange
-            this.longOrderType = data.longOrderType
+            this.longExchange = payload.bot_config.draft.longExchange
+            this.longOrderType = payload.bot_config.draft.longOrderType
             
-            this.shortExchange = data.shortExchange
-            this.shortOrderType = data.shortOrderType
+            this.shortExchange = payload.bot_config.draft.shortExchange
+            this.shortOrderType = payload.bot_config.draft.shortOrderType
 
-            this.currentStatus = data.status
+            this.currentStatus = payload.bot_config.draft.status
 
             if (this.isBotRunning) {
                 orderBookStore.updateHeader(
-                    data.symbol,
-                    data.longExchange,
-                    data.longOrderType,
-                    data.shortExchange,
-                    data.shortOrderType
+                    payload.bot_config.active.symbol,
+                    payload.bot_config.active.longExchange,
+                    payload.bot_config.active.longOrderType,
+                    payload.bot_config.active.shortExchange,
+                    payload.bot_config.active.shortOrderType
                 )
             }
         },

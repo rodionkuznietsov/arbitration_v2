@@ -5,7 +5,7 @@ export function user_state_handler(
     configStore
 ) {
     const handlers = {
-        init_data: (data) => userStateStore.set_init_data(data.payload.data, orderBookStore),
+        init_data: (data) => userStateStore.set_init_data(data.payload, orderBookStore),
         exchange_invalidated: (data) => userStateStore.set_exchange(data.payload.data),
         default: (data) => {
             console.log(`Неизвестное событие: ${data}`)
