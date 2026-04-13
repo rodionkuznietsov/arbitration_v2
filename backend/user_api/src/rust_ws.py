@@ -7,6 +7,8 @@ import os
 from dotenv import load_dotenv
 import structlog
 
+from backend.user_api.src.routers.exchange import notify_manager
+
 from .services.user_state import UserState
 from .schemas.bot import OrderTypeEnum
 from .schemas import MessageData, MessageMethod, WebSocketStatuEnum, WebsocketClosedContext
@@ -32,9 +34,6 @@ WEBSOCKET_URL = os.getenv("WEBSOCKET_URL")
 async def run_ws(
     action: WebSocketActionEnum,
     channel: WebSocketChannelEnum,
-    long_exchange: ExchangeEnum,
-    short_exchange: ExchangeEnum,
-    symbol: str,
     
     user_state: UserState,
     tg_user_id: int,
@@ -68,9 +67,9 @@ async def run_ws(
                 await websocket.send(json.dumps({
                     "action": action,
                     "channel": channel,
-                    "longExchange": long_exchange,
-                    "shortExchange": short_exchange,
-                    "ticker": symbol
+                    "longExchange": user_state.long_active_exchange(tg_user_id),
+                    "shortExchange": user_state.short_active_exchange(tg_user_id),
+                    "ticker": user_state.long_active_symbol(tg_user_id)
                 }))
 
                 while True:
@@ -78,29 +77,30 @@ async def run_ws(
                     data = json.loads(response)
                 
                     try:
-                        ws_message = MessageData(
-                            event_data=MessageEventData(
-                                type=EventDataTypeEnum.Websocket,
-                                payload=MessageEventPayload(
-                                    event=EventTypeEnum.Websocket,
-                                    symbol=symbol,
-                                    longExchange=message.event_data.payload.longExchange,
-                                    longOrderType=message.event_data.payload.longOrderType,
-                                    shortExchange=message.event_data.payload.shortExchange,
-                                    shortOrderType=message.event_data.payload.shortOrderType,
-                                    status=AppStatusEnum.Online,
-                                    isBotRunning=True
-                                ),
-                                timestamp=int(time()),
-                                ws_data=data
-                            ),
-                            context=MessageContext(
-                                method=MessageMethod.WebsocketConnected,
-                                tg_user_id=tg_user_id
-                            )
-                        )
+                        notify_manager.push_websocket_message(tg_user_id, data=data)
+                        # ws_message = MessageData(
+                        #     event_data=MessageEventData(
+                        #         type=EventDataTypeEnum.Websocket,
+                        #         payload=MessageEventPayload(
+                        #             event=EventTypeEnum.Websocket,
+                        #             symbol=user_state.long_active_symbol(tg_user_id),
+                        #             longExchange=user_state.long_active_exchange(tg_user_id),
+                        #             longOrderType=user_state.long_active_order_type(tg_user_id),
+                        #             shortExchange=user_state.short_active_exchange(tg_user_id),
+                        #             shortOrderType=user_state.short_active_order_type(tg_user_id),
+                        #             status=AppStatusEnum.Online,
+                        #             isBotRunning=True
+                        #         ),
+                        #         timestamp=int(time()),
+                        #         ws_data=data
+                        #     ),
+                        #     context=MessageContext(
+                        #         method=MessageMethod.WebsocketConnected,
+                        #         tg_user_id=tg_user_id
+                        #     )
+                        # )
 
-                        push_to_subscribes(ws_message)
+                        # push_to_subscribes(ws_message)
                     except Exception as e:
                         log.error(f"{{ rust_websocket.ws_message }} -> {e}")   
 
@@ -169,10 +169,10 @@ async def run_ws(
                     timestamp=int(time()),
                     payload=MessageEventPayload(
                         event=EventTypeEnum.BotStop,
-                        symbol=symbol,
-                        longExchange=long_exchange,
+                        symbol=user_state.long_active_symbol(tg_user_id),
+                        longExchange=user_state.long_active_exchange(tg_user_id),
                         longOrderType=OrderTypeEnum.Spot,
-                        shortExchange=short_exchange,
+                        shortExchange=user_state.short_active_exchange(tg_user_id),
                         shortOrderType=OrderTypeEnum.Spot,
                         isBotRunning=False,
                         status=AppStatusEnum.Offline
@@ -193,10 +193,10 @@ async def run_ws(
                     timestamp=int(time()),
                     payload=MessageEventPayload(
                         event=EventTypeEnum.BotStop,
-                        symbol=symbol,
-                        longExchange=long_exchange,
+                        symbol=user_state.long_active_symbol(tg_user_id),
+                        longExchange=user_state.long_active_exchange(tg_user_id),
                         longOrderType=OrderTypeEnum.Spot,
-                        shortExchange=short_exchange,
+                        shortExchange=user_state.short_active_exchange(tg_user_id),
                         shortOrderType=OrderTypeEnum.Spot,
                         isBotRunning=False,
                         status=AppStatusEnum.Offline

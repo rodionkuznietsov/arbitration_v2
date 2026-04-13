@@ -1,9 +1,7 @@
-import time
 from fastapi import APIRouter, HTTPException
 
-from ..schemas import EventDataTypeEnum, ExchangeEventData, ExchangeMessageResponse, ExchangePayload, MarketTypeEnum, MessageContext, MessageData, ExchangeEventEnum, MessageEventData, MessageMethod, UserStatePayload, UserStateEventTypeEnum, UserStateUpdateData
+from ..schemas import ExchangeMessageResponse, ExchangeEventEnum
 from ..cache.exchange import available_exchanges, exchange_cache
-from ..cache.cache import push_to_subscribes
 from ..core.state import user_state
 
 from ..services.notify_manager import notify_manager

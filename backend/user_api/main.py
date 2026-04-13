@@ -13,7 +13,7 @@ log = structlog.get_logger()
 
 from src.schemas import ResultSchema
 from src.routers.tg_bot.auth import database, router as auth_router
-from src.routers import log_router
+from src.routers import cmd_router
 from src.cache import check_active_subscribes
 from src import tg_bot_app
 
@@ -67,7 +67,7 @@ async def http_exception_handler(request: Request, exc: RequestValidationError):
 
 app.include_router(user_router, prefix="/user")
 app.include_router(auth_router, prefix="/telegram/bot")
-app.include_router(log_router, prefix="/user/bot")
+app.include_router(cmd_router, prefix="/user/bot")
 app.include_router(events_router)
 app.include_router(exchange_router, prefix="/exchanges")
 

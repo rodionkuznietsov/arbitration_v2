@@ -13,8 +13,6 @@ export const useConfigStore = defineStore("configStore", {
                 this.exchanges = this.exchanges.filter(
                     e => e !== event_data.payload.exchange_name
                 )
-
-                alert(this.exchanges)
             } else {
                 const index = this.exchanges.findIndex(
                     ex => ex === event_data.payload.exchange_name

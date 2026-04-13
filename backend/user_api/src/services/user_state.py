@@ -106,6 +106,36 @@ class UserState:
         except UserStateError as e:
             log.error(f"{{ user_state.get }} -> {e}")
     
+    def long_active_symbol(
+        self,
+        tg_user_id: int
+    ):
+        return self.__user_state__[tg_user_id].payload.bot_config.active.symbol
+
+    def long_active_exchange(
+        self,
+        tg_user_id: int
+    ):
+        return self.__user_state__[tg_user_id].payload.bot_config.active.longExchange
+
+    def long_active_order_type(
+        self,
+        tg_user_id: int
+    ):
+        return self.__user_state__[tg_user_id].payload.bot_config.active.longOrderType
+
+    def short_active_exchange(
+        self,
+        tg_user_id: int
+    ):
+        return self.__user_state__[tg_user_id].payload.bot_config.active.short_exchange
+
+    def short_active_order_type(
+        self,
+        tg_user_id: int
+    ):
+        return self.__user_state__[tg_user_id].payload.bot_config.active.shortOrderType
+
     def isBotRunning(
         self,
         tg_user_id: int
