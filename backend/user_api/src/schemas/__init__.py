@@ -32,5 +32,6 @@ from .user_state import (
     UserStatePayload,
     UserStateInitializationData,
     UserStateUpdateData,
-    UserStateCmd
+    UserStateCmd,
+    BotConfig, BotConfigData
 )

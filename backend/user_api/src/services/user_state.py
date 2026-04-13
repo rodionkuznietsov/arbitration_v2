@@ -2,7 +2,7 @@ import time
 import structlog
 
 from ..cache.exchange import exchange_cache
-from ..schemas import AppStatusEnum, EventDataTypeEnum, ExchangeEnum, MarketTypeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStateEventTypeEnum, UserStateInitializationData, UserStatePayload, UserStateError
+from ..schemas import AppStatusEnum, BotConfig, EventDataTypeEnum, ExchangeEnum, MarketTypeEnum, MessageContext, MessageData, MessageEventData, MessageMethod, OrderTypeEnum, UserStateEventTypeEnum, UserStateInitializationData, UserStatePayload, UserStateError
 
 log: structlog.PrintLogger = structlog.get_logger()
 
@@ -25,14 +25,17 @@ class UserState:
                             event=UserStateEventTypeEnum.InitData,
                             data=UserStateInitializationData(
                                 isSleeping=AppStatusEnum.NotSleeping,
-                                symbol="BTC",
-                                longExchange=ExchangeEnum.Unknown,
-                                longOrderType=OrderTypeEnum.Spot,
+                                # symbol="BTC",
+                                # longExchange=ExchangeEnum.Unknown,
+                                # longOrderType=OrderTypeEnum.Spot,
 
-                                shortExchange=ExchangeEnum.Unknown,
-                                shortOrderType=OrderTypeEnum.Spot,
+                                # shortExchange=ExchangeEnum.Unknown,
+                                # shortOrderType=OrderTypeEnum.Spot,
                                 isBotRunning=False,
                                 logs=[]
+                            ),
+                            bot_config=BotConfig(
+                                active=None
                             )
                         ),
                         timestamp=int(time.time())
@@ -45,18 +48,38 @@ class UserState:
         except Exception as e:
             log.error(f"UserState -> {e}")
     
+    def __is_bot_running__(
+        self,
+        tg_user_id: int
+    ):
+        return self.__user_state__[tg_user_id].data.isBotRunning
+
+    def __long_exchange__(
+        self,
+        tg_user_id: int
+    ):
+        return self.__user_state__[tg_user_id].event_data.payload.bot_config.draft.longExchange
+
+    def __short_exchange__(
+        self,
+        tg_user_id: int
+    ):
+        return self.__user_state__[tg_user_id].event_data.payload.bot_config.draft.shortExchange
+
     def update_exchange(
         self,
         tg_user_id: int,
         new_exchange: ExchangeEnum,
         market_type: MarketTypeEnum
     ):
-        if market_type == MarketTypeEnum.Long:
-            self.__user_state__[tg_user_id].event_data.payload.data.longExchange = new_exchange
-        elif market_type == MarketTypeEnum.Short:
-            self.__user_state__[tg_user_id].event_data.payload.data.shortExchange = new_exchange
-        else:
-            raise Exception("Неизвестный тип market_type")
+        log.info(f"{tg_user_id}; {new_exchange} {market_type}")
+    
+        # if market_type == MarketTypeEnum.Long:
+        #     self.__long_exchange__(tg_user_id) = new_exchange
+        # elif market_type == MarketTypeEnum.Short:
+        #     self.__short_exchange__(tg_user_id) = new_exchange
+        # else:
+        #     raise Exception("Неизвестный тип market_type")
 
     def update_exchange_invalidated(
         self,
