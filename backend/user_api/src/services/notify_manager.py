@@ -28,6 +28,8 @@ class NotifyMassager:
             )
 
             push_to_subscribes(message=message)
+            log.info(f"{{ notify_manager.push_exchange_message.{event} }} -> {exchange_data.name.lower()}")
+
         elif event == ExchangeEventEnum.ClearExchanges:
             message = MessageData(
                 event_data=ExchangeEventData(
@@ -41,7 +43,6 @@ class NotifyMassager:
 
             push_to_subscribes(message=message)
 
-        log.info(f"{{ notify_manager.push_exchange_message.{event} }} -> {exchange_data.name.lower()}")
-
+            log.info(f"{{ notify_manager.push_exchange_message.{event} }} -> очищено")
         
 notify_manager = NotifyMassager()
