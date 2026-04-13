@@ -12,7 +12,7 @@ from ..rust_ws import run_ws
 from ..schemas import EventDataTypeEnum, EventTypeEnum, AppStatusEnum, LogPayload, LogStatusEnum, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod, UserStatePayload, WebSocketActionEnum, WebSocketChannelEnum
 from ..cache import push_to_subscribes
 from ..core.state import user_state
-from ..jwt_func import ALGORITHM, JWT_SECRET_KEY, oauth2_scheme
+from ..jwt_func import oauth2_scheme
 from ..db import database
 from ..schemas import LogMessageSchema, ResultSchema, UserLogSchema
 from ..services import authothicate
@@ -34,8 +34,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             if user_state.isBotRunning(tg_user_id) == False and user_state.status(tg_user_id) != AppStatusEnum.Warning:
                 user_state.set_active_from_draft(tg_user_id)
 
-                log.info(user_state.get_active_config(tg_user_id))
-
                 # Подключаем клиента
                 task = asyncio.create_task(run_ws(
                     action=WebSocketActionEnum.Subscribe,
@@ -50,12 +48,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             if task:
                 task.cancel()
                 del ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"]
-                if tg_user_id in user_state.exists_users():
-                    user_state.change_status(
-                        tg_user_id, 
-                        isBotRunning=False, 
-                        status=AppStatusEnum.Offline
-                    )
 
                 message = MessageData(
                     event_data=MessageEventData(
