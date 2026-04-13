@@ -79,4 +79,9 @@ class ExchangeCache:
         except Exception as e:
             log.error(f"{{ exchange_cache.update_available_exchanges_in_cache }} -> {e}")
 
+    def clear(
+        self
+    ):
+        self.__available_exchanges__.clear()
+
 exchange_cache = ExchangeCache(database=database)

@@ -2,6 +2,7 @@ from .exchange import (
     ExchangeSchema, 
     ExchangeEnum, 
     ExchangePayload, 
+    ExchangeClearPayload,
     ExchangeEventData
 )
 

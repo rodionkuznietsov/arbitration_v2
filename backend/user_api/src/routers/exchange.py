@@ -110,6 +110,13 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
 async def delete_all_exchanges():
     await database.clear_table_exchanges()
     
+    exchange_cache.clear()
+
+    notify_manager.push_exchange_message(
+        exchange_data=None,
+        event=ExchangeEventEnum.ClearExchanges
+    )
+
     return ResultSchema(
         status_code=200,
         success=True,

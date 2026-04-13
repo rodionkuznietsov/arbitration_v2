@@ -15,6 +15,7 @@ class MarketTypeEnum(str, Enum):
 class ExchangeEventEnum(str, Enum):
     AddExchange = "add_exchange"
     UpdateExchange = "update_exchange"
+    ClearExchanges = "clear_exchanges"
 
 
 class EventDataTypeEnum(str, Enum):
