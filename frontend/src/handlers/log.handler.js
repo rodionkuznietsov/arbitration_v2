@@ -7,8 +7,8 @@ export function log_handler(
         const log = {
             event: event_data.payload.event,
             symbol: event_data.payload.symbol,
-            long_exchange: event_data.payload.long_exchange,
-            short_exchange: event_data.payload.short_exchange,
+            long_exchange: event_data.payload.longExchange,
+            short_exchange: event_data.payload.shortExchange,
             timestamp: event_data.timestamp
         }
 
