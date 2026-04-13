@@ -25,7 +25,8 @@ from .rust_ws import (
     WebSocketActionEnum, 
     WebSocketChannelEnum,
     WebSocketStatuEnum,
-    WebsocketClosedContext
+    WebsocketClosedContext,
+    WebsocketPayload
 )
 from .event import EventDataTypeEnum, MessageData, MessageEventData, MessageEventPayload, MessageContext, MessageMethod, UserStatePayload, MessageWebsocketData, LogPayload
 from .user_state import (

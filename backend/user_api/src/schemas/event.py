@@ -6,6 +6,7 @@ from ..schemas import ExchangeEnum, ExchangeEventData, WebsocketClosedContext
 from .bot import AppStatusEnum, EventTypeEnum, LogStatusEnum, OrderTypeEnum
 from .enums import EventDataTypeEnum, ExchangeEnum
 from .user_state import UserStatePayload
+from .rust_ws import WebsocketPayload
 
 class MessageEventPayload(BaseModel):
     event: EventTypeEnum
@@ -37,7 +38,7 @@ class MessageWebsocketData(BaseModel):
 class MessageEventData(BaseModel):
     type: EventDataTypeEnum
     timestamp: int
-    payload: Union[MessageEventPayload, UserStatePayload, LogPayload] = None
+    payload: Union[MessageEventPayload, UserStatePayload, LogPayload, WebsocketPayload] = None
     ws_data: Optional[dict] = None
 
 class MessageContext(BaseModel):

@@ -4,7 +4,6 @@ export function ws_handler(
     orderBookStore
 ) {
 
-
     userStateStore.changeStatus(event_data.payload.status)
     userStateStore.isBotRunning = event_data.payload.isBotRunning
     

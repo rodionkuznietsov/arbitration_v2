@@ -1,6 +1,9 @@
 from enum import Enum
 from pydantic import BaseModel
 
+from .enums import ExchangeEnum
+from .bot import OrderTypeEnum
+
 
 class WebSocketActionEnum(str, Enum):
     Subscribe = "subscribe"
@@ -17,3 +20,10 @@ class WebSocketStatuEnum(str, Enum):
 class WebsocketClosedContext(BaseModel):
     tg_user_id: int
     status: WebSocketStatuEnum
+
+class WebsocketPayload(BaseModel):
+    symbol: str
+    longExchange: ExchangeEnum
+    longOrderType: OrderTypeEnum
+    shortExchange: ExchangeEnum
+    shortOrderType: OrderTypeEnum
