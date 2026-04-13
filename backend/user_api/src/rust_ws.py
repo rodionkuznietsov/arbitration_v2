@@ -42,7 +42,6 @@ async def run_ws(
 
     log.info(f"longActiveExchange: {user_state.long_active_exchange(tg_user_id)}")
 
-
     # while attempt <= max_attempts and is_success_running is False:
     #     # try:
     #         log.info(f"{{ rust_websocket.connect }} -> {attempt} попытка")

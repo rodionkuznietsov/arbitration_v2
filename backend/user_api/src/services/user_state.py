@@ -123,25 +123,25 @@ class UserState:
         self,
         tg_user_id: int
     ):
-        return self.__user_state__[tg_user_id].payload.bot_config.active.symbol
+        return self.__user_state__[tg_user_id].event_data.payload.bot_config.active.symbol
 
     def long_active_exchange(
         self,
         tg_user_id: int
     ):
-        return self.__user_state__[tg_user_id].payload.bot_config.active.longExchange
+        return self.__user_state__[tg_user_id].event_data.payload.bot_config.active.longExchange
 
     def long_active_order_type(
         self,
         tg_user_id: int
     ):
-        return self.__user_state__[tg_user_id].payload.bot_config.active.longOrderType
+        return self.__user_state__[tg_user_id].event_data.payload.bot_config.active.longOrderType
 
     def short_active_exchange(
         self,
         tg_user_id: int
     ):
-        return self.__user_state__[tg_user_id].payload.bot_config.active.short_exchange
+        return self.__user_state__[tg_user_id].event_data.payload.bot_config.active.shortExchange
 
     def short_active_order_type(
         self,
