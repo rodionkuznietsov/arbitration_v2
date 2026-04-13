@@ -140,25 +140,14 @@ async def run_ws(
             notify_manager.push_user_state_message(tg_user_id)
             log.error(f"{{ rust_websocket.error }} -> принудительно остановлен")
         except asyncio.CancelledError: # Юзер отключил WS
-            message = MessageData(
-                event_data=MessageEventData(
-                    type=EventDataTypeEnum.Websocket,
-                    timestamp=int(time()),
-                    payload=MessageEventPayload(
-                        event=EventTypeEnum.BotStop,
-                        symbol=user_state.long_active_symbol(tg_user_id),
-                        longExchange=user_state.long_active_exchange(tg_user_id),
-                        longOrderType=OrderTypeEnum.Spot,
-                        shortExchange=user_state.short_active_exchange(tg_user_id),
-                        shortOrderType=OrderTypeEnum.Spot,
-                    )
-                ),
-                context=MessageContext(
-                    method=MessageMethod.WebsocketClosed,
-                    tg_user_id=tg_user_id,
-                )
+            user_state.change_status(
+                tg_user_id=tg_user_id,
+                status=AppStatusEnum.Offline,
+                isBotRunning=False,
             )
-            push_to_subscribes(message)
+            
+            notify_manager.push_user_state_message(tg_user_id)
+
             log.info("RustWebsocket -> успешно остановлен")
 
         
