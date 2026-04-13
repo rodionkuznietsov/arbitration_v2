@@ -48,12 +48,6 @@ async def run_ws(
                 
                 # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
                 try:
-                    user_state.change_status(
-                        tg_user_id=tg_user_id,
-                        status=AppStatusEnum.Online,
-                        isBotRunning=True,
-                    )
-
                     log.info(f"{{ rust_websocket.user_state.change_status }} -> {tg_user_id}")
                 except AttributeError as e:
                     log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
@@ -68,6 +62,14 @@ async def run_ws(
                     "shortExchange": user_state.short_active_exchange(tg_user_id),
                     "ticker": user_state.long_active_symbol(tg_user_id)
                 }))
+
+                user_state.change_status(
+                    tg_user_id=tg_user_id,
+                    status=AppStatusEnum.Online,
+                    isBotRunning=True,
+                )
+
+                notify_manager.push_user_state_message(tg_user_id)
 
                 while True:
                     response = await websocket.recv()

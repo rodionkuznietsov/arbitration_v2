@@ -1,3 +1,4 @@
+from email import message
 import json
 import time
 from typing import Optional
@@ -5,16 +6,17 @@ from typing import Optional
 import structlog
 
 from ..cache import push_to_subscribes
-from ..schemas import WebsocketPayload, EventDataTypeEnum, ExchangeClearPayload, ExchangeEventData, ExchangeEventEnum, ExchangePayload, ExchangeSchema, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod
+from ..schemas import UserStatePayload, WebsocketPayload, EventDataTypeEnum, ExchangeClearPayload, ExchangeEventData, ExchangeEventEnum, ExchangePayload, ExchangeSchema, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod
 from ..core.state import user_state
 
 log: structlog.PrintLogger = structlog.get_logger()
 
 class NotifyMassager:
     def push_user_state_message(
-        self
+        self,
+        tg_user_id: int
     ):
-        pass
+        push_to_subscribes(user_state.get(tg_user_id))
 
     def push_websocket_message(
         self,
