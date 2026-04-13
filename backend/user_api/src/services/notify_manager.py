@@ -21,6 +21,9 @@ class NotifyMassager:
         tg_user_id: int,
         data
     ):
+
+        log.info(data)
+
         ws_message = MessageData(
             event_data=MessageEventData(
                 type=EventDataTypeEnum.Websocket,
