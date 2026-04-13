@@ -25,6 +25,7 @@ class UserState:
                             event=UserStateEventTypeEnum.InitData,
                             data=UserStateInitializationData(
                                 isSleeping=AppStatusEnum.NotSleeping,
+                                status=AppStatusEnum.Offline,
                                 isBotRunning=False,
                                 logs=[]
                             ),
