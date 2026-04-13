@@ -22,19 +22,19 @@ async def update_user_state(
     
     tg_user_id = int(authothicate(token))
 
-    try:
-        if data.event == UserStateEventTypeEnum.ExchangeUpdate:
-            user_state.update_draft_exchange(tg_user_id, data.data.exchange_name, data.data.market_type)
-            log.info(f"{{ user_router.update_user_state.update_exchange }}")
-    except Exception as e:
-        log.error(f"{{ user_router.update_user_state.update_exchange }} -> {e}")
+    # try:
+    #     if data.event == UserStateEventTypeEnum.ExchangeUpdate:
+    #         user_state.update_draft_exchange(tg_user_id, data.data.exchange_name, data.data.market_type)
+    #         log.info(f"{{ user_router.update_user_state.update_exchange }}")
+    # except Exception as e:
+    #     log.error(f"{{ user_router.update_user_state.update_exchange }} -> {e}")
 
-    try:
-        if data.event == UserStateEventTypeEnum.SymbolUpdate:
-            user_state.update_draft_symbol(tg_user_id, data.data.symbol)
-            log.info(f"{{ user_router.update_user_state.update_exchange }}")
-    except Exception as e:
-        log.error(f"{{ user_router.update_user_state.update_exchange }} -> {e}")
+    # try:
+    #     if data.event == UserStateEventTypeEnum.SymbolUpdate:
+    #         user_state.update_draft_symbol(tg_user_id, data.data.symbol)
+    #         log.info(f"{{ user_router.update_user_state.update_exchange }}")
+    # except Exception as e:
+    #     log.error(f"{{ user_router.update_user_state.update_exchange }} -> {e}")
 
     return ResultSchema(
         status_code=200,
