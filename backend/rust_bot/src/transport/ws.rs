@@ -72,7 +72,7 @@ async fn handle_connection(
             loop {
                 tokio::select! {
                     Some(error_msg) = error_rx.recv() => {
-                        info("Принудительно отключили клиента");
+                        info!("Принудительно отключили клиента");
                         ws_sender.send(error_msg).await.ok();
                     }
 
