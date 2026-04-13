@@ -17,13 +17,11 @@ class ExchangeEventEnum(str, Enum):
     UpdateExchange = "update_exchange"
     ClearExchanges = "clear_exchanges"
 
-
 class EventDataTypeEnum(str, Enum):
     Log = "log"
     Exchange = "exchange"
     Websocket = "websocket"
     UserState = "user_state"
-
 
 class EventTypeEnum(str, Enum):
     UserState = "user_state"

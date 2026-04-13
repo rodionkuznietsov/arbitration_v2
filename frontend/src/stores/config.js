@@ -22,15 +22,21 @@ export const useConfigStore = defineStore("configStore", {
 
                 // Добавляем биржу
                 if (index === -1) {
-                    if (!this.exchanges.includes(event_data.payload.exchange_name)) {
-                        this.exchanges.push(event_data.payload.exchange_name)
-                    }
+                    this.__insert_or_not__(event_data.payload.exchange_name)
                 }
+            }
+        },
+
+        __insert_or_not__(
+            value
+        ) {
+            if (!this.exchanges.includes(value)) {
+                this.exchanges.push(value)
             }
         },
         
         addExchange(exchange_data) {
-            alert(`AddExchange: ${JSON.stringify(exchange_data)}`)
+            this.__insert_or_not__(exchange_data.payload.exchange_name)
         },
 
         clearExchanges() {
