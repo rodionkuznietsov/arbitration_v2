@@ -34,7 +34,7 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
             if not user_state.isBotRunning(tg_user_id) and user_state.status(tg_user_id) != AppStatusEnum.Warning:
                 user_state.set_active_from_draft(tg_user_id)
 
-                log.info(f"Id: {id(user_state)}")
+                log.info(f"Id: {id(user_state.get(tg_user_id))}")
 
                 # Подключаем клиента
                 task = asyncio.create_task(run_ws(
