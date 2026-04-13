@@ -42,7 +42,7 @@
     log: (data) => log_handler(data, tgStore, logStore),
     exchange: (data) => exchange_handler(data, configStore),
     websocket: (data) => ws_handler(data, orderBookStore),
-    user_state: (data) => user_state_handler(data, userStateStore, orderBookStore, configStore),
+    user_state: (data) => user_state_handler(data, userStateStore, orderBookStore),
     default: (data) => {
       console.warn("Не известное собитие", data.type)
     }

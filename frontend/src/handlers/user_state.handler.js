@@ -2,7 +2,6 @@ export function user_state_handler(
     event_data,
     userStateStore,
     orderBookStore,
-    configStore
 ) {
     const handlers = {
         init_data: (data) => userStateStore.set_init_data(data.payload, orderBookStore),
@@ -12,7 +11,6 @@ export function user_state_handler(
         }
     }
 
-    configStore
     const handler = handlers[event_data.payload.event] || handlers.default
     handler(event_data)
 }

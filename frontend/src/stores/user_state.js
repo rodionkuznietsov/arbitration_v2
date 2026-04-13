@@ -19,6 +19,9 @@ export const useUserState = defineStore('userState', {
 
     actions: {
         set_init_data(payload, orderBookStore) {
+
+            alert(JSON.stringify(payload))
+
             this.isBotRunning = payload.data.isBotRunning
             this.symbol = payload.bot_config.draft.symbol
 
