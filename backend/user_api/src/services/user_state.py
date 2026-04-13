@@ -36,7 +36,13 @@ class UserState:
                             ),
                             bot_config=BotConfig(
                                 active=BotConfigData(),
-                                draft=BotConfigData()
+                                draft=BotConfigData(
+                                    symbol="BTC",
+                                    longExchange=ExchangeEnum.Unknown,
+                                    longOrderType=OrderTypeEnum.Spot,
+                                    shortExchange=ExchangeEnum.Unknown,
+                                    shortOrderType=OrderTypeEnum.Spot,
+                                )
                             )
                         ),
                         timestamp=int(time.time())
