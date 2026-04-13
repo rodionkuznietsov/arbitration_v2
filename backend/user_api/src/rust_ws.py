@@ -10,7 +10,7 @@ import structlog
 from .services.notify_manager import notify_manager
 
 from .schemas.bot import OrderTypeEnum
-from .schemas import MessageData, MessageMethod, WebSocketStatuEnum, WebsocketClosedContext
+from .schemas import LogStatusEnum, MessageData, MessageMethod, WebSocketStatuEnum, WebsocketClosedContext
 from .cache.cache import push_to_subscribes
 
 from .schemas import (
@@ -35,6 +35,7 @@ async def run_ws(
     action: WebSocketActionEnum,
     channel: WebSocketChannelEnum,
     tg_user_id: int,
+    log_data
 ):
     attempt = 1
     max_attempts = 3
@@ -70,6 +71,21 @@ async def run_ws(
                 )
 
                 notify_manager.push_user_state_message(tg_user_id)
+                await notify_manager.push_log_message(
+                    tg_user_id,
+                    event=EventTypeEnum.BotStart,
+
+                    symbol=user_state.long_active_symbol(tg_user_id),
+
+                    longExchange=user_state.long_active_exchange(tg_user_id),
+                    longOrderType=user_state.long_active_order_type(tg_user_id),
+
+                    shortExchange=user_state.short_active_exchange(tg_user_id),
+                    shortOrderType=user_state.short_active_order_type(tg_user_id),
+
+                    status=LogStatusEnum.Success,
+                    data=log_data
+                )
 
                 while True:
                     response = await websocket.recv()

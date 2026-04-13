@@ -27,7 +27,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
     global log_deque
 
     tg_user_id = int(authothicate(token))
-    await database.add_log(tg_user_id, data)
 
     match data.event:
         case EventTypeEnum.BotStart:
@@ -39,8 +38,10 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     action=WebSocketActionEnum.Subscribe,
                     channel=WebSocketChannelEnum.OrderBook,
                     tg_user_id=tg_user_id,
+                    log_data=data
                 ))
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
+
         case EventTypeEnum.BotStop:
             task = ws_task.get(f"{tg_user_id}:{data.data.symbol.lower()}")
             

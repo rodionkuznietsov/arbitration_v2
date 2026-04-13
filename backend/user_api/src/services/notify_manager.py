@@ -5,8 +5,10 @@ from typing import Optional
 
 import structlog
 
+from ..db import database
+
 from ..cache import push_to_subscribes
-from ..schemas import UserStatePayload, WebsocketPayload, EventDataTypeEnum, ExchangeClearPayload, ExchangeEventData, ExchangeEventEnum, ExchangePayload, ExchangeSchema, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod
+from ..schemas import EventTypeEnum, ExchangeEnum, LogPayload, LogStatusEnum, OrderTypeEnum, UserStatePayload, WebsocketPayload, EventDataTypeEnum, ExchangeClearPayload, ExchangeEventData, ExchangeEventEnum, ExchangePayload, ExchangeSchema, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod
 from ..core.state import user_state
 
 log: structlog.PrintLogger = structlog.get_logger()
@@ -15,10 +17,49 @@ class NotifyMassager:
     def push_user_state_message(
         self,
         tg_user_id: int
-    ):
-        log.info(f"Id: {id(user_state.get(tg_user_id))}")
-        
+    ) -> None:
         push_to_subscribes(user_state.get(tg_user_id))
+
+    async def push_log_message(
+        self,
+        tg_user_id: int,
+        event: EventTypeEnum,
+        
+        symbol: str,
+        longExchange: ExchangeEnum,
+        shortExchange: ExchangeEnum,
+        longOrderType: OrderTypeEnum,
+        shortOrderType: OrderTypeEnum,
+
+        status: LogStatusEnum,
+        data
+    ):
+        message = MessageData(
+            event_data=MessageEventData(
+                type=EventDataTypeEnum.Log,
+                timestamp=int(time.time()),
+                payload=LogPayload(
+                    event=event,
+
+                    symbol=symbol,
+
+                    longExchange=longExchange,
+                    longOrderType=longOrderType,
+
+                    shortExchange=shortExchange,                    
+                    shortOrderType=shortOrderType,
+
+                    status=status
+                )
+            ),
+            context=MessageContext(
+                method=MessageMethod.User,
+                tg_user_id=tg_user_id
+            )
+        )
+
+        push_to_subscribes(message=message)
+        await database.add_log(tg_user_id, data=data)
 
     def push_websocket_message(
         self,
