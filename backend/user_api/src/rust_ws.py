@@ -9,7 +9,6 @@ import structlog
 
 from .services.notify_manager import notify_manager
 
-from .services.user_state import UserState
 from .schemas.bot import OrderTypeEnum
 from .schemas import MessageData, MessageMethod, WebSocketStatuEnum, WebsocketClosedContext
 from .cache.cache import push_to_subscribes
@@ -25,6 +24,7 @@ from .schemas import (
     WebSocketChannelEnum, 
     ExchangeEnum
 )
+from .core.state import user_state
 
 load_dotenv()
 log: structlog.PrintLogger = structlog.get_logger()
@@ -35,7 +35,6 @@ async def run_ws(
     action: WebSocketActionEnum,
     channel: WebSocketChannelEnum,
     
-    user_state: UserState,
     tg_user_id: int,
 ):
     attempt = 1
