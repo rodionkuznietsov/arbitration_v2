@@ -12,9 +12,7 @@ class NotifyMassager:
         self,
         exchange_data: ExchangeSchema,
         event: ExchangeEventEnum
-    ):
-        log.info(f"Добавление новой биржи: {exchange_data.name.lower()}")
-        
+    ):        
         message = MessageData(
             event_data=ExchangeEventData(
                 type=EventDataTypeEnum.Exchange,
@@ -28,5 +26,6 @@ class NotifyMassager:
         )
 
         push_to_subscribes(message=message)
+        log.info(f"{{ notify_manager.push_exchange_message }} -> {exchange_data.name.lower()}")
 
 notify_manager = NotifyMassager()
