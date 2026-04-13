@@ -9,7 +9,7 @@
     import { useAuthStore } from '@/stores/auth';
     import { API_URL } from '@/config';
     import { useConfigStore } from '@/stores/config';
-import { send_cmd } from '@/utils/send_cmd';
+    import { send_cmd } from '@/utils/send_cmd';
 
     const authStore = useAuthStore()
     const userStore = useUserState()
