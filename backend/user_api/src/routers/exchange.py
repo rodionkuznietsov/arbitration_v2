@@ -35,20 +35,6 @@ async def add_exchange(exchange_data: ExchangeSchema):
     if not added:
         raise HTTPException(status_code=400, detail=f"Биржа {exchange_data.name} уже существует в базе данных.")
 
-    # message = MessageData(
-    #     event_data=ExchangeEventData(
-    #         type=EventDataTypeEnum.Exchange,
-    #         payload=ExchangePayload(
-    #             event=ExchangeEventEnum.AddExchange,
-    #             exchange_name=exchange_data.name.lower(),
-    #             is_available=exchange_data.is_available
-    #         ),
-    #         timestamp=int(time.time())
-    #     )
-    # )
-
-    # push_to_subscribes(message)
-
     notify_manager.push_exchange_message(
         exchange_data=exchange_data,
         event=ExchangeEventEnum.AddExchange
@@ -74,19 +60,10 @@ async def update_exchange_availability(exchange_data: ExchangeSchema):
     exchange_cache.remove_or_insert(exchange_data=exchange_data)
 
     # Пушим событие юзерам, чтобы их ui обновился
-    message = MessageData(
-        event_data=ExchangeEventData(
-            type=EventDataTypeEnum.Exchange,
-            payload=ExchangePayload(
-                event=ExchangeEventEnum.UpdateExchange,
-                exchange_name=exchange_data.name.lower(),
-                is_available=exchange_data.is_available
-            ),
-            timestamp=int(time.time())
-        )
+    notify_manager.push_exchange_message(
+        exchange_data=exchange_data,
+        event=ExchangeEventEnum.UpdateExchange
     )
-    
-    push_to_subscribes(message)
 
     # Меняем данные для userState, чтобы навсякий случай избежать проблему с рассихроностью
     try:

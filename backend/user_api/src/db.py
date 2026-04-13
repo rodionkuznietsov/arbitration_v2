@@ -74,7 +74,6 @@ class AsyncDatabase:
             "INSERT INTO exchanges (name, is_available) VALUES ($1, $2)",
             exchange_name, is_available
         )
-        log.info(f"Биржа {exchange_name} добавлена в базу данных.")
         return True
     
     async def update_exchange_availability(self, exchange_name: str, is_available: bool) -> bool:
