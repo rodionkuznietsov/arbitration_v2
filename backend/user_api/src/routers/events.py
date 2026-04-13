@@ -45,7 +45,6 @@ async def subscribe_events(tg_user_id: int):
             
             # Обновляем статус на NotSleeping, чтобы в cache.check_active_subscribes не удалялись очереди, если юзер активный
             user_state.change_sleeping_status(tg_user_id, new_status=AppStatusEnum.NotSleeping)
-            log.info(user_state.get(tg_user_id))
             push_to_subscribes(user_state.get(tg_user_id))
 
         return StreamingResponse(
