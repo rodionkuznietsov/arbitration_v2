@@ -4,6 +4,7 @@ class ExchangeEnum(str, Enum):
     Bybit = "bybit"
     Gate = "gate.io"
     Binance = "binance"
+    KuCoint = "kucoin"
     Unknown = "unknown"
 
 
