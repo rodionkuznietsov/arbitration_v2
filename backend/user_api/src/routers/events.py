@@ -41,17 +41,13 @@ async def subscribe_events(tg_user_id: int):
         subscribes[tg_user_id]["success_queue"].append(success_queue)
         subscribes[tg_user_id]["error_queue"].append(error_queue)
         
-        # Исправить баг при обновлении страницы
-        
         # Возращаем состояние юзера
         if tg_user_id in user_state.exists_users():
             log.info(f"{{ events_router.subscribe.events.init_data }} -> {tg_user_id}")
             
             # Обновляем статус на NotSleeping, чтобы в cache.check_active_subscribes не удалялись очереди, если юзер активный
             user_state.change_sleeping_status(tg_user_id, new_status=AppStatusEnum.NotSleeping)
-            log.info(user_state.get(tg_user_id))
-
-            # notify_manager.push_user_state_message(tg_user_id)
+            notify_manager.push_user_state_message(tg_user_id)
 
         return StreamingResponse(
             event_streamer(success_queue, tg_user_id), 
