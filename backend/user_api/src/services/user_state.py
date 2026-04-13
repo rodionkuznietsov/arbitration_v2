@@ -55,6 +55,12 @@ class UserState:
     ):
         return self.__user_state__[tg_user_id].data.isBotRunning
 
+    def set_active_from_draft(
+        self,
+        tg_user_id: int
+    ): 
+        self.__user_state__[tg_user_id].event_data.payload.bot_config.active = self.__user_state__[tg_user_id].event_data.payload.bot_config.draft
+
     def update_draft_exchange(
         self,
         tg_user_id: int,
