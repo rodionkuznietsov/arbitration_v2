@@ -37,7 +37,6 @@ async def run_ws(
     
     user_state: UserState,
     tg_user_id: int,
-    message: MessageData,
 ):
     attempt = 1
     max_attempts = 3
