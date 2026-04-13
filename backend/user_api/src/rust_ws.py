@@ -147,6 +147,21 @@ async def run_ws(
             attempt += 1
             await asyncio.sleep(3)
         except Exception as e:
+            # Меняем статус для userState
+            try:
+                user_state.change_status(
+                    tg_user_id=tg_user_id,
+                    status=AppStatusEnum.Offline,
+                    isBotRunning=False,
+                )
+
+                log.info(f"{{ rust_websocket.user_state.change_status }} -> {tg_user_id}")
+            except AttributeError as e:
+                log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
+                log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
+            except Exception as e:
+                log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
+
             message = MessageData(
                 event_data=MessageEventData(
                     type=EventDataTypeEnum.Websocket,
