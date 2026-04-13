@@ -147,7 +147,7 @@ class UserState:
         self,
         tg_user_id: int
     ):
-        return self.__user_state__[tg_user_id].payload.bot_config.active.shortOrderType
+        return self.__user_state__[tg_user_id].event_data.payload.bot_config.active.shortOrderType
 
     def isBotRunning(
         self,
