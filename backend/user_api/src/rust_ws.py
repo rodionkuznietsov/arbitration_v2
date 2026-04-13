@@ -40,28 +40,29 @@ async def run_ws(
     max_attempts = 3
     is_success_running = False
 
-    while attempt <= max_attempts and is_success_running is False:
-        # try:
-            log.info(f"{{ rust_websocket.connect }} -> {attempt} попытка")
-            async with websockets.connect(WEBSOCKET_URL) as websocket:
-                is_success_running = True # При успешном коннекте завершаем цикл с попытками
+    log.info(f"{user_state.long_active_exchange(tg_user_id)}")
+
+
+    # while attempt <= max_attempts and is_success_running is False:
+    #     # try:
+    #         log.info(f"{{ rust_websocket.connect }} -> {attempt} попытка")
+    #         async with websockets.connect(WEBSOCKET_URL) as websocket:
+    #             is_success_running = True # При успешном коннекте завершаем цикл с попытками
                 
-                # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
-                try:
-                    user_state.change_status(
-                        tg_user_id=tg_user_id,
-                        status=AppStatusEnum.Online,
-                        isBotRunning=True,
-                    )
+    #             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
+    #             try:
+    #                 user_state.change_status(
+    #                     tg_user_id=tg_user_id,
+    #                     status=AppStatusEnum.Online,
+    #                     isBotRunning=True,
+    #                 )
 
-                    log.info(f"{{ rust_websocket.user_state.change_status }} -> {tg_user_id}")
-                except AttributeError as e:
-                    log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
-                    log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
-                except Exception as e:
-                    log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
-
-                log.info(user_state.long_active_exchange(tg_user_id))
+    #                 log.info(f"{{ rust_websocket.user_state.change_status }} -> {tg_user_id}")
+    #             except AttributeError as e:
+    #                 log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
+    #                 log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
+    #             except Exception as e:
+    #                 log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
 
                 # await websocket.send(json.dumps({
                 #     "action": action,
