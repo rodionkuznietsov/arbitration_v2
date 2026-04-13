@@ -23,6 +23,8 @@ export const useUserState = defineStore('userState', {
             this.isBotRunning = payload.data.isBotRunning
             this.currentStatus = payload.data.status
 
+            alert(JSON.stringify(this.currentStatus))
+
             this.symbol = payload.bot_config.draft.symbol
 
             this.longExchange = payload.bot_config.draft.longExchange
