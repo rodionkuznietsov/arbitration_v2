@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 
 import structlog
 
-from ..services import notify_manager
+from ..services.notify_manager import notify_manager
 
 from ..schemas import AppStatusEnum
 from ..cache import subscribes
