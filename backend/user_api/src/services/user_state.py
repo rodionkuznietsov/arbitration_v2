@@ -146,29 +146,6 @@ class UserState:
         except Exception as e:
             log.error(f"{{ user_state.set_logs }} -> {e}")
 
-    def update_payload(
-        self, 
-        tg_user_id: int,
-        symbol: str,
-        longExchange: ExchangeEnum,
-        longOrderType: OrderTypeEnum,
-        shortExchange: ExchangeEnum,
-        shortOrderType: OrderTypeEnum,
-        status: AppStatusEnum,
-        isBotRunning: AppStatusEnum
-    ):
-        try:
-            if tg_user_id in self.__user_state__:
-                self.__user_state__[tg_user_id].event_data.payload.data.symbol = symbol
-                self.__user_state__[tg_user_id].event_data.payload.data.longExchange = longExchange
-                self.__user_state__[tg_user_id].event_data.payload.data.longOrderType = longOrderType
-                self.__user_state__[tg_user_id].event_data.payload.data.shortExchange = shortExchange
-                self.__user_state__[tg_user_id].event_data.payload.data.shortOrderType = shortOrderType
-                self.__user_state__[tg_user_id].event_data.payload.data.status = status
-                self.__user_state__[tg_user_id].event_data.payload.data.isBotRunning = isBotRunning
-        except Exception as e:
-            log.error(f"{{ user_state.update_payload }} -> {e}")
-
     def change_status(
         self,
         tg_user_id: int,

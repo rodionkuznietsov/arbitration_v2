@@ -54,21 +54,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     )
                 )
                 
-                # # Сохраняем насстройки для остальных устройств
-                # user_state.update_payload(
-                #     tg_user_id=tg_user_id, 
-                #     symbol=message.event_data.payload.symbol,
-                    
-                #     longExchange=message.event_data.payload.longExchange,
-                #     longOrderType=message.event_data.payload.longOrderType,
-
-                #     shortExchange=message.event_data.payload.shortExchange,
-                #     shortOrderType=message.event_data.payload.shortOrderType,
-
-                #     status=AppStatusEnum.Offline,
-                #     isBotRunning=False,
-                # )
-
                 # Подключаем клиента
                 task = asyncio.create_task(run_ws(
                     action=WebSocketActionEnum.Subscribe,
