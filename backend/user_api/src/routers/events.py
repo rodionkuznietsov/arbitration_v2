@@ -6,8 +6,10 @@ from fastapi.responses import StreamingResponse
 
 import structlog
 
+from ..services import notify_manager
+
 from ..schemas import AppStatusEnum
-from ..cache import push_to_subscribes, subscribes
+from ..cache import subscribes
 from ..core.state import user_state
 
 router = APIRouter()
@@ -47,7 +49,7 @@ async def subscribe_events(tg_user_id: int):
             user_state.change_sleeping_status(tg_user_id, new_status=AppStatusEnum.NotSleeping)
             log.info(user_state.get(tg_user_id))
 
-            push_to_subscribes(user_state.get(tg_user_id))
+            notify_manager.push_user_state_message(tg_user_id)
 
         return StreamingResponse(
             event_streamer(success_queue, tg_user_id), 
