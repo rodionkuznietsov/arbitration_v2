@@ -21,9 +21,10 @@ class WebsocketClosedContext(BaseModel):
     tg_user_id: int
     status: WebSocketStatuEnum
 
+class WebsocketChannelEnum(str, Enum):
+    OrderBook = "order_book"
+    Chart = "chart"
+
 class WebsocketPayload(BaseModel):
-    symbol: str
-    longExchange: ExchangeEnum
-    longOrderType: OrderTypeEnum
-    shortExchange: ExchangeEnum
-    shortOrderType: OrderTypeEnum
+    channel: WebsocketChannelEnum
+    result: dict

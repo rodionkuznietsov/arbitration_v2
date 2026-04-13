@@ -23,27 +23,22 @@ class NotifyMassager:
     ):
 
         try:
-            log.info(data)
-            # ws_message = MessageData(
-            #     event_data=MessageEventData(
-            #         type=EventDataTypeEnum.Websocket,
-            #         payload=WebsocketPayload(
-            #             symbol=data.get("symbol"),
-            #             longExchange=user_state.long_active_exchange(tg_user_id),
-            #             longOrderType=user_state.long_active_long_order_type(tg_user_id),
-            #             shortExchange=user_state.short_active_exchange(tg_user_id),
-            #             shortOrderType=user_state.short_active_short_order_type(tg_user_id),
-            #         ),
-            #         timestamp=int(time.time()),
-            #         ws_data=data
-            #     ),
-            #     context=MessageContext(
-            #         method=MessageMethod.WebsocketConnected,
-            #         tg_user_id=tg_user_id
-            #     )
-            # )
+            ws_message = MessageData(
+                event_data=MessageEventData(
+                    type=EventDataTypeEnum.Websocket,
+                    payload=WebsocketPayload(
+                        channel=data.get("channel"),
+                        result=data.get("result")
+                    ),
+                    timestamp=int(time.time()),
+                ),
+                context=MessageContext(
+                    method=MessageMethod.WebsocketConnected,
+                    tg_user_id=tg_user_id
+                )
+            )
 
-            # push_to_subscribes(ws_message)
+            push_to_subscribes(ws_message)
         except Exception as e:
             log.error(f"{{ notify_manager.push_websocket_message }} -> {e}")
 
