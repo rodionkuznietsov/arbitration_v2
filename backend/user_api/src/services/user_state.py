@@ -116,7 +116,6 @@ class UserState:
         try:
             if tg_user_id in self.__user_state__:
                 if self.__is_bot_running__(tg_user_id):
-                    log.info(self.__is_bot_running__(tg_user_id))
                     self.__user_state__[tg_user_id].event_data.payload.bot_config.draft = self.__user_state__[tg_user_id].event_data.payload.bot_config.active
                     
                 return self.__user_state__[tg_user_id]
