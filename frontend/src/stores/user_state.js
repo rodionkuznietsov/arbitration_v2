@@ -20,9 +20,9 @@ export const useUserState = defineStore('userState', {
     actions: {
         set_init_data(payload, orderBookStore) {
 
-            alert(JSON.stringify(payload))
-
             this.isBotRunning = payload.data.isBotRunning
+            this.currentStatus = payload.data.status
+
             this.symbol = payload.bot_config.draft.symbol
 
             this.longExchange = payload.bot_config.draft.longExchange
@@ -30,8 +30,6 @@ export const useUserState = defineStore('userState', {
             
             this.shortExchange = payload.bot_config.draft.shortExchange
             this.shortOrderType = payload.bot_config.draft.shortOrderType
-
-            this.currentStatus = payload.bot_config.draft.status
 
             if (this.isBotRunning) {
                 orderBookStore.updateHeader(
