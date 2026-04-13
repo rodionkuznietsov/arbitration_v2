@@ -73,7 +73,8 @@ async def run_ws(
                 while True:
                     response = await websocket.recv()
                     data = json.loads(response)
-                    notify_manager.push_websocket_message(tg_user_id, data=data)
+                    log.info(data)
+                    # notify_manager.push_websocket_message(tg_user_id, data=data)
 
         except websockets.exceptions.InvalidStatus as e:            
             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
