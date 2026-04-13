@@ -147,7 +147,8 @@ async def run_ws(
             attempt += 1
             await asyncio.sleep(3)
         except Exception as e:
-            # Меняем статус для userState
+            # Здесь меняем статус для userState, так мы избежим бага, 
+            # запущеного вебсокета после обновление страницы юзером
             try:
                 user_state.change_status(
                     tg_user_id=tg_user_id,
