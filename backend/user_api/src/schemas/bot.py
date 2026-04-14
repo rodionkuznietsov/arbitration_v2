@@ -17,8 +17,8 @@ class AppStatusEnum(str, Enum):
     Sleeping = "sleeping"
 
 class LogStatusEnum(str, Enum):
-    Error = "Не удалось запустить бота",
-    Success = "Бот был успешно запущен"
+    Error = "Ошибка",
+    Success = "Успешно"
 
 class LogDataSchema(BaseModel):
     symbol: str
