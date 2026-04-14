@@ -91,6 +91,8 @@ async def run_ws(
                         status=LogStatusEnum.Success,
                     )
 
+                log.info(can_success_log_send)
+
                 while True:
                     response = await websocket.recv()
                     data = json.loads(response)
