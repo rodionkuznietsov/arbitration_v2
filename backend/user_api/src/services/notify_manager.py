@@ -32,13 +32,6 @@ class NotifyMassager:
         self,
         tg_user_id: int,
         event: EventTypeEnum,
-        
-        symbol: str,
-        longExchange: ExchangeEnum,
-        shortExchange: ExchangeEnum,
-        longOrderType: OrderTypeEnum,
-        shortOrderType: OrderTypeEnum,
-
         status: LogStatusEnum,
     ):
         try:       
@@ -48,7 +41,7 @@ class NotifyMassager:
                     timestamp=int(time.time()),
                     payload=LogPayload(
                         event=event,
-                        symbol=symbol,
+                        symbol=user_state.long_active_symbol(tg_user_id),
 
                         longExchange=user_state.long_active_exchange(tg_user_id),
                         longOrderType=user_state.long_active_order_type(tg_user_id),

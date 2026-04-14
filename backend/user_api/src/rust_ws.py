@@ -71,15 +71,6 @@ async def run_ws(
                         await notify_manager.push_log_message(
                             tg_user_id,
                             event=EventTypeEnum.BotStart,
-
-                            symbol=user_state.long_active_symbol(tg_user_id),
-
-                            longExchange=user_state.long_active_exchange(tg_user_id),
-                            longOrderType=user_state.long_active_order_type(tg_user_id),
-
-                            shortExchange=user_state.short_active_exchange(tg_user_id),
-                            shortOrderType=user_state.short_active_order_type(tg_user_id),
-
                             status=LogStatusEnum.Success,
                         )
 
@@ -106,26 +97,17 @@ async def run_ws(
                 if attempt == max_attempts:
                     log.error(f"{{ rust_websocket.502 }} -> Не удалось подключиться к WebSocket")
                     log.error(f"{{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
-
-                    # Сбрасываем status UserState, чтобы позже можно было снова попробовать подключиться к WS
-                    try:
-                        user_state.change_status(
-                            tg_user_id=tg_user_id,
-                            status=AppStatusEnum.Offline,
-                            isBotRunning=False,
-                        )
-
-                        log.info(f"{{ rust_websocket.user_state.change_status }} -> {tg_user_id}")
-                    except AttributeError as e:
-                        log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
-                        log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
-                    except Exception as e:
-                        log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
-
             else:
                 log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
             
             notify_manager.push_user_state_message(tg_user_id)
+
+            if attempt == max_attempts:
+                notify_manager.push_log_message(
+                    tg_user_id=tg_user_id,
+                    event=EventTypeEnum.BotStart,
+                    status=LogStatusEnum.Error
+                )
 
             attempt += 1
             await asyncio.sleep(3)
@@ -148,6 +130,13 @@ async def run_ws(
 
             notify_manager.push_user_state_message(tg_user_id)
             log.error(f"{{ rust_websocket.error }} -> принудительно остановлен: {e}")
+
+            if attempt == max_attempts:
+                notify_manager.push_log_message(
+                    tg_user_id=tg_user_id,
+                    event=EventTypeEnum.BotStart,
+                    status=LogStatusEnum.Error
+                )
 
             attempt += 1    
             await asyncio.sleep(3)
