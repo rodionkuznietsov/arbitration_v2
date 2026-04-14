@@ -35,7 +35,6 @@ async def run_ws(
     action: WebSocketActionEnum,
     channel: WebSocketChannelEnum,
     tg_user_id: int,
-    log_data
 ):
     attempt = 1
     max_attempts = 3
@@ -84,7 +83,6 @@ async def run_ws(
                     shortOrderType=user_state.short_active_order_type(tg_user_id),
 
                     status=LogStatusEnum.Success,
-                    data=log_data
                 )
 
                 while True:

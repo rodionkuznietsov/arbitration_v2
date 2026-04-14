@@ -32,7 +32,6 @@ class NotifyMassager:
         shortOrderType: OrderTypeEnum,
 
         status: LogStatusEnum,
-        data
     ):
         message = MessageData(
             event_data=MessageEventData(
@@ -59,7 +58,7 @@ class NotifyMassager:
         )
 
         push_to_subscribes(message=message)
-        await database.add_log(tg_user_id, data=data)
+        await database.add_log(tg_user_id, data=message)
 
     def push_websocket_message(
         self,

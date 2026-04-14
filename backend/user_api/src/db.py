@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import os
 import structlog
 
-from .schemas import UserLogSchema
+from .schemas import MessageData, UserLogSchema
 
 log = structlog.get_logger()
 
@@ -96,17 +96,17 @@ class AsyncDatabase:
         )
         return result is not None
     
-    async def add_log(self, tg_user_id: int, data: UserLogSchema):
+    async def add_log(self, data: MessageData):
         try:
-            if await self.__check_log_exists__(data.timestamp, tg_user_id):
+            if await self.__check_log_exists__(data.event_data.timestamp, data.context.tg_user_id):
                 log.warning(f"Не удалось добавить лог")
                 return
             
             await self.pool.execute(
-                "INSERT INTO user_logs (event, tg_user_id, symbol, long_exchange, short_exchange, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
-                data.event, tg_user_id, data.data.symbol, data.data.longExchange, data.data.shortExchange, data.timestamp
+                "INSERT INTO user_logs (event, tg_user_id, symbol, long_exchange, short_exchange, status, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
+                data.event_data.payload.event, data.context.tg_user_id, data.event_data.payload.symbol, data.event_data.payload.longExchange, data.event_data.payload.shortExchange, data.event_data.timestamp
             )
-            log.info(f"Лог: {data.event.title()}, успешно был добавлен для пользователя с id: {tg_user_id}.")
+            log.info(f"Лог: {data.event_data.payload.event.title()}, успешно был добавлен для пользователя с id: {data.context.tg_user_id}.")
         except Exception as e:
             log.error(f"AsyncDatabase: {e}")
 

@@ -38,7 +38,6 @@ async def add_log(data: UserLogSchema, token: Annotated[str, Depends(oauth2_sche
                     action=WebSocketActionEnum.Subscribe,
                     channel=WebSocketChannelEnum.OrderBook,
                     tg_user_id=tg_user_id,
-                    log_data=data
                 ))
                 ws_task[f"{tg_user_id}:{data.data.symbol.lower()}"] = task
 
