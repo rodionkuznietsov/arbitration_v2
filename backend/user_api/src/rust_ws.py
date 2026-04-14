@@ -6,6 +6,7 @@ import websockets
 import os
 from dotenv import load_dotenv
 import structlog
+import websockets.connection
 
 from .services.notify_manager import notify_manager
 
@@ -39,7 +40,7 @@ async def run_ws(
     attempt = 1
     max_attempts = 3
     is_success_running = False
-    can_success_log_send = False
+    can_log_send = True
 
     while attempt <= max_attempts and is_success_running is False:
         try:
@@ -73,33 +74,30 @@ async def run_ws(
 
                 notify_manager.push_user_state_message(tg_user_id)
 
-                if can_success_log_send:
-                    log.info("Отправка лога")
-
-                    await notify_manager.push_log_message(
-                        tg_user_id,
-                        event=EventTypeEnum.BotStart,
-
-                        symbol=user_state.long_active_symbol(tg_user_id),
-
-                        longExchange=user_state.long_active_exchange(tg_user_id),
-                        longOrderType=user_state.long_active_order_type(tg_user_id),
-
-                        shortExchange=user_state.short_active_exchange(tg_user_id),
-                        shortOrderType=user_state.short_active_order_type(tg_user_id),
-
-                        status=LogStatusEnum.Success,
-                    )
-
-                log.info(can_success_log_send)
-
                 while True:
                     response = await websocket.recv()
                     data = json.loads(response)
                     notify_manager.push_websocket_message(tg_user_id, data=data)
 
-                    if can_success_log_send is False:
-                        can_success_log_send = True
+                    if can_log_send:
+                        log.info("Отправка лога")
+
+                        await notify_manager.push_log_message(
+                            tg_user_id,
+                            event=EventTypeEnum.BotStart,
+
+                            symbol=user_state.long_active_symbol(tg_user_id),
+
+                            longExchange=user_state.long_active_exchange(tg_user_id),
+                            longOrderType=user_state.long_active_order_type(tg_user_id),
+
+                            shortExchange=user_state.short_active_exchange(tg_user_id),
+                            shortOrderType=user_state.short_active_order_type(tg_user_id),
+
+                            status=LogStatusEnum.Success,
+                        )
+
+                        can_log_send = False
 
         except websockets.exceptions.InvalidStatus as e:            
             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
