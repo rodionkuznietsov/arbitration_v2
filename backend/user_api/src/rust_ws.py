@@ -39,13 +39,14 @@ async def run_ws(
     attempt = 1
     max_attempts = 3
     is_success_running = False
+    can_success_log_send = False
 
     while attempt <= max_attempts and is_success_running is False:
         try:
             log.info(f"{{ rust_websocket.connect }} -> {attempt} попытка")
-            
             async with websockets.connect(WEBSOCKET_URL) as websocket:
-                is_success_running = True # При успешном коннекте завершаем цикл с попытками
+                # При успешном коннекте завершаем цикл с попытками
+                is_success_running = True
             
                 # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
                 try:
@@ -71,29 +72,34 @@ async def run_ws(
                 )
 
                 notify_manager.push_user_state_message(tg_user_id)
-                await notify_manager.push_log_message(
-                    tg_user_id,
-                    event=EventTypeEnum.BotStart,
 
-                    symbol=user_state.long_active_symbol(tg_user_id),
+                if can_success_log_send:
+                    log.info("Отправка лога")
 
-                    longExchange=user_state.long_active_exchange(tg_user_id),
-                    longOrderType=user_state.long_active_order_type(tg_user_id),
+                    await notify_manager.push_log_message(
+                        tg_user_id,
+                        event=EventTypeEnum.BotStart,
 
-                    shortExchange=user_state.short_active_exchange(tg_user_id),
-                    shortOrderType=user_state.short_active_order_type(tg_user_id),
+                        symbol=user_state.long_active_symbol(tg_user_id),
 
-                    status=LogStatusEnum.Success,
-                )
+                        longExchange=user_state.long_active_exchange(tg_user_id),
+                        longOrderType=user_state.long_active_order_type(tg_user_id),
+
+                        shortExchange=user_state.short_active_exchange(tg_user_id),
+                        shortOrderType=user_state.short_active_order_type(tg_user_id),
+
+                        status=LogStatusEnum.Success,
+                    )
 
                 while True:
                     response = await websocket.recv()
                     data = json.loads(response)
                     notify_manager.push_websocket_message(tg_user_id, data=data)
 
+                    if can_success_log_send is False:
+                        can_success_log_send = True
+
         except websockets.exceptions.InvalidStatus as e:            
-            is_success_running = False
-            
             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
             # во время попыток подключения
             try:
@@ -138,8 +144,6 @@ async def run_ws(
             attempt += 1
             await asyncio.sleep(3)
         except Exception as e:
-            is_success_running = False
-
             # Здесь меняем статус для userState, так мы избежим бага, 
             # запущеного вебсокета после обновление страницы юзером
             try:
