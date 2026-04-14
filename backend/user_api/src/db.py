@@ -103,7 +103,7 @@ class AsyncDatabase:
                 return
             
             await self.pool.execute(
-                "INSERT INTO user_logs (event, tg_user_id, symbol, long_exchange, short_exchange, status, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
+                "INSERT INTO user_logs (event, tg_user_id, symbol, long_exchange, short_exchange, status, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)",
                 data.event_data.payload.event, 
                 data.context.tg_user_id, 
                 data.event_data.payload.symbol, 
