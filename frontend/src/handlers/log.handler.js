@@ -9,6 +9,7 @@ export function log_handler(
             symbol: event_data.payload.symbol,
             long_exchange: event_data.payload.longExchange,
             short_exchange: event_data.payload.shortExchange,
+            status: event_data.payload.status,
             timestamp: event_data.timestamp
         }
 

@@ -45,6 +45,7 @@
                     <div class="log-table-element">Тикер: {{ v.symbol.toUpperCase() }}</div>
                     <div class="log-table-element">Лонг биржа: {{ v.long_exchange }}</div>
                     <div class="log-table-element">Шорт биржа: {{ v.short_exchange }}</div>
+                    <div class="log-table-element">Статус: {{ v.status }}</div>
                     <div class="log-table-element">Время: {{ new Date(v.timestamp * 1000).toLocaleTimeString() }}</div>
                 </div>
             </div>

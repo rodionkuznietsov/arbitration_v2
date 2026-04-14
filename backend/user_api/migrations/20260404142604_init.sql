@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS user_logs (
     symbol VARCHAR(255) NOT NULL,
     long_exchange VARCHAR(255) NOT NULL,
     short_exchange VARCHAR(255) NOT NULL,
+    status VARCHAR(255) NOT NULL,
     timestamp BIGINT NOT NULL,
     PRIMARY KEY (id, timestamp, tg_user_id, event)
 );
