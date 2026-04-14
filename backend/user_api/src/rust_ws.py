@@ -39,24 +39,15 @@ async def run_ws(
 ):
     attempt = 1
     max_attempts = 3
-    is_success_running = False
-    can_log_send = True
+    is_attempt_allow = True
+    can_push_message = True
 
-    while attempt <= max_attempts and is_success_running is False:
+    while attempt <= max_attempts and is_attempt_allow:
         try:
             log.info(f"{{ rust_websocket.connect }} -> {attempt} попытка")
             async with websockets.connect(WEBSOCKET_URL) as websocket:
                 # При успешном коннекте завершаем цикл с попытками
-                is_success_running = True
-            
-                # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
-                try:
-                    log.info(f"{{ rust_websocket.user_state.change_status }} -> {tg_user_id}")
-                except AttributeError as e:
-                    log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
-                    log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
-                except Exception as e:
-                    log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
+                is_attempt_allow = False
 
                 await websocket.send(json.dumps({
                     "action": action,
@@ -66,22 +57,17 @@ async def run_ws(
                     "ticker": user_state.long_active_symbol(tg_user_id)
                 }))
 
-                user_state.change_status(
-                    tg_user_id=tg_user_id,
-                    status=AppStatusEnum.Online,
-                    isBotRunning=True,
-                )
-
-                notify_manager.push_user_state_message(tg_user_id)
-
                 while True:
                     response = await websocket.recv()
                     data = json.loads(response)
                     notify_manager.push_websocket_message(tg_user_id, data=data)
 
-                    if can_log_send:
-                        log.info("Отправка лога")
-
+                    if can_push_message:
+                        notify_manager.push_user_state_message(
+                            tg_user_id,
+                            status=AppStatusEnum.Online
+                        )
+                        
                         await notify_manager.push_log_message(
                             tg_user_id,
                             event=EventTypeEnum.BotStart,
@@ -97,7 +83,7 @@ async def run_ws(
                             status=LogStatusEnum.Success,
                         )
 
-                        can_log_send = False
+                        can_push_message = False # Устанавливаем False чтобы сообщение отправилось только один раз
 
         except websockets.exceptions.InvalidStatus as e:            
             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket

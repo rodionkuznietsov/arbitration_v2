@@ -8,7 +8,7 @@ import structlog
 from ..db import database
 
 from ..cache import push_to_subscribes
-from ..schemas import EventTypeEnum, ExchangeEnum, LogPayload, LogStatusEnum, OrderTypeEnum, UserStatePayload, WebsocketPayload, EventDataTypeEnum, ExchangeClearPayload, ExchangeEventData, ExchangeEventEnum, ExchangePayload, ExchangeSchema, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod
+from ..schemas import AppStatusEnum, EventTypeEnum, ExchangeEnum, LogPayload, LogStatusEnum, OrderTypeEnum, UserStatePayload, WebsocketPayload, EventDataTypeEnum, ExchangeClearPayload, ExchangeEventData, ExchangeEventEnum, ExchangePayload, ExchangeSchema, MessageContext, MessageData, MessageEventData, MessageEventPayload, MessageMethod
 from ..core.state import user_state
 
 log: structlog.PrintLogger = structlog.get_logger()
@@ -16,8 +16,16 @@ log: structlog.PrintLogger = structlog.get_logger()
 class NotifyMassager:
     def push_user_state_message(
         self,
-        tg_user_id: int
+        tg_user_id: int,
+        status: Optional[AppStatusEnum] = None
     ) -> None:
+        if status is not None:
+            user_state.change_status(
+                tg_user_id=tg_user_id,
+                status=status,
+                isBotRunning=True,
+            )
+            
         push_to_subscribes(user_state.get(tg_user_id))
 
     async def push_log_message(
