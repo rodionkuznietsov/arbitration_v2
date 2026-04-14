@@ -129,7 +129,6 @@ async def run_ws(
                 log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
 
             notify_manager.push_user_state_message(tg_user_id)
-            log.error(f"{{ rust_websocket.error }} -> принудительно остановлен: {e}")
 
             if attempt == max_attempts:
                 notify_manager.push_log_message(
@@ -140,6 +139,9 @@ async def run_ws(
 
             attempt += 1    
             await asyncio.sleep(3)
+
+            log.error(f"{{ rust_websocket.error }} -> принудительно остановлен: {e}")
+
         except asyncio.CancelledError: # Юзер отключил WS
             user_state.change_status(
                 tg_user_id=tg_user_id,
