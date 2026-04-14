@@ -33,32 +33,35 @@ class NotifyMassager:
 
         status: LogStatusEnum,
     ):
-        message = MessageData(
-            event_data=MessageEventData(
-                type=EventDataTypeEnum.Log,
-                timestamp=int(time.time()),
-                payload=LogPayload(
-                    event=event,
+        try:       
+            message = MessageData(
+                event_data=MessageEventData(
+                    type=EventDataTypeEnum.Log,
+                    timestamp=int(time.time()),
+                    payload=LogPayload(
+                        event=event,
 
-                    symbol=symbol,
+                        symbol=symbol,
 
-                    longExchange=longExchange,
-                    longOrderType=longOrderType,
+                        longExchange=longExchange,
+                        longOrderType=longOrderType,
 
-                    shortExchange=shortExchange,                    
-                    shortOrderType=shortOrderType,
+                        shortExchange=shortExchange,                    
+                        shortOrderType=shortOrderType,
 
-                    status=status
+                        status=status
+                    )
+                ),
+                context=MessageContext(
+                    method=MessageMethod.User,
+                    tg_user_id=tg_user_id
                 )
-            ),
-            context=MessageContext(
-                method=MessageMethod.User,
-                tg_user_id=tg_user_id
             )
-        )
-
-        push_to_subscribes(message=message)
-        await database.add_log(tg_user_id, data=message)
+                
+            push_to_subscribes(message=message)
+            await database.add_log(data=message)
+        except Exception as e:
+            log.error(f"{{ notify_manager.push_log_message }} -> {e}")
 
     def push_websocket_message(
         self,
