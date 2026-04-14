@@ -17,13 +17,14 @@ class NotifyMassager:
     def push_user_state_message(
         self,
         tg_user_id: int,
-        status: Optional[AppStatusEnum] = None
+        status: Optional[AppStatusEnum] = None,
+        isBotRunning: Optional[bool] = False
     ) -> None:
         if status is not None:
             user_state.change_status(
                 tg_user_id=tg_user_id,
                 status=status,
-                isBotRunning=True,
+                isBotRunning=isBotRunning,
             )
             
         push_to_subscribes(user_state.get(tg_user_id))

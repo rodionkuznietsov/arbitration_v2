@@ -65,7 +65,8 @@ async def run_ws(
                     if can_push_message:
                         notify_manager.push_user_state_message(
                             tg_user_id,
-                            status=AppStatusEnum.Online
+                            status=AppStatusEnum.Online,
+                            isBotRunning=True
                         )
                         
                         await notify_manager.push_log_message(
@@ -77,21 +78,11 @@ async def run_ws(
                         can_push_message = False # Устанавливаем False чтобы сообщение отправилось только один раз
 
         except websockets.exceptions.InvalidStatus as e:            
-            # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
-            # во время попыток подключения
-            try:
-                user_state.change_status(
-                    tg_user_id=tg_user_id,
-                    status=AppStatusEnum.Warning,
-                    isBotRunning=False,
-                )
-
-                log.info(f"{{ rust_websocket.user_state.change_status }} -> {tg_user_id}")
-            except AttributeError as e:
-                log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
-                log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
-            except Exception as e:
-                log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
+            notify_manager.push_user_state_message(
+                tg_user_id,
+                status=AppStatusEnum.Warning,
+                isBotRunning=False
+            )
             
             if e.response.status_code == 502:
                 if attempt == max_attempts:
@@ -99,10 +90,14 @@ async def run_ws(
                     log.error(f"{{ rust_websocket.502 }} -> Рекомендуем проверить запущен ли WebSocket")
             else:
                 log.error(f"{{ rust_websocket.{e.response.status_code} }} -> {e}")
-            
-            notify_manager.push_user_state_message(tg_user_id)
 
             if attempt == max_attempts:
+                notify_manager.push_user_state_message(
+                    tg_user_id,
+                    status=AppStatusEnum.Offline,
+                    isBotRunning=False
+                )
+
                 notify_manager.push_log_message(
                     tg_user_id=tg_user_id,
                     event=EventTypeEnum.BotStart,
@@ -112,23 +107,11 @@ async def run_ws(
             attempt += 1
             await asyncio.sleep(3)
         except Exception as e:
-            # Здесь меняем статус для userState, так мы избежим бага, 
-            # запущеного вебсокета после обновление страницы юзером
-            try:
-                user_state.change_status(
-                    tg_user_id=tg_user_id,
-                    status=AppStatusEnum.Offline,
-                    isBotRunning=False,
-                )
-
-                log.info(f"{{ rust_websocket.user_state.change_status }} -> {tg_user_id}")
-            except AttributeError as e:
-                log.error(f"RustWebsocket {{user_state.change_status)}} -> У {type(e.obj).__name__} нет change_status")
-                log.error(f"RustWebsocket {{user_state.change_status)}} -> Рекомендуем проверить, какие данные передаються в user_state=")
-            except Exception as e:
-                log.error(f"RustWebsocket {{user_state.change_status)}} -> {e}")
-
-            notify_manager.push_user_state_message(tg_user_id)
+            notify_manager.push_user_state_message(
+                tg_user_id, 
+                status=AppStatusEnum.Offline,
+                isBotRunning=False
+            )
 
             if can_push_message:
                 await notify_manager.push_log_message(
