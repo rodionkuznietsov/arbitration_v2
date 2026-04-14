@@ -7,9 +7,6 @@ export const useLogStore = defineStore('logStore', {
 
     actions: {
         addLog(log) {
-            alert(log)
-            alert(this.logs)
-
             this.logs.push(log)
         },
 
