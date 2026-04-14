@@ -43,6 +43,7 @@ async def run_ws(
     while attempt <= max_attempts and is_success_running is False:
         try:
             log.info(f"{{ rust_websocket.connect }} -> {attempt} попытка")
+            
             async with websockets.connect(WEBSOCKET_URL) as websocket:
                 is_success_running = True # При успешном коннекте завершаем цикл с попытками
             
@@ -91,6 +92,8 @@ async def run_ws(
                     notify_manager.push_websocket_message(tg_user_id, data=data)
 
         except websockets.exceptions.InvalidStatus as e:            
+            is_success_running = False
+            
             # Обновляем статус в user_state, для защиты от запусков последующих WebSocket
             # во время попыток подключения
             try:
@@ -135,6 +138,8 @@ async def run_ws(
             attempt += 1
             await asyncio.sleep(3)
         except Exception as e:
+            is_success_running = False
+
             # Здесь меняем статус для userState, так мы избежим бага, 
             # запущеного вебсокета после обновление страницы юзером
             try:
