@@ -57,11 +57,9 @@ class NotifyMassager:
                     tg_user_id=tg_user_id
                 )
             )
-
-            log.info(message)
                 
-            # push_to_subscribes(message=message)
-            # await database.add_log(data=message)
+            push_to_subscribes(message=message)
+            await database.add_log(data=message)
         except Exception as e:
             log.error(f"{{ notify_manager.push_log_message }} -> {e}")
 
