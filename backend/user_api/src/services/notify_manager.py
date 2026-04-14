@@ -48,14 +48,13 @@ class NotifyMassager:
                     timestamp=int(time.time()),
                     payload=LogPayload(
                         event=event,
-
                         symbol=symbol,
 
-                        longExchange=longExchange,
-                        longOrderType=longOrderType,
+                        longExchange=user_state.long_active_exchange(tg_user_id),
+                        longOrderType=user_state.long_active_order_type(tg_user_id),
 
-                        shortExchange=shortExchange,                    
-                        shortOrderType=shortOrderType,
+                        shortExchange=user_state.short_active_exchange(tg_user_id),                    
+                        shortOrderType=user_state.short_active_order_type(tg_user_id),
 
                         status=status
                     )
@@ -65,9 +64,11 @@ class NotifyMassager:
                     tg_user_id=tg_user_id
                 )
             )
+
+            log.info(message)
                 
-            push_to_subscribes(message=message)
-            await database.add_log(data=message)
+            # push_to_subscribes(message=message)
+            # await database.add_log(data=message)
         except Exception as e:
             log.error(f"{{ notify_manager.push_log_message }} -> {e}")
 
