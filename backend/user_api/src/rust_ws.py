@@ -131,12 +131,12 @@ async def run_ws(
             notify_manager.push_user_state_message(tg_user_id)
 
             if can_push_message:
-                notify_manager.push_log_message(
+                await notify_manager.push_log_message(
                     tg_user_id=tg_user_id,
                     event=EventTypeEnum.BotStart,
                     status=LogStatusEnum.Error
                 )
-                
+
             log.error(f"{{ rust_websocket.error }} -> принудительно остановлен: {e}")
 
         except asyncio.CancelledError: # Юзер отключил WS
