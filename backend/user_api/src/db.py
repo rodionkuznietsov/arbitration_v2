@@ -104,7 +104,13 @@ class AsyncDatabase:
             
             await self.pool.execute(
                 "INSERT INTO user_logs (event, tg_user_id, symbol, long_exchange, short_exchange, status, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
-                data.event_data.payload.event, data.context.tg_user_id, data.event_data.payload.symbol, data.event_data.payload.longExchange, data.event_data.payload.shortExchange, data.event_data.timestamp
+                data.event_data.payload.event, 
+                data.context.tg_user_id, 
+                data.event_data.payload.symbol, 
+                data.event_data.payload.longExchange, 
+                data.event_data.payload.shortExchange, 
+                data.event_data.payload.status,
+                data.event_data.timestamp
             )
             log.info(f"Лог: {data.event_data.payload.event.title()}, успешно был добавлен для пользователя с id: {data.context.tg_user_id}.")
         except Exception as e:
