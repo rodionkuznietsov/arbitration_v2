@@ -25,6 +25,9 @@ async fn main() {
         .with_target(false)
         .pretty()
         .init();
+
+    console_subscriber::ConsoleLayer::builder()
+        .init();
     
     let storage_pool = storage::pool::create_pool().await;
         
