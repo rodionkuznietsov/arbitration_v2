@@ -116,7 +116,7 @@ async fn main() {
     //     }
     // });
 
-    // loop {
-    //     tokio::time::sleep(Duration::from_millis(10)).await;
-    // }
+    loop {
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
 }
