@@ -98,7 +98,7 @@ async def run_ws(
                     isBotRunning=False
                 )
 
-                notify_manager.push_log_message(
+                await notify_manager.push_log_message(
                     tg_user_id=tg_user_id,
                     event=EventTypeEnum.BotStart,
                     status=LogStatusEnum.Error
