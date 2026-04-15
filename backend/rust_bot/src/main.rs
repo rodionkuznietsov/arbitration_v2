@@ -29,87 +29,94 @@ async fn main() {
         .with(console_subscriber::spawn())
         .init();
 
-    let storage_pool = storage::pool::create_pool().await;
-        
-    let (manager_transmitter_tx, manager_transmitter_rx) = mpsc::channel::<ManagerTransmitterCmd>(64);
-        
-    let data_mapping = DataMapping::new(manager_transmitter_tx.clone());
-    let data_mapping_tx = data_mapping.data_mapping_tx.clone();
-    data_mapping.run();
-
-    // Запускаем агррегаторы
-    let (cache_aggregator_tx, cache_aggregator_rx) = mpsc::channel::<Arc<CacheAggregatorCmd>>(64);
-    let cache_aggregator = CacheAggregator::new(
-        cache_aggregator_rx, 
-        data_mapping_tx.clone(),
-        storage_pool.clone()
-    );
-    tokio::spawn(cache_aggregator.run());
-
-    // Каналы для получения данных с data aggregator
-    let (client_aggregator_chart_tx, client_aggregator_chart_rx) = mpsc::channel::<Arc<ClientAggregatorCmd>>(64);
-
-    // Канал для приёма команд от пользователя
-    let (client_aggregator_tx, client_aggregator_rx) = mpsc::channel::<ClientAggregatorCmd>(64);
-
-    let client_aggregator = ClientAggregator::new(
-        client_aggregator_rx,
-        client_aggregator_chart_rx,
-        cache_aggregator_tx.clone(),
-    );
-    tokio::spawn(client_aggregator.run());
-    
-    let (data_aggregator_tx, data_aggregator_rx) = mpsc::channel::<DataAggregatorCmd>(64);
-    let data_aggregator = DataAggregator::new(
-        data_aggregator_rx, 
-        data_mapping_tx.clone(),
-        cache_aggregator_tx.clone(),
-        storage_pool.clone(),
-    );
-
-    let manager_transmitter = ManagerTransmitter::new(
-        client_aggregator_chart_tx.clone(),
-        cache_aggregator_tx.clone(),
-    );
-    tokio::spawn(manager_transmitter.run(manager_transmitter_rx));
-
-    let exchange_channel_store = ExchangeChannelStore::new();
-    let exchange_channel_store_tx = exchange_channel_store.sender_channel.clone();
-    tokio::spawn(exchange_channel_store.run());
-
-    let data_access_layer = DataAccessLayer::new(
-        cache_aggregator_tx.clone(),
-        data_mapping_tx.clone(),
-        exchange_channel_store_tx.clone(),
-        data_aggregator_tx.clone()
-    );
-    tokio::spawn(data_access_layer.run());
-
-    tokio::spawn(
-        data_aggregator.run()
-    );
-
-    // Запуск биржевых вебсокетов
-    tokio::spawn({
-        let data_aggregator_tx = data_aggregator_tx.clone();
-        async move {
-            services::exchange::exchanges_run::run_ws_exchanges(
-                data_aggregator_tx,
-                exchange_channel_store_tx
-            ).await;
+    tokio::spawn(async {
+        loop {
+            println!("working");
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
     });
-    
-    tokio::spawn({
-        let client_aggregator_tx = client_aggregator_tx.clone();
-        async move {
-            transport::ws::connect_async(
-                client_aggregator_tx,
-            ).await;
-        }
-    });
+            
+    // let storage_pool = storage::pool::create_pool().await;
+        
+    // let (manager_transmitter_tx, manager_transmitter_rx) = mpsc::channel::<ManagerTransmitterCmd>(64);
+        
+    // let data_mapping = DataMapping::new(manager_transmitter_tx.clone());
+    // let data_mapping_tx = data_mapping.data_mapping_tx.clone();
+    // data_mapping.run();
 
-    loop {
-        tokio::time::sleep(Duration::from_millis(10)).await;
-    }
+    // // Запускаем агррегаторы
+    // let (cache_aggregator_tx, cache_aggregator_rx) = mpsc::channel::<Arc<CacheAggregatorCmd>>(64);
+    // let cache_aggregator = CacheAggregator::new(
+    //     cache_aggregator_rx, 
+    //     data_mapping_tx.clone(),
+    //     storage_pool.clone()
+    // );
+    // tokio::spawn(cache_aggregator.run());
+
+    // // Каналы для получения данных с data aggregator
+    // let (client_aggregator_chart_tx, client_aggregator_chart_rx) = mpsc::channel::<Arc<ClientAggregatorCmd>>(64);
+
+    // // Канал для приёма команд от пользователя
+    // let (client_aggregator_tx, client_aggregator_rx) = mpsc::channel::<ClientAggregatorCmd>(64);
+
+    // let client_aggregator = ClientAggregator::new(
+    //     client_aggregator_rx,
+    //     client_aggregator_chart_rx,
+    //     cache_aggregator_tx.clone(),
+    // );
+    // tokio::spawn(client_aggregator.run());
+    
+    // let (data_aggregator_tx, data_aggregator_rx) = mpsc::channel::<DataAggregatorCmd>(64);
+    // let data_aggregator = DataAggregator::new(
+    //     data_aggregator_rx, 
+    //     data_mapping_tx.clone(),
+    //     cache_aggregator_tx.clone(),
+    //     storage_pool.clone(),
+    // );
+
+    // let manager_transmitter = ManagerTransmitter::new(
+    //     client_aggregator_chart_tx.clone(),
+    //     cache_aggregator_tx.clone(),
+    // );
+    // tokio::spawn(manager_transmitter.run(manager_transmitter_rx));
+
+    // let exchange_channel_store = ExchangeChannelStore::new();
+    // let exchange_channel_store_tx = exchange_channel_store.sender_channel.clone();
+    // tokio::spawn(exchange_channel_store.run());
+
+    // let data_access_layer = DataAccessLayer::new(
+    //     cache_aggregator_tx.clone(),
+    //     data_mapping_tx.clone(),
+    //     exchange_channel_store_tx.clone(),
+    //     data_aggregator_tx.clone()
+    // );
+    // tokio::spawn(data_access_layer.run());
+
+    // tokio::spawn(
+    //     data_aggregator.run()
+    // );
+
+    // // Запуск биржевых вебсокетов
+    // tokio::spawn({
+    //     let data_aggregator_tx = data_aggregator_tx.clone();
+    //     async move {
+    //         services::exchange::exchanges_run::run_ws_exchanges(
+    //             data_aggregator_tx,
+    //             exchange_channel_store_tx
+    //         ).await;
+    //     }
+    // });
+    
+    // tokio::spawn({
+    //     let client_aggregator_tx = client_aggregator_tx.clone();
+    //     async move {
+    //         transport::ws::connect_async(
+    //             client_aggregator_tx,
+    //         ).await;
+    //     }
+    // });
+
+    // loop {
+    //     tokio::time::sleep(Duration::from_millis(10)).await;
+    // }
 }
