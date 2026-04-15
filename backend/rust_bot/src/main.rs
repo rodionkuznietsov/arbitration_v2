@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 use tokio::sync::{mpsc};
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{services::{cache_aggregator::{CacheAggregator, CacheAggregatorCmd}, data_access_layer::DataAccessLayer, data_aggregator::{DataAggregator, DataAggregatorCmd}, data_mapping::DataMapping, exchange::exchange_channel_store::ExchangeChannelStore, manager_transmitter::{ManagerTransmitter, ManagerTransmitterCmd}}, transport::client_aggregator::{ClientAggregator, ClientAggregatorCmd}};
 
@@ -17,18 +17,18 @@ mod mexc_orderbook {
 
 #[tokio::main(flavor="multi_thread")]
 async fn main() {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .with_env_filter(
-            EnvFilter::new("info,sqlx::query=off")
-        )
-        .with_target(false)
+    let fmt_layer = tracing_subscriber::fmt::layer()
         .pretty()
+        .with_target(false);
+
+    let filter = EnvFilter::new("info,sqlx::query=off");
+
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(fmt_layer)
+        .with(console_subscriber::spawn())
         .init();
 
-    console_subscriber::ConsoleLayer::builder()
-        .init();
-    
     let storage_pool = storage::pool::create_pool().await;
         
     let (manager_transmitter_tx, manager_transmitter_rx) = mpsc::channel::<ManagerTransmitterCmd>(64);
