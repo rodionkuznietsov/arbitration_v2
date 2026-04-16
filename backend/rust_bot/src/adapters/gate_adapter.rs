@@ -129,10 +129,6 @@ impl ExchangeAdapter for GateAdapter {
                     if let (Some(price_str), Some(vol_str)) = (last_price, volume) {
                         let price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
                         let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
-                        
-                        if symbol == "btcusdt" {
-                            tracing::info!("LastPriceGate: {}", price);
-                        }
 
                         sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::TickerUpdate { symbol, 

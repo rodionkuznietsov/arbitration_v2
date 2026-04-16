@@ -220,6 +220,12 @@ impl ExchangeStore {
                             last_price, 
                             volume 
                         } => {
+                            // Проблема где-то дальше с last_price
+
+                            if symbol == "btcusdt" {
+                                tracing::info!("{}", last_price);
+                            }
+
                             if let Some(data) = self.market_data.get_mut(&symbol) {
                                 data.last_price = Some(last_price);
                                 data.volume24h = Some(volume);
@@ -232,29 +238,6 @@ impl ExchangeStore {
                     reply
                 } => {             
                     reply.send(self.watch_rx.clone()).ok();
-                //     if let Some(data) = self.market_data.get(&symbol.to_string()) {
-                //         if let Some(snapshot) = &data.snapshot {
-                //             let best_ask = snapshot.a.iter()
-                //                 .min_by_key(|x| x.0)
-                //                 .map(|(price, _)| *price as f64 / PRICE_TICK);
-
-                //             let best_bid = snapshot.b.iter()
-                //                 .max_by_key(|x| x.0)
-                //                 .map(|(price, _)| *price as f64 / PRICE_TICK);
-
-                //             let best_ask = match best_ask {
-                //                 Some(v) => v,
-                //                 None => 0.0
-                //             };
-
-                //             let best_bid = match best_bid {
-                //                 Some(v) => v,
-                //                 None => 0.0
-                //             };
-
-                //             reply.send((best_ask, best_bid)).ok();
-                //         }
-                //     }
                 },
             }
         }
