@@ -139,7 +139,9 @@ impl ExchangeStore {
                             if symbol == "btcusdt" {
                                 if let Some(data) = self.market_data.get_mut(&symbol) {
                                     data.snapshot = Some(snapshot);
-                                    tracing::info!("{:?}", data.snapshot.iter().last())
+                                    for i in data.snapshot {
+                                        tracing::info!("Ask: {:?}", i.a.iter().last())
+                                    }
                                 }
                             }
                         }
