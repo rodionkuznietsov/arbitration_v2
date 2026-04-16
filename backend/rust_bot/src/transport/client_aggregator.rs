@@ -119,8 +119,6 @@ impl ClientAggregator {
                         key,
                         msg,
                     ) => {
-                        tracing::info!("{:?}", msg);
-
                         if let Some(client_ids) = self.sub_index.get(&key) {
                             for client_id in client_ids {
                                 if let Some(channels) = self.clients.get(&*client_id) {
