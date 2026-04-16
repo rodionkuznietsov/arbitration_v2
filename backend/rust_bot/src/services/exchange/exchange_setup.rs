@@ -40,9 +40,9 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
         exchange_channel_store_tx: mpsc::Sender<ExchangeChannelStoreCmd>
     ) -> Arc<Self> {
         let title = format!("{}Websocket", exchange_id);
-        let (ticker_tx, ticker_rx) = async_channel::bounded(32);
+        let (ticker_tx, ticker_rx) = async_channel::bounded(64);
         let client = reqwest::Client::new();
-        let (sender_data, rx_data) = mpsc::channel::<ExchangeStoreCMD>(32);
+        let (sender_data, rx_data) = mpsc::channel::<ExchangeStoreCMD>(64);
 
         let store = ExchangeStore::new(rx_data, exchange_id);
         let sender_data_cl = sender_data.clone();

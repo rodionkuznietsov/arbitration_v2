@@ -23,9 +23,9 @@ pub enum DataMappingCmd {
 
 #[derive(Debug, Deserialize, Clone, Serialize, Hash, PartialEq, Eq)]
 pub struct SnapshotJson {
-    asks: Vec<Value>,
-    bids: Vec<Value>,
-    last_price: OrderedFloat<f64>,
+    pub asks: Vec<Value>,
+    pub bids: Vec<Value>,
+    pub last_price: OrderedFloat<f64>,
 }
 
 pub struct DataMapping {
