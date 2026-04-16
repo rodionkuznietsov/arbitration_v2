@@ -98,10 +98,6 @@ impl ExchangeAdapter for GateAdapter {
                     let bids = data.bids;
 
                     if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
-                        if symbol == "btcusdt" {
-                            tracing::info!("{:?}", asks);
-                        }
-                        
                         let asks = parse_levels__(asks).await;
                         let bids = parse_levels__(bids).await;
                         

@@ -11,7 +11,7 @@ pub async fn run_ws_exchanges(
     ExchangeSetup::new(
         ExchangeType::Bybit,
         Arc::new(BybitAdapter),
-        false,
+        true,
         data_aggregator_tx.clone(),
         exchange_channel_store_tx.clone()
     ).start();
