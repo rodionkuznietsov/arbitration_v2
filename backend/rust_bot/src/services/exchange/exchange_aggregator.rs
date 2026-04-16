@@ -223,8 +223,10 @@ impl ExchangeStore {
                         } => {
                             // Проблема где-то дальше с last_price
 
-                            if symbol == "btcusdt" {
-                                tracing::info!("ExchangeAggregator: {}; {}", last_price, Utc::now());
+                            if self.id == ExchangeType::Gate {
+                                if symbol == "btcusdt" {
+                                    tracing::info!("ExchangeAggregator: {}; {}", last_price, Utc::now());
+                                }
                             }
 
                             if let Some(data) = self.market_data.get_mut(&symbol) {
