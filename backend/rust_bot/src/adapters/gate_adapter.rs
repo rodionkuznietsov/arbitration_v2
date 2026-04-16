@@ -84,38 +84,38 @@ impl ExchangeAdapter for GateAdapter {
             return;
         }
         
-        // if msg.contains("spot.order_book") {
-        //     let json: OrderBookEvent = serde_json::from_str(&msg).unwrap();
-        //     let data = json.data;
-        //     let ts = json.timestamp;
+        if msg.contains("spot.order_book") {
+            let json: OrderBookEvent = serde_json::from_str(&msg).unwrap();
+            let data = json.data;
+            let ts = json.timestamp;
 
-        //     if let Some(data) = data {
-        //         let ticker = data.symbol;
-        //         if let Some(symbol) = ticker {
-        //             let symbol = symbol.replace("_", "").to_lowercase();
+            if let Some(data) = data {
+                let ticker = data.symbol;
+                if let Some(symbol) = ticker {
+                    let symbol = symbol.replace("_", "").to_lowercase();
 
-        //             let asks = data.asks;
-        //             let bids = data.bids;
+                    let asks = data.asks;
+                    let bids = data.bids;
 
-        //             if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
-        //                 let asks = parse_levels__(asks).await;
-        //                 let bids = parse_levels__(bids).await;
+                    if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
+                        let asks = parse_levels__(asks).await;
+                        let bids = parse_levels__(bids).await;
                         
-        //                 sender_data.send(ExchangeStoreCMD::Event(
-        //                     BookEvent::Snapshot { 
-        //                         symbol,
-        //                         snapshot: Snapshot { 
-        //                             a: asks, 
-        //                             b: bids, 
-        //                             last_update_id: None,
-        //                             timestamp,
-        //                         }
-        //                     }
-        //                 )).await.ok();
-        //             }
-        //         }
-        //     }
-        // }
+                        sender_data.send(ExchangeStoreCMD::Event(
+                            BookEvent::Snapshot { 
+                                symbol,
+                                snapshot: Snapshot { 
+                                    a: asks, 
+                                    b: bids, 
+                                    last_update_id: None,
+                                    timestamp,
+                                }
+                            }
+                        )).await.ok();
+                    }
+                }
+            }
+        }
 
         if msg.contains("spot.tickers") {
             let json: TickerEvent = serde_json::from_str(&msg).unwrap();
@@ -129,10 +129,6 @@ impl ExchangeAdapter for GateAdapter {
                     if let (Some(price_str), Some(vol_str)) = (last_price, volume) {
                         let price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
                         let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
-                        
-                        if symbol == "btcusdt" {
-                            tracing::info!("{} -> {:?}", symbol, price);
-                        }
                         
                         sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::TickerUpdate { symbol, 

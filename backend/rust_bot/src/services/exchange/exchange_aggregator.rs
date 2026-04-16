@@ -135,8 +135,12 @@ impl ExchangeStore {
                             symbol, 
                             snapshot  
                         } => {
+
                             if let Some(data) = self.market_data.get_mut(&symbol) {
                                 data.snapshot = Some(snapshot);
+
+
+                                println!("{:?}", data.snapshot)
                             }
                         }
                         BookEvent::Delta { 
