@@ -136,11 +136,11 @@ impl ExchangeStore {
                             snapshot  
                         } => {
 
-                            if let Some(data) = self.market_data.get_mut(&symbol) {
-                                data.snapshot = Some(snapshot);
-
-
-                                println!("{:?}", data.snapshot)
+                            if symbol == "btcusdt" {
+                                if let Some(data) = self.market_data.get_mut(&symbol) {
+                                    data.snapshot = Some(snapshot);
+                                    tracing::info!("{:?}", data.snapshot)
+                                }
                             }
                         }
                         BookEvent::Delta { 
