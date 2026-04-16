@@ -134,12 +134,12 @@ impl ExchangeAdapter for GateAdapter {
                             tracing::info!("{} -> {:?}", symbol, price);
                         }
                         
-                        // sender_data.send(ExchangeStoreCMD::Event(
-                        //     BookEvent::TickerUpdate { symbol, 
-                        //         last_price: price, 
-                        //         volume: volume
-                        //     }
-                        // )).await.ok();
+                        sender_data.send(ExchangeStoreCMD::Event(
+                            BookEvent::TickerUpdate { symbol, 
+                                last_price: price, 
+                                volume: volume
+                            }
+                        )).await.ok();
                     }
                 }
             }
