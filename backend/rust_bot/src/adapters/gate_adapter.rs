@@ -66,7 +66,7 @@ impl ExchangeAdapter for GateAdapter {
 
         if let Ok(response) = response {
             if let Ok(snapshot) = response.json::<serde_json::Value>().await {
-                tracing::info!("{:?}", snapshot)
+                
             }
         }
     }

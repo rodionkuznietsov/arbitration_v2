@@ -62,3 +62,10 @@ pub enum BookEvent {
         volume: f64,
     }
 }
+
+pub struct OrderBookFromHttp {
+    asks: Vec<Vec<String>>,
+    bids: Vec<Vec<String>>,
+    current: int,
+    update: int
+}
