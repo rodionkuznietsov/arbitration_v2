@@ -38,6 +38,13 @@ impl ExchangeAdapter for BinanceAdapter {
         None
     }
     
+    async fn get_snapshot_spot_http(
+        self: Arc<Self>,
+        client: &reqwest::Client
+    ) {
+        
+    }
+
     fn create_subscribe_messages(
         self: Arc<Self>,
         _symbol: Arc<Symbol>

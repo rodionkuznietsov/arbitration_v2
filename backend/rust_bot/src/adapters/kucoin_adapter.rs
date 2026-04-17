@@ -70,6 +70,13 @@ impl ExchangeAdapter for KuCoinAdapter {
         Some(usdt_tickers)
     }
 
+    async fn get_snapshot_spot_http(
+        self: Arc<Self>,
+        client: &reqwest::Client
+    ) {
+        
+    }
+
     fn create_subscribe_messages(
         self: Arc<Self>,
         symbol: Arc<Symbol>

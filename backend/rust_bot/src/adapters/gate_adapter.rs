@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use chrono::Utc;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -51,6 +50,25 @@ impl ExchangeAdapter for GateAdapter {
             .collect();
 
         Some(usdt_tickers)
+    }
+
+    async fn get_snapshot_spot_http(
+        self: Arc<Self>,
+        client: &reqwest::Client
+    ) {
+        let url = "https://api.gateio.ws/api/v4/spot/order_book?currency_pair=BTC_USDT&limit=1000";
+        let response = client   
+            .get(url)
+            .send()
+            .await;
+
+        // Доработать
+
+        if let Ok(response) = response {
+            if let Ok(snapshot) = response.json::<serde_json::Value>().await {
+                tracing::info!("{:?}", snapshot)
+            }
+        }
     }
 
     fn create_subscribe_messages(
@@ -131,10 +149,6 @@ impl ExchangeAdapter for GateAdapter {
                         let price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
                         let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
 
-                        if symbol == "btcusdt" {
-                            tracing::info!("GateAdapter: {}; {}", price, Utc::now());
-                        }
-                            
                         sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::TickerUpdate { 
                                 symbol, 

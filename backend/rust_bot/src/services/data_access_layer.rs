@@ -69,6 +69,8 @@ impl DataAccessLayer {
         if let Ok(mut watch_rx) = rx.await {
             let exchanges_count = 3;
 
+            // Возможно проблема здесь
+
             if watch_rx.borrow().len() == exchanges_count {
                 let data = watch_rx.borrow_and_update().clone();
                 println!("{data:?}")

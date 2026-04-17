@@ -1,6 +1,5 @@
 use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 
-use chrono::Utc;
 use lru::LruCache;
 use tokio::sync::{mpsc, oneshot, watch};
 use crate::models::{exchange::ExchangeType, exchange_aggregator::BookData, orderbook::{BookEvent, Snapshot, SnapshotUi}, websocket::Symbol};
@@ -221,14 +220,6 @@ impl ExchangeStore {
                             last_price, 
                             volume 
                         } => {
-                            // Проблема где-то дальше с last_price
-
-                            if self.id == ExchangeType::Gate {
-                                if symbol == "btcusdt" {
-                                    tracing::info!("ExchangeAggregator: {}; {}", last_price, Utc::now());
-                                }
-                            }
-
                             if let Some(data) = self.market_data.get_mut(&symbol) {
                                 data.last_price = Some(last_price);
                                 data.volume24h = Some(volume);

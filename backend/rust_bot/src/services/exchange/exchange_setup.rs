@@ -74,12 +74,21 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
             tracing::warn!("{} disabled", self.title);
             return;
         }
+
+        tokio::spawn({
+            let this = self.clone();
+            let adapter = this.adapter.clone();
+            async move {
+                adapter.get_snapshot_spot_http(&this.client).await;
+            }
+        });
         
         tokio::spawn({
+            let this = self.clone();
             async move {
-                let tickers = self.adapter.clone().get_tickers(&self.client).await;
+                let tickers = this.adapter.clone().get_tickers(&this.client).await;
                 if let Some(result) = tickers {
-                    self.try_run_ws_session(&result).await;
+                    this.try_run_ws_session(&result).await;
                 }
             }
         });
