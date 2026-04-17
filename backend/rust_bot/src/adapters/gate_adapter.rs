@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use futures_util::{StreamExt, stream};
-use tokio::sync::mpsc;
+use tokio::sync::{Semaphore, mpsc};
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::{models::{exchange::{TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, OrderBookFromHttp, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
@@ -64,53 +64,92 @@ impl ExchangeAdapter for GateAdapter {
 
         let mut urls = Vec::new();
 
-        for chunk in tickers[0..10].chunks(5) {
-            for info in chunk {
-                let symbol = info.symbol.clone();
-                if let Some(symbol) = symbol {
-                    let url = format!("https://api.gateio.ws/api/v4/spot/order_book?currency_pair={symbol}&limit=1000");
-                    urls.push((url, symbol));
-                }
-                tokio::time::sleep(Duration::from_secs(5)).await;
+        // Формируем url ссылки
+        for info in tickers {
+            let symbol = info.symbol.clone();
+            if let Some(symbol) = symbol {
+                let url = format!("https://api.gateio.ws/api/v4/spot/order_book?currency_pair={symbol}&limit=1000");
+                urls.push((url, symbol));
             }
         }
 
-        let responses = stream::iter(urls)
-            .map(|(url, symbol)| {
-                let client = client.clone();
-                async move {
-                    tokio::time::sleep(Duration::from_millis(100)).await;
-                    let res = client.get(url).send().await;
-                    (res, symbol)
-                }
-            })
-            .buffer_unordered(5);
+        let semaphore = Arc::new(Semaphore::new(5));
 
-        responses.for_each(|(resp, symbol)| async move {
-            match resp {
-                Ok(response) => {
-                    if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
-                        let mut asks = parse_levels__(snapshot.asks);
-                        let bids = parse_levels__(snapshot.bids);
+        for (url, symbol) in urls {
+            let permit = semaphore.clone().acquire_owned().await;
+            let client = client.clone();
 
-                        tracing::info!("{} -> {:?}", symbol.clone(), asks.first_entry())
+            tokio::spawn(async move {
+                let _p = permit;
+                tracing::info!("Запрос");
 
-                        // sender_data.send(ExchangeStoreCMD::Event(
-                        //     BookEvent::Snapshot { 
-                        //         symbol,
-                        //         snapshot: Snapshot { 
-                        //             a: asks, 
-                        //             b: bids, 
-                        //             last_update_id: None,
-                        //             timestamp: 0
-                        //         }
-                        //     }
-                        // )).await.ok();
+                let response = client.get(url).send().await;
+                match response {
+                    Ok(response) => {
+                        if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
+                            let mut asks = parse_levels__(snapshot.asks);
+                            let bids = parse_levels__(snapshot.bids);
+
+                            tracing::info!("{} -> {:?}", symbol.clone(), asks.first_entry())
+
+                            // sender_data.send(ExchangeStoreCMD::Event(
+                            //     BookEvent::Snapshot { 
+                            //         symbol,
+                            //         snapshot: Snapshot { 
+                            //             a: asks, 
+                            //             b: bids, 
+                            //             last_update_id: None,
+                            //             timestamp: 0
+                            //         }
+                            //     }
+                            // )).await.ok();
+                        }
+                    },
+                    Err(e) => {
+                        tracing::error!("{e}")
                     }
-                },
-                Err(e) => tracing::error!("{e}")
-            }
-        }).await;
+                }
+
+                tracing::info!("Запрос завершен");
+            });
+        }
+
+        // let responses = stream::iter(urls)
+        //     .map(|(url, symbol)| {
+        //         let client = client.clone();
+        //         async move {
+        //             tokio::time::sleep(Duration::from_millis(100)).await;
+        //             let res = client.get(url).send().await;
+        //             (res, symbol)
+        //         }
+        //     })
+        //     .buffer_unordered(5);
+
+        // responses.for_each(|(resp, symbol)| async move {
+        //     match resp {
+        //         Ok(response) => {
+        //             if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
+        //                 let mut asks = parse_levels__(snapshot.asks);
+        //                 let bids = parse_levels__(snapshot.bids);
+
+        //                 tracing::info!("{} -> {:?}", symbol.clone(), asks.first_entry())
+
+        //                 // sender_data.send(ExchangeStoreCMD::Event(
+        //                 //     BookEvent::Snapshot { 
+        //                 //         symbol,
+        //                 //         snapshot: Snapshot { 
+        //                 //             a: asks, 
+        //                 //             b: bids, 
+        //                 //             last_update_id: None,
+        //                 //             timestamp: 0
+        //                 //         }
+        //                 //     }
+        //                 // )).await.ok();
+        //             }
+        //         },
+        //         Err(e) => tracing::error!("{e}")
+        //     }
+        // }).await;
         
     }
 
