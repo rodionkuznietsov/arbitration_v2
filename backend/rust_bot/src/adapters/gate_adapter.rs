@@ -67,7 +67,7 @@ impl ExchangeAdapter for GateAdapter {
 
         for symbol1 in symbols {
             let url = format!("https://api.gateio.ws/api/v4/spot/order_book?currency_pair={symbol1}&limit=1000");
-            urls.push((url, symbol1));
+            urls.push((url, symbol1.to_string()));
         }
 
         let responses = stream::iter(urls)
@@ -81,14 +81,14 @@ impl ExchangeAdapter for GateAdapter {
             })
             .buffer_unordered(5);
 
-        responses.for_each(|(resp, symbol)| async {
+        responses.for_each(|(resp, symbol)| async move {
             match resp {
                 Ok(response) => {
                     if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
                         let mut asks = parse_levels__(snapshot.asks);
                         let bids = parse_levels__(snapshot.bids);
 
-                        tracing::info!("{} -> {:?}", symbol, asks.first_entry())
+                        tracing::info!("{} -> {:?}", symbol.clone(), asks.first_entry())
 
                         // sender_data.send(ExchangeStoreCMD::Event(
                         //     BookEvent::Snapshot { 
