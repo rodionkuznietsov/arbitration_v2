@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use futures_util::{StreamExt, stream};
 use tokio::sync::mpsc;
@@ -74,10 +74,12 @@ impl ExchangeAdapter for GateAdapter {
             .map(|url| {
                 let client = client.clone();
                 async move {
-                    client.get(url).send().await
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                    let res = client.get(url).send().await;
+                    res
                 }
             })
-            .buffer_unordered(2);
+            .buffered(5);
 
         responses.for_each(|resp| async {
             match resp {
