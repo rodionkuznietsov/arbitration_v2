@@ -77,6 +77,8 @@ impl ExchangeAdapter for GateAdapter {
 
         for chunk in urls.chunks(5) {
             for (url, symbol) in chunk {
+                let url = url.clone();
+                let symbol = symbol.clone();
                 let permit = semaphore.clone().acquire_owned().await;
                 let client = client.clone();
 
@@ -91,7 +93,7 @@ impl ExchangeAdapter for GateAdapter {
                                 let mut asks = parse_levels__(snapshot.asks);
                                 let bids = parse_levels__(snapshot.bids);
 
-                                tracing::info!("{} -> {:?}", symbol.clone(), asks.first_entry())
+                                tracing::info!("{} -> {:?}", symbol, asks.first_entry())
 
                                 // sender_data.send(ExchangeStoreCMD::Event(
                                 //     BookEvent::Snapshot { 
