@@ -62,7 +62,7 @@ impl ExchangeAdapter for GateAdapter {
         // Загружать лениво, только когда юзер просит(один раз)
         // Избегают повторную загрузку во время двух запросов одновременно для даного тикера
 
-        let symbols = vec!["BTC_USDT", "ETH_USDT", "SOL_USDT", "BNB_USDT", "TONCOIN_USDT", "AVAX_USDT"];
+        let symbols = vec!["BTC_USDT", "ETH_USDT", "SOL_USDT", "BNB_USDT", "TON_USDT", "AVAX_USDT"];
         let mut urls = Vec::new();
 
         for symbol1 in symbols {
