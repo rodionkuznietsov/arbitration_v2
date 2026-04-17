@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use futures_util::{StreamExt, stream};
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -54,25 +55,65 @@ impl ExchangeAdapter for GateAdapter {
 
     async fn get_snapshot_spot_http(
         self: Arc<Self>,
-        client: &reqwest::Client
+        symbol: Symbol,
+        client: &reqwest::Client,
+        sender_data: mpsc::Sender<ExchangeStoreCMD>,
     ) {
-        let url = "https://api.gateio.ws/api/v4/spot/order_book?currency_pair=BTC_USDT&limit=1000";
-        let response = client   
-            .get(url)
-            .send()
-            .await;
+        // Загружать лениво, только когда юзер просит(один раз)
+        // Избегают повторную загрузку во время двух запросов одновременно для даного тикера
 
-        // Доработать
+        let symbols = vec!["BTC_USDT", "ETH_USDT"];
+        let mut urls = Vec::new();
 
-        if let Ok(response) = response {
-            if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
-                let asks = parse_levels__(snapshot.asks);
-                let bids = parse_levels__(snapshot.bids);
-
-                tracing::info!("Asks: {:?}", asks);
-                tracing::info!("Bids: {:?}", bids);
-            }
+        for symbol1 in symbols {
+            let url = format!("https://api.gateio.ws/api/v4/spot/order_book?currency_pair={symbol1}&limit=1000");
+            urls.push(url);
         }
+
+        let responses = stream::iter(urls)
+            .map(|url| {
+                let client = client.clone();
+                async move {
+                    client.get(url).send().await
+                }
+            })
+            .buffer_unordered(5);
+
+        responses.for_each(|resp| async {
+            match resp {
+                Ok(response) => {
+                    println!("Request done")
+                },
+                Err(e) => tracing::error!("{e}")
+            }
+        }).await;
+        
+        // let url = format!("https://api.gateio.ws/api/v4/spot/order_book?currency_pair={symbol}&limit=1000");
+        // let response = client   
+        //     .get(url)
+        //     .send()
+        //     .await;
+
+        // // Доработать
+
+        // if let Ok(response) = response {
+        //     if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
+        //         let asks = parse_levels__(snapshot.asks);
+        //         let bids = parse_levels__(snapshot.bids);
+
+        //         sender_data.send(ExchangeStoreCMD::Event(
+        //             BookEvent::Snapshot { 
+        //                 symbol,
+        //                 snapshot: Snapshot { 
+        //                     a: asks, 
+        //                     b: bids, 
+        //                     last_update_id: None,
+        //                     timestamp: 0
+        //                 }
+        //             }
+        //         )).await.ok();
+        //     }
+        // }
     }
 
     fn create_subscribe_messages(

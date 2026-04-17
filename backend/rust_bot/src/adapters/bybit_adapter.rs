@@ -50,7 +50,9 @@ impl ExchangeAdapter for BybitAdapter {
 
     async fn get_snapshot_spot_http(
         self: Arc<Self>,
-        client: &reqwest::Client
+        symbol: Symbol,
+        client: &reqwest::Client,
+        sender_data: mpsc::Sender<ExchangeStoreCMD>
     ) {
         
     }
