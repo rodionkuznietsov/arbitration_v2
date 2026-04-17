@@ -71,6 +71,7 @@ impl ExchangeAdapter for GateAdapter {
                     let url = format!("https://api.gateio.ws/api/v4/spot/order_book?currency_pair={symbol}&limit=1000");
                     urls.push((url, symbol));
                 }
+                tokio::time::sleep(Duration::from_secs(5)).await;
             }
         }
 
