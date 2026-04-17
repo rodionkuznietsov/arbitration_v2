@@ -75,43 +75,45 @@ impl ExchangeAdapter for GateAdapter {
 
         let semaphore = Arc::new(Semaphore::new(5));
 
-        for (url, symbol) in urls {
-            let permit = semaphore.clone().acquire_owned().await;
-            let client = client.clone();
+        for chunk in urls.chunks(5) {
+            for (url, symbol) in chunk {
+                let permit = semaphore.clone().acquire_owned().await;
+                let client = client.clone();
 
-            tokio::spawn(async move {
-                let _p = permit;
-                tracing::info!("Запрос");
+                tokio::spawn(async move {
+                    let _p = permit;
+                    tracing::info!("Запрос");
 
-                let response = client.get(url).send().await;
-                match response {
-                    Ok(response) => {
-                        if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
-                            let mut asks = parse_levels__(snapshot.asks);
-                            let bids = parse_levels__(snapshot.bids);
+                    let response = client.get(url).send().await;
+                    match response {
+                        Ok(response) => {
+                            if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
+                                let mut asks = parse_levels__(snapshot.asks);
+                                let bids = parse_levels__(snapshot.bids);
 
-                            tracing::info!("{} -> {:?}", symbol.clone(), asks.first_entry())
+                                tracing::info!("{} -> {:?}", symbol.clone(), asks.first_entry())
 
-                            // sender_data.send(ExchangeStoreCMD::Event(
-                            //     BookEvent::Snapshot { 
-                            //         symbol,
-                            //         snapshot: Snapshot { 
-                            //             a: asks, 
-                            //             b: bids, 
-                            //             last_update_id: None,
-                            //             timestamp: 0
-                            //         }
-                            //     }
-                            // )).await.ok();
+                                // sender_data.send(ExchangeStoreCMD::Event(
+                                //     BookEvent::Snapshot { 
+                                //         symbol,
+                                //         snapshot: Snapshot { 
+                                //             a: asks, 
+                                //             b: bids, 
+                                //             last_update_id: None,
+                                //             timestamp: 0
+                                //         }
+                                //     }
+                                // )).await.ok();
+                            }
+                        },
+                        Err(e) => {
+                            tracing::error!("{e}")
                         }
-                    },
-                    Err(e) => {
-                        tracing::error!("{e}")
                     }
-                }
 
-                tracing::info!("Запрос завершен");
-            });
+                    tracing::info!("Запрос завершен");
+                });
+            }
 
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
