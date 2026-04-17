@@ -40,7 +40,7 @@ impl ExchangeAdapter for BinanceAdapter {
     
     async fn get_snapshot_spot_http(
         self: Arc<Self>,
-        symbol: Symbol,
+        tickers: &Vec<TickerInfo>,
         client: &reqwest::Client,
         sender_data: mpsc::Sender<ExchangeStoreCMD>
     ) {

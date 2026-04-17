@@ -11,7 +11,7 @@ pub trait ExchangeAdapter: Send + Sync + 'static {
     async fn auth_url(self: Arc<Self>, client: &reqwest::Client) -> Option<url::Url>;
     async fn get_api_key(self: Arc<Self>, client: &reqwest::Client) -> Result<String, reqwest::Error>;
     async fn get_tickers(self: Arc<Self>, client: &reqwest::Client) -> Option<Vec<TickerInfo>>;
-    async fn get_snapshot_spot_http(self: Arc<Self>, symbol: Symbol, client: &reqwest::Client, sender_data: mpsc::Sender<ExchangeStoreCMD>);
+    async fn get_snapshot_spot_http(self: Arc<Self>, tickers: &Vec<TickerInfo>, client: &reqwest::Client, sender_data: mpsc::Sender<ExchangeStoreCMD>);
     async fn parse_message(self: Arc<Self>, msg: String, sender_data: mpsc::Sender<ExchangeStoreCMD>);
     fn create_subscribe_messages(self: Arc<Self>, symbol: Arc<Symbol>) -> Vec<Message>;
 }

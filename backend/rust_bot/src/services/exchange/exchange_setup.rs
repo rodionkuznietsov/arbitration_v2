@@ -85,7 +85,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                         let this = self.clone();
                         let adapter = this.adapter.clone();
                         async move {
-                         adapter.get_snapshot_spot_http(String::from("BTC_USDT"), &this.client, this.sender_data.clone()).await;
+                         adapter.get_snapshot_spot_http(result, &this.client, this.sender_data.clone()).await;
                         }
                     });
                     

@@ -55,19 +55,23 @@ impl ExchangeAdapter for GateAdapter {
 
     async fn get_snapshot_spot_http(
         self: Arc<Self>,
-        symbol: Symbol,
+        tickers: &Vec<TickerInfo>,
         client: &reqwest::Client,
         sender_data: mpsc::Sender<ExchangeStoreCMD>,
     ) {
         // Загружать лениво, только когда юзер просит(один раз)
         // Избегают повторную загрузку во время двух запросов одновременно для даного тикера
 
-        let symbols = vec!["BTC_USDT", "ETH_USDT", "SOL_USDT", "BNB_USDT", "TON_USDT", "AVAX_USDT"];
         let mut urls = Vec::new();
 
-        for symbol1 in symbols {
-            let url = format!("https://api.gateio.ws/api/v4/spot/order_book?currency_pair={symbol1}&limit=1000");
-            urls.push((url, symbol1.to_string()));
+        for chunk in tickers[0..10].chunks(5) {
+            for info in chunk {
+                let symbol = info.symbol.clone();
+                if let Some(symbol) = symbol {
+                    let url = format!("https://api.gateio.ws/api/v4/spot/order_book?currency_pair={symbol}&limit=1000");
+                    urls.push((url, symbol));
+                }
+            }
         }
 
         let responses = stream::iter(urls)
@@ -107,32 +111,6 @@ impl ExchangeAdapter for GateAdapter {
             }
         }).await;
         
-        // let url = format!("https://api.gateio.ws/api/v4/spot/order_book?currency_pair={symbol}&limit=1000");
-        // let response = client   
-        //     .get(url)
-        //     .send()
-        //     .await;
-
-        // // Доработать
-
-        // if let Ok(response) = response {
-        //     if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
-        //         let asks = parse_levels__(snapshot.asks);
-        //         let bids = parse_levels__(snapshot.bids);
-
-        //         sender_data.send(ExchangeStoreCMD::Event(
-        //             BookEvent::Snapshot { 
-        //                 symbol,
-        //                 snapshot: Snapshot { 
-        //                     a: asks, 
-        //                     b: bids, 
-        //                     last_update_id: None,
-        //                     timestamp: 0
-        //                 }
-        //             }
-        //         )).await.ok();
-        //     }
-        // }
     }
 
     fn create_subscribe_messages(
