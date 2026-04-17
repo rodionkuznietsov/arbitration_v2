@@ -66,8 +66,8 @@ impl ExchangeAdapter for GateAdapter {
 
         if let Ok(response) = response {
             if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
-                let asks = snapshot.asks;
-                let bids = snapshot.bids;
+                let asks = parse_levels__(snapshot.asks);
+                let bids = parse_levels__(snapshot.bids);
 
                 tracing::info!("Asks: {:?}", asks);
                 tracing::info!("Bids: {:?}", bids);
@@ -121,8 +121,8 @@ impl ExchangeAdapter for GateAdapter {
                     let bids = data.bids;
 
                     if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
-                        let asks = parse_levels__(asks).await;
-                        let bids = parse_levels__(bids).await;
+                        let asks = parse_levels__(asks);
+                        let bids = parse_levels__(bids);
                         
                         sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::Snapshot { 

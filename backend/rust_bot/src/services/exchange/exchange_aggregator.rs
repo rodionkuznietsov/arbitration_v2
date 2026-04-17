@@ -53,7 +53,7 @@ impl Snapshot {
     }
 }
 
-pub async fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
+pub fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
     let mut values = BTreeMap::new();
     for vec in data {
         let price = vec[0].parse::<f64>().expect("[Orderbook] Bad price");

@@ -100,8 +100,8 @@ impl ExchangeAdapter for BybitAdapter {
                                 Some(timestamp)
                             ) = (ticker, asks, bids, ts) {
                                 let symbol = symbol.to_lowercase();
-                                let asks = parse_levels__(asks).await;
-                                let bids = parse_levels__(bids).await;
+                                let asks = parse_levels__(asks);
+                                let bids = parse_levels__(bids);
 
                                 sender_data.send(
                                     ExchangeStoreCMD::Event(
@@ -131,8 +131,8 @@ impl ExchangeAdapter for BybitAdapter {
                                 Some(bids
                             )) = (ticker, asks, bids) {
                                 let symbol = symbol.to_lowercase();
-                                let asks = parse_levels__(asks).await;
-                                let bids = parse_levels__(bids).await;
+                                let asks = parse_levels__(asks);
+                                let bids = parse_levels__(bids);
 
                                 sender_data.send(
                                     ExchangeStoreCMD::Event(
