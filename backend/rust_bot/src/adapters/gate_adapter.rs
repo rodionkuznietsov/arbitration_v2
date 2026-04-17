@@ -112,6 +112,8 @@ impl ExchangeAdapter for GateAdapter {
 
                 tracing::info!("Запрос завершен");
             });
+
+            tokio::time::sleep(Duration::from_secs(5)).await;
         }
 
         // let responses = stream::iter(urls)
