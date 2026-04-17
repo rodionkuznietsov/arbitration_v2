@@ -73,9 +73,9 @@ impl ExchangeAdapter for GateAdapter {
             }
         }
 
-        let semaphore = Arc::new(Semaphore::new(5));
+        let semaphore = Arc::new(Semaphore::new(8));
 
-        for chunk in urls.chunks(5) {
+        for chunk in urls.chunks(8) {
             for (url, symbol) in chunk {
                 let url = url.clone();
                 let symbol = symbol.clone();
@@ -117,7 +117,7 @@ impl ExchangeAdapter for GateAdapter {
                 });
             }
 
-            tokio::time::sleep(Duration::from_secs(5)).await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
 
         // let responses = stream::iter(urls)
