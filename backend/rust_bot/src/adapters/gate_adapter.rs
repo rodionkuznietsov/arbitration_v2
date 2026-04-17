@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::{models::{exchange::{TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
+use crate::{models::{exchange::{TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, OrderBookFromHttp, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
 
 
 pub struct GateAdapter;
@@ -65,8 +65,12 @@ impl ExchangeAdapter for GateAdapter {
         // Доработать
 
         if let Ok(response) = response {
-            if let Ok(snapshot) = response.json::<serde_json::Value>().await {
-                
+            if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
+                let asks = snapshot.asks;
+                let bids = snapshot.bids;
+
+                tracing::info!("Asks: {:?}", asks);
+                tracing::info!("Bids: {:?}", bids);
             }
         }
     }

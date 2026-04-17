@@ -63,9 +63,10 @@ pub enum BookEvent {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct OrderBookFromHttp {
-    asks: Vec<Vec<String>>,
-    bids: Vec<Vec<String>>,
-    current: int,
-    update: int
+    pub asks: Vec<Vec<String>>,
+    pub bids: Vec<Vec<String>>,
+    pub current: i64,
+    pub update: i64
 }
