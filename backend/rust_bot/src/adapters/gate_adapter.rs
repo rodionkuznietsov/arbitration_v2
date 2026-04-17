@@ -77,12 +77,29 @@ impl ExchangeAdapter for GateAdapter {
                     client.get(url).send().await
                 }
             })
-            .buffer_unordered(5);
+            .buffer_unordered(2);
 
         responses.for_each(|resp| async {
             match resp {
                 Ok(response) => {
-                    println!("Request done")
+                    if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
+                        let mut asks = parse_levels__(snapshot.asks);
+                        let bids = parse_levels__(snapshot.bids);
+
+                        tracing::info!("{:?}", asks.first_entry())
+
+                        // sender_data.send(ExchangeStoreCMD::Event(
+                        //     BookEvent::Snapshot { 
+                        //         symbol,
+                        //         snapshot: Snapshot { 
+                        //             a: asks, 
+                        //             b: bids, 
+                        //             last_update_id: None,
+                        //             timestamp: 0
+                        //         }
+                        //     }
+                        // )).await.ok();
+                    }
                 },
                 Err(e) => tracing::error!("{e}")
             }
