@@ -138,7 +138,7 @@ impl ExchangeStore {
                             if let Some(data) = self.market_data.get_mut(&symbol) {
                                 if self.id == ExchangeType::Gate {
                                     if let Some(old_snapshot) = &mut data.snapshot {
-                                        for (price, volume) in &snapshot.a {
+                                        for (price, volume) in snapshot.a.iter() {
                                             tracing::info!("{price}");
                                             if *volume == 0.0 {
                                                 tracing::info!("{} -> volume: {}", price, volume)
