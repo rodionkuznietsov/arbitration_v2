@@ -7,7 +7,7 @@ use tokio::sync::{RwLock, mpsc};
 
 use crate::{models::{aggregator::{JsonPairData, JsonPairUniqueId, KeyMarketType, SpreadPair, Volume}, exchange::ExchangeType, line::{Line}, orderbook::Snapshot, websocket::{ChannelSubscription, ChannelType, Symbol, WsClientMessage, WsClientMsgResult}}, services::manager_transmitter::{ManagerTransmitterCmd, NotifyEvent}};
 
-const MANAGER_TRANSMITTER_TIMEOUT_DELAY: u64 = 100; // ms
+const MANAGER_TRANSMITTER_TIMEOUT_DELAY: u64 = 300; // ms
 
 pub enum DataMappingCmd {
     #[allow(unused)]
