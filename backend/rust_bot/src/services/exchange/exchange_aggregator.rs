@@ -239,7 +239,7 @@ impl ExchangeStore {
                 ExchangeStoreCMD::Subscribe { 
                     reply
                 } => {             
-                    reply.send(self.watch_rx.clone()).await.ok();
+                    reply.try_send(self.watch_rx.clone()).ok();
                 },
             }
         }
