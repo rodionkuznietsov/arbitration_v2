@@ -110,131 +110,131 @@ impl ExchangeStore {
     pub async fn set_data(
         mut self,
     ) {
-        let mut last_version_id = 0;
-        while let Some(cmd) = self.rx.recv().await {
-            match cmd {
-                ExchangeStoreCMD::RegisterSymbol { 
-                    symbol 
-                } => {
-                    // Разобрать с normilize_symbol;
-                    let symbol: String = symbol
-                        .chars()
-                        .filter(|c| *c != '_' && *c != '-')
-                        .map(|c| c.to_ascii_lowercase())
-                        .collect();
+        // let mut last_version_id = 0;
+        // while let Some(cmd) = self.rx.recv().await {
+        //     match cmd {
+        //         ExchangeStoreCMD::RegisterSymbol { 
+        //             symbol 
+        //         } => {
+        //             // Разобрать с normilize_symbol;
+        //             let symbol: String = symbol
+        //                 .chars()
+        //                 .filter(|c| *c != '_' && *c != '-')
+        //                 .map(|c| c.to_ascii_lowercase())
+        //                 .collect();
 
-                    self.market_data.put(symbol, BookData { 
-                        snapshot: None, 
-                        last_price: None, 
-                        volume24h: None
-                    });
-                },
-                ExchangeStoreCMD::Event(event) => {
-                    match event {
-                        BookEvent::Snapshot { 
-                            symbol, 
-                            snapshot  
-                        } => {
-                            if let Some(data) = self.market_data.get_mut(&symbol) {
-                                data.snapshot = Some(snapshot);
-                                let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
-                            }
-                        }
-                        BookEvent::Delta { 
-                            symbol, 
-                            delta 
-                        } => {
-                            if let Some(data) = self.market_data.get_mut(&symbol) {
-                                if let Some(snapshot) = &mut data.snapshot {
-                                    match snapshot.last_update_id {
-                                        Some(_) => {
-                                            let from_version = delta.from_version.unwrap();
-                                            let to_version = delta.to_version.unwrap();
+        //             self.market_data.put(symbol, BookData { 
+        //                 snapshot: None, 
+        //                 last_price: None, 
+        //                 volume24h: None
+        //             });
+        //         },
+        //         ExchangeStoreCMD::Event(event) => {
+        //             match event {
+        //                 BookEvent::Snapshot { 
+        //                     symbol, 
+        //                     snapshot  
+        //                 } => {
+        //                     if let Some(data) = self.market_data.get_mut(&symbol) {
+        //                         data.snapshot = Some(snapshot);
+        //                         let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
+        //                     }
+        //                 }
+        //                 BookEvent::Delta { 
+        //                     symbol, 
+        //                     delta 
+        //                 } => {
+        //                     if let Some(data) = self.market_data.get_mut(&symbol) {
+        //                         if let Some(snapshot) = &mut data.snapshot {
+        //                             match snapshot.last_update_id {
+        //                                 Some(_) => {
+        //                                     let from_version = delta.from_version.unwrap();
+        //                                     let to_version = delta.to_version.unwrap();
 
-                                            for (price, volume) in delta.a {
-                                                if volume == 0.0 {
-                                                    snapshot.a.remove(&price);
-                                                } else {
-                                                    if let Some(v) = snapshot.a.get_mut(&price) {
-                                                        *v = volume;
-                                                    } else {
-                                                        snapshot.a.insert(price, volume);
-                                                    }
-                                                }
-                                            }
+        //                                     for (price, volume) in delta.a {
+        //                                         if volume == 0.0 {
+        //                                             snapshot.a.remove(&price);
+        //                                         } else {
+        //                                             if let Some(v) = snapshot.a.get_mut(&price) {
+        //                                                 *v = volume;
+        //                                             } else {
+        //                                                 snapshot.a.insert(price, volume);
+        //                                             }
+        //                                         }
+        //                                     }
 
-                                            for (price, volume) in delta.b {
-                                                if volume == 0.0 {
-                                                    snapshot.b.remove(&price);
-                                                } else {
-                                                    if let Some(v) = snapshot.b.get_mut(&price) {
-                                                        *v = volume;
-                                                    } else {
-                                                        snapshot.b.insert(price, volume);
-                                                    }
-                                                }
-                                            }
+        //                                     for (price, volume) in delta.b {
+        //                                         if volume == 0.0 {
+        //                                             snapshot.b.remove(&price);
+        //                                         } else {
+        //                                             if let Some(v) = snapshot.b.get_mut(&price) {
+        //                                                 *v = volume;
+        //                                             } else {
+        //                                                 snapshot.b.insert(price, volume);
+        //                                             }
+        //                                         }
+        //                                     }
 
-                                            if last_version_id == 0 {
-                                                continue;
-                                            }
+        //                                     if last_version_id == 0 {
+        //                                         continue;
+        //                                     }
 
-                                            if from_version != last_version_id {
-                                                println!("[OrderBookManager]: Packet loss detected");
-                                                continue;
-                                            }
-                                            last_version_id = to_version + 1;  
-                                            let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
-                                        }
-                                        None => {
-                                            for (price, volume) in delta.a {
-                                                if volume == 0.0 {
-                                                    snapshot.a.remove(&price);
-                                                } else {
-                                                    if let Some(v) = snapshot.a.get_mut(&price) {
-                                                        *v = volume;
-                                                    } else {
-                                                        snapshot.a.insert(price, volume);
-                                                    }
-                                                }
-                                            }
+        //                                     if from_version != last_version_id {
+        //                                         println!("[OrderBookManager]: Packet loss detected");
+        //                                         continue;
+        //                                     }
+        //                                     last_version_id = to_version + 1;  
+        //                                     let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
+        //                                 }
+        //                                 None => {
+        //                                     for (price, volume) in delta.a {
+        //                                         if volume == 0.0 {
+        //                                             snapshot.a.remove(&price);
+        //                                         } else {
+        //                                             if let Some(v) = snapshot.a.get_mut(&price) {
+        //                                                 *v = volume;
+        //                                             } else {
+        //                                                 snapshot.a.insert(price, volume);
+        //                                             }
+        //                                         }
+        //                                     }
 
-                                            for (price, volume) in delta.b {
-                                                if volume == 0.0 {
-                                                    snapshot.b.remove(&price);
-                                                } else {
-                                                    if let Some(v) = snapshot.b.get_mut(&price) {
-                                                        *v = volume;
-                                                    } else {
-                                                        snapshot.b.insert(price, volume);
-                                                    }
-                                                }
-                                            }
-                                            let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
-                                        }
-                                    } 
-                                }
-                            }
-                        },
-                        BookEvent::TickerUpdate { 
-                            symbol, 
-                            last_price, 
-                            volume 
-                        } => {
-                            if let Some(data) = self.market_data.get_mut(&symbol) {
-                                data.last_price = Some(last_price);
-                                data.volume24h = Some(volume);
-                                let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
-                            }
-                        },
-                    }
-                }
-                ExchangeStoreCMD::Subscribe { 
-                    reply
-                } => {             
-                    reply.send(self.watch_rx.clone()).ok();
-                },
-            }
-        }
+        //                                     for (price, volume) in delta.b {
+        //                                         if volume == 0.0 {
+        //                                             snapshot.b.remove(&price);
+        //                                         } else {
+        //                                             if let Some(v) = snapshot.b.get_mut(&price) {
+        //                                                 *v = volume;
+        //                                             } else {
+        //                                                 snapshot.b.insert(price, volume);
+        //                                             }
+        //                                         }
+        //                                     }
+        //                                     let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
+        //                                 }
+        //                             } 
+        //                         }
+        //                     }
+        //                 },
+        //                 BookEvent::TickerUpdate { 
+        //                     symbol, 
+        //                     last_price, 
+        //                     volume 
+        //                 } => {
+        //                     if let Some(data) = self.market_data.get_mut(&symbol) {
+        //                         data.last_price = Some(last_price);
+        //                         data.volume24h = Some(volume);
+        //                         let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
+        //                     }
+        //                 },
+        //             }
+        //         }
+        //         ExchangeStoreCMD::Subscribe { 
+        //             reply
+        //         } => {             
+        //             reply.send(self.watch_rx.clone()).ok();
+        //         },
+        //     }
+        // }
     }
 }
