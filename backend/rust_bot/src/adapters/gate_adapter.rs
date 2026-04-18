@@ -173,7 +173,7 @@ impl ExchangeAdapter for GateAdapter {
                             for (price, volume) in asks.iter().rev() {
                                 let price_without_tick = *price as f64 / PRICE_TICK; 
 
-                                tracing::info!("{} -> {}", price, volume)
+                                tracing::info!("{} -> {}", price_without_tick, volume)
                             }
                         }
                         
