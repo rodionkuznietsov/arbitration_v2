@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 use tokio::sync::{mpsc, oneshot};
-use crate::services::{cache_aggregator::CacheAggregatorCmd, data_aggregator::{DataAggregatorCmd}, data_mapping::DataMappingCmd, exchange::{exchange_aggregator::ExchangeStoreCMD, exchange_channel_store::ExchangeChannelStoreCmd}};
+use crate::{models::exchange::ExchangeType, services::{cache_aggregator::CacheAggregatorCmd, data_aggregator::DataAggregatorCmd, data_mapping::DataMappingCmd, exchange::{exchange_aggregator::ExchangeStoreCMD, exchange_channel_store::ExchangeChannelStoreCmd}}};
 
 /// Извлекает конкретные данные из:
 /// 
@@ -95,8 +95,10 @@ impl DataAccessLayer {
                                     while watch_aggregator_tx.changed().await.is_ok() {
                                         let (symbol, exchange_data) = watch_aggregator_tx.borrow().clone();
 
-                                        if symbol.to_string() == "btcusdt" {
-                                            tracing::info!("{symbol} -> {:?}", exchange_data.last_price)
+                                        if exchange_id == ExchangeType::Gate {
+                                            if symbol.to_string() == "btcusdt" {
+                                                tracing::info!("{symbol} -> {:?}", exchange_data.last_price)
+                                            }
                                         }
                                         
                                         // if let Some(e) = data_aggregator_tx.send_timeout(
