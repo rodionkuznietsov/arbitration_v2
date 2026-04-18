@@ -11,8 +11,6 @@ pub enum ExchangeChannelStoreCmd {
     GetExchangesChannel {
         reply: oneshot::Sender<watch::Receiver<HashMap<ExchangeType, watch::Sender<ExchangeStoreCMD>>>>
     },
-
-    Default
 }
 
 pub struct ExchangeChannelStore {
@@ -54,7 +52,6 @@ impl ExchangeChannelStore {
                     } => {
                         let _ = reply.send(self.watch_rx.clone());
                     },
-                    ExchangeChannelStoreCmd::Default => {}
                 }
             }
         }
