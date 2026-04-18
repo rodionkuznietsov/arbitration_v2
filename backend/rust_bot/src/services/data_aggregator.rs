@@ -237,7 +237,7 @@ impl DataAggregator {
 
                         if let Some(err) = data_mapping.send_timeout(
                             DataMappingCmd::SpreadPairToJsonPair(long_spread.clone()), 
-                            Duration::from_millis(10)
+                            Duration::from_millis(300)
                         ).await.err() {
                             tracing::error!("DataAggregator(CalculateSpread-LongType) - {err}")
                         }
