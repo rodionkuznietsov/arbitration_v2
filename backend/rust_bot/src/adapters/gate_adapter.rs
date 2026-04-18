@@ -165,6 +165,12 @@ impl ExchangeAdapter for GateAdapter {
                     let asks = data.asks;
                     let bids = data.bids;
 
+                    if symbol == "btcusdt" {
+                        for ask_vec in asks.iter().rev() {
+                            tracing::info!("Out: {:?}", ask_vec)
+                        }
+                    }
+
                     if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
                         if symbol == "btcusdt" {
                             for ask_vec in asks.iter().rev() {
