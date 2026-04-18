@@ -99,9 +99,9 @@ impl DataAccessLayer {
                                                 symbol,
                                                 data: exchange_data
                                             }, 
-                                        Duration::from_millis(300)
+                                        Duration::from_millis(1000)
                                         ).await.err() {
-                                            tracing::error!("DataAccessLayer(FromExchangeAggregator) -> {e}; capacity: {}", data_aggregator_tx.capacity())
+                                            tracing::error!("DataAccessLayer(FromExchangeAggregator) -> {e};")
                                         }
                                     }
                                 }
