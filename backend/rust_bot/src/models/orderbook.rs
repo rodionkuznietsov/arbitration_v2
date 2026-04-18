@@ -46,7 +46,7 @@ pub struct SnapshotUi {
     pub timestamp: i64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BookEvent {
     Snapshot { 
         symbol: Symbol,

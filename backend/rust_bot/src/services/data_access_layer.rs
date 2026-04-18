@@ -84,10 +84,10 @@ impl DataAccessLayer {
 
                             tokio::spawn(async move {
                                 let data_aggregator_tx = data_aggregator_tx.clone();
-                                let (tx, rx) = oneshot::channel();
+                                let (tx, mut rx) = mpsc::channel(1);
                                 exchange_aggregator_tx.send(ExchangeStoreCMD::Subscribe { reply: tx }).ok();
 
-                                if let Ok(mut watch_aggregator_tx) = rx.await {
+                                if let Some(mut watch_aggregator_tx) = rx.recv().await {
                                     let _new_data = watch_aggregator_tx.borrow().clone();
 
                                     while watch_aggregator_tx.changed().await.is_ok() {
@@ -99,7 +99,7 @@ impl DataAccessLayer {
                                                 symbol,
                                                 data: exchange_data
                                             }, 
-                                        Duration::from_millis(1000)
+                                        Duration::from_millis(10)
                                         ).await.err() {
                                             tracing::error!("DataAccessLayer(FromExchangeAggregator) -> {e};")
                                         }
