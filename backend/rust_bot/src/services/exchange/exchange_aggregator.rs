@@ -135,9 +135,17 @@ impl ExchangeStore {
                             symbol, 
                             snapshot  
                         } => {
-                            if let Some(data) = self.market_data.get_mut(&symbol) {
-                                data.snapshot = Some(snapshot);
+                            if symbol == "btcusdt" {
+                                for (price, volume) in snapshot.a.iter().rev() {
+                                    let price_without_tick = *price as f64 / PRICE_TICK; 
+
+                                    tracing::info!("{} -> {}", price_without_tick, volume)
+                                }
                             }
+                            
+                            // if let Some(data) = self.market_data.get_mut(&symbol) {
+                            //     data.snapshot = Some(snapshot);
+                            // }
                         }
                         BookEvent::Delta { 
                             symbol, 

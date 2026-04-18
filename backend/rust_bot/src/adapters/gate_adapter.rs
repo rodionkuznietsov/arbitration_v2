@@ -167,27 +167,19 @@ impl ExchangeAdapter for GateAdapter {
 
                     if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
                         let asks = parse_levels__(asks);
-                        let bids = parse_levels__(bids);
+                        let bids = parse_levels__(bids);                    
                         
-                        if symbol == "btcusdt" {
-                            for (price, volume) in asks.iter().rev() {
-                                let price_without_tick = *price as f64 / PRICE_TICK; 
-
-                                tracing::info!("{} -> {}", price_without_tick, volume)
+                        sender_data.send(ExchangeStoreCMD::Event(
+                            BookEvent::Snapshot { 
+                                symbol,
+                                snapshot: Snapshot { 
+                                    a: asks, 
+                                    b: bids, 
+                                    last_update_id: None,
+                                    timestamp,
+                                }
                             }
-                        }
-                        
-                        // sender_data.send(ExchangeStoreCMD::Event(
-                        //     BookEvent::Snapshot { 
-                        //         symbol,
-                        //         snapshot: Snapshot { 
-                        //             a: asks, 
-                        //             b: bids, 
-                        //             last_update_id: None,
-                        //             timestamp,
-                        //         }
-                        //     }
-                        // )).await.ok();
+                        )).await.ok();
                     }
                 }
             }
