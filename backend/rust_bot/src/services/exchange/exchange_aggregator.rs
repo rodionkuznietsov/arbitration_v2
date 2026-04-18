@@ -146,10 +146,6 @@ impl ExchangeStore {
                                             }
                                         }
                                     }
-
-                                    // let snapshot = Sna
-
-                                    data.snapshot = Some(snapshot);
                                 } else {
                                     data.snapshot = Some(snapshot);
                                 }
