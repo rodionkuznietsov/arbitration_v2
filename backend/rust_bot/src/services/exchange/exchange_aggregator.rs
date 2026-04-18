@@ -120,21 +120,21 @@ impl ExchangeStore {
                 ExchangeStoreCMD::Default => {}
                 ExchangeStoreCMD::RegisterSymbol { 
                     symbol 
-                } => {
-                    tracing::info!("{symbol:?}")
-                    
-                    // // Разобрать с normilize_symbol;
-                    // let symbol: String = symbol
-                    //     .chars()
-                    //     .filter(|c| *c != '_' && *c != '-')
-                    //     .map(|c| c.to_ascii_lowercase())
-                    //     .collect();
+                } => {                    
+                    // Разобрать с normilize_symbol;
+                    let symbol: String = symbol
+                        .chars()
+                        .filter(|c| *c != '_' && *c != '-')
+                        .map(|c| c.to_ascii_lowercase())
+                        .collect();
 
-                    // self.market_data.put(symbol, BookData { 
-                    //     snapshot: None, 
-                    //     last_price: None, 
-                    //     volume24h: None
-                    // });
+                    self.market_data.put(symbol, BookData { 
+                        snapshot: None, 
+                        last_price: None, 
+                        volume24h: None
+                    });
+
+                    tracing::info!("{:?}", self.market_data)
                 },
                 ExchangeStoreCMD::Event(event) => {
                     match event {
