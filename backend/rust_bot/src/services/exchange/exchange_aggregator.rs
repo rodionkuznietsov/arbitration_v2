@@ -139,12 +139,11 @@ impl ExchangeStore {
                                 if self.id == ExchangeType::Gate {
                                     if let Some(old_snapshot) = &mut data.snapshot {
                                         for (price, volume) in snapshot.a.iter() {
-                                            tracing::info!("{price}");
-                                            // if *volume == 0.0 {
-                                            //     tracing::info!("{} -> volume: {}", price, volume)
-                                            // } else {
-                                            //     old_snapshot.a.insert(*price, *volume);
-                                            // }
+                                            if *volume == 0.0 {
+                                                tracing::info!("{} -> volume: {}", price, volume)
+                                            } else {
+                                                old_snapshot.a.insert(*price, *volume);
+                                            }
                                         }
                                     } else {
                                         data.snapshot = Some(snapshot);
