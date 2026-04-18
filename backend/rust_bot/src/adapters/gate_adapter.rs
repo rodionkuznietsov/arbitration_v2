@@ -165,32 +165,22 @@ impl ExchangeAdapter for GateAdapter {
                     let asks = data.asks;
                     let bids = data.bids;
 
-                    if let Some(asks) = asks {
-                        if symbol == "btcusdt" {
-                            for ask_vec in asks.iter().rev() {
-                                tracing::info!("{:?}", ask_vec)
+                    if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
+                        let asks = parse_levels__(asks);
+                        let bids = parse_levels__(bids);
+                        
+                        sender_data.send(ExchangeStoreCMD::Event(
+                            BookEvent::Snapshot { 
+                                symbol,
+                                snapshot: Snapshot { 
+                                    a: asks, 
+                                    b: bids, 
+                                    last_update_id: None,
+                                    timestamp,
+                                }
                             }
-                        }
+                        )).await.ok();
                     }
-
-                    // if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
-
-                        
-                        // let asks = parse_levels__(asks);
-                        // let bids = parse_levels__(bids);
-                        
-                        // sender_data.send(ExchangeStoreCMD::Event(
-                        //     BookEvent::Snapshot { 
-                        //         symbol,
-                        //         snapshot: Snapshot { 
-                        //             a: asks, 
-                        //             b: bids, 
-                        //             last_update_id: None,
-                        //             timestamp,
-                        //         }
-                        //     }
-                        // )).await.ok();
-                    // }
                 }
             }
         }
