@@ -237,7 +237,9 @@ impl ExchangeStore {
                 ExchangeStoreCMD::Subscribe { 
                     reply
                 } => {             
-                    reply.try_send(self.watch_rx.clone()).ok();
+                    println!("{:?}", self.market_data.get("btcusdt"))
+                    
+                    // reply.try_send(self.watch_rx.clone()).ok();
                 },
             }
         }
