@@ -82,14 +82,14 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                 if let Some(result) = tickers {                    
                     this.try_run_ws_session(&result).await;
                     
-                    // Загружаем снапшоты
-                    tokio::spawn({
-                        let this = self.clone();
-                        let adapter = this.adapter.clone();
-                        async move {
-                         adapter.get_snapshot_spot_http(&result, &this.client, this.sender_data.clone()).await;
-                        }
-                    });
+                    // // Загружаем снапшоты
+                    // tokio::spawn({
+                    //     let this = self.clone();
+                    //     let adapter = this.adapter.clone();
+                    //     async move {
+                    //      adapter.get_snapshot_spot_http(&result, &this.client, this.sender_data.clone()).await;
+                    //     }
+                    // });
                 }
             }
         });
