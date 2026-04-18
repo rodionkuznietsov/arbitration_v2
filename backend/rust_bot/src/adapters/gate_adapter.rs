@@ -171,7 +171,7 @@ impl ExchangeAdapter for GateAdapter {
                         
                         if symbol == "btcusdt" {
                             for ask_vec in asks {
-                                tracing::info!("{:?}", ask_vec.iter().last())
+                                tracing::info!("{:?}", ask_vec.last())
                             }
                         }
                         
