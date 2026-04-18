@@ -7,6 +7,8 @@ use tokio::sync::{RwLock, mpsc};
 
 use crate::{models::{aggregator::{JsonPairData, JsonPairUniqueId, KeyMarketType, SpreadPair, Volume}, exchange::ExchangeType, line::{Line}, orderbook::Snapshot, websocket::{ChannelSubscription, ChannelType, Symbol, WsClientMessage, WsClientMsgResult}}, services::manager_transmitter::{ManagerTransmitterCmd, NotifyEvent}};
 
+const MANAGER_TRANSMITTER_TIMEOUT_DELAY: u64 = 100; // ms
+
 pub enum DataMappingCmd {
     #[allow(unused)]
     /// Это команда приводит `lines` в формат JSON и соединяет попарно (`Long Lines & Short Lines`)
@@ -356,9 +358,9 @@ impl DataMapping {
                                                     msg
                                                 )
                                             ), 
-                                        Duration::from_millis(10)
+                                        Duration::from_millis(100)
                                         ).await.err() {
-                                            tracing::error!("DataMapping -> {err}");
+                                            tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.first }} -> {err}");
                                         }
 
                                         let msg_2 = WsClientMessage {
@@ -395,9 +397,9 @@ impl DataMapping {
                                                     msg_2
                                                 )
                                             ), 
-                                        Duration::from_millis(10)
+                                        Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
                                         ).await.err() {
-                                            tracing::error!("DataMapping -> {err}");
+                                            tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.last }} -> {err}");
                                         }
                                     }
                                 }

@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 use tokio::sync::{mpsc, oneshot};
-use crate::{models::exchange::ExchangeType, services::{cache_aggregator::CacheAggregatorCmd, data_aggregator::DataAggregatorCmd, data_mapping::DataMappingCmd, exchange::{exchange_aggregator::ExchangeStoreCMD, exchange_channel_store::ExchangeChannelStoreCmd}}};
+use crate::{services::{cache_aggregator::CacheAggregatorCmd, data_aggregator::DataAggregatorCmd, data_mapping::DataMappingCmd, exchange::{exchange_aggregator::ExchangeStoreCMD, exchange_channel_store::ExchangeChannelStoreCmd}}};
 
 /// Извлекает конкретные данные из:
 /// 
