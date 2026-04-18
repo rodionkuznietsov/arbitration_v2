@@ -80,6 +80,8 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
             async move {
                 let tickers = this.adapter.clone().get_tickers(&this.client).await;
                 if let Some(result) = tickers {
+                    this.try_run_ws_session(&result).await;
+                    
                     // Загружаем снапшоты
                     tokio::spawn({
                         let this = self.clone();
@@ -88,8 +90,6 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                          adapter.get_snapshot_spot_http(&result, &this.client, this.sender_data.clone()).await;
                         }
                     });
-                    
-                    // this.try_run_ws_session(&result).await;
                 }
             }
         });
