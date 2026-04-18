@@ -117,24 +117,24 @@ impl ExchangeStore {
             let cmd = self.rx.borrow().clone();
 
             match cmd {
-                ExchangeStoreCMD::Default => {
-
-                }
+                ExchangeStoreCMD::Default => {}
                 ExchangeStoreCMD::RegisterSymbol { 
                     symbol 
                 } => {
-                    // Разобрать с normilize_symbol;
-                    let symbol: String = symbol
-                        .chars()
-                        .filter(|c| *c != '_' && *c != '-')
-                        .map(|c| c.to_ascii_lowercase())
-                        .collect();
+                    tracing::info!("{symbol:?}")
+                    
+                    // // Разобрать с normilize_symbol;
+                    // let symbol: String = symbol
+                    //     .chars()
+                    //     .filter(|c| *c != '_' && *c != '-')
+                    //     .map(|c| c.to_ascii_lowercase())
+                    //     .collect();
 
-                    self.market_data.put(symbol, BookData { 
-                        snapshot: None, 
-                        last_price: None, 
-                        volume24h: None
-                    });
+                    // self.market_data.put(symbol, BookData { 
+                    //     snapshot: None, 
+                    //     last_price: None, 
+                    //     volume24h: None
+                    // });
                 },
                 ExchangeStoreCMD::Event(event) => {
                     match event {
