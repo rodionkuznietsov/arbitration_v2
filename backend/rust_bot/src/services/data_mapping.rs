@@ -96,15 +96,17 @@ impl DataMapping {
                                                     }, 
                                                 };
 
-                                                self.manager_transmitter_tx.send_timeout(
+                                                if let Some(err) = self.manager_transmitter_tx.send_timeout(
                                                     ManagerTransmitterCmd::Notify(
                                                         NotifyEvent::PayloadJson(
                                                             channel_key,
                                                             msg
                                                         )
                                                     ), 
-                                                Duration::from_millis(10)
-                                                ).await.ok();
+                                                Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
+                                                ).await.err() {
+                                                    tracing::error!("{{ data_mapping.lines_from_data_access_layer.first }} -> {err}");
+                                                }
 
                                                 let msg_2 = WsClientMessage {
                                                     channel: ChannelType::Chart,
@@ -131,15 +133,17 @@ impl DataMapping {
                                                     }, 
                                                 };
 
-                                                self.manager_transmitter_tx.send_timeout(
+                                                if let Some(err) = self.manager_transmitter_tx.send_timeout(
                                                     ManagerTransmitterCmd::Notify(
                                                         NotifyEvent::PayloadJson(
                                                             channel_key_2,
                                                             msg_2
                                                         )
                                                     ), 
-                                                Duration::from_millis(10)
-                                                ).await.ok();                                                
+                                                Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
+                                                ).await.err() {
+                                                    tracing::error!("{{ data_mapping.lines_from_data_access_layer.last }} -> {err}");
+                                                }                                              
                                             }
                                         }
                                     }
@@ -184,15 +188,17 @@ impl DataMapping {
                                 }, 
                             };
 
-                            self.manager_transmitter_tx.send_timeout(
+                            if let Some(err) = self.manager_transmitter_tx.send_timeout(
                                 ManagerTransmitterCmd::Notify(
                                     NotifyEvent::PayloadJson(
                                         channel_key,
                                         msg
                                     )
                                 ), 
-                            Duration::from_millis(10)
-                            ).await.ok();
+                            Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
+                            ).await.err() {
+                                tracing::error!("{{ data_mapping.lines_to_json_pair.first }} -> {err}");
+                            }
 
                             let msg_2 = WsClientMessage {
                                 channel: ChannelType::Chart,
@@ -219,15 +225,17 @@ impl DataMapping {
                                 }, 
                             };
 
-                            self.manager_transmitter_tx.send_timeout(
+                            if let Some(err) = self.manager_transmitter_tx.send_timeout(
                                 ManagerTransmitterCmd::Notify(
                                     NotifyEvent::PayloadJson(
                                         channel_key_2,
                                         msg_2
                                     )
                                 ), 
-                            Duration::from_millis(10)
-                            ).await.ok();
+                            Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
+                            ).await.err() {
+                                tracing::error!("{{ data_mapping.lines_to_json_pair.last }} -> {err}");
+                            }
                         },
                         DataMappingCmd::LinesFromDbToJsonPair(lines) => {
                             for (i, ((long_exchange, short_exchnage, symbol), long_lines)) in lines.iter().enumerate() {
@@ -269,7 +277,7 @@ impl DataMapping {
                                         ), 
                                     Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
                                     ).await.err() {
-                                        tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.last }} -> {err}");
+                                        tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.first }} -> {err}");
                                     }
 
                                     let msg_2 = WsClientMessage {
@@ -456,9 +464,9 @@ impl DataMapping {
                                         msg
                                     )
                                 ), 
-                            Duration::from_millis(10)
+                            Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
                             ).await.err() {
-                                tracing::error!("DataMapping -> {err}");
+                                tracing::error!("{{ data_mapping.spread_pair_to_json_pair.first }} -> {err}");
                             }
                             
                             let msg_2 = WsClientMessage {
@@ -495,9 +503,9 @@ impl DataMapping {
                                         msg_2
                                     )
                                 ), 
-                            Duration::from_millis(10)
+                            Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
                             ).await.err() {
-                                tracing::error!("DataMapping -> {err}");
+                                tracing::error!("{{ data_mapping.spread_pair_to_json_pair.last }} -> {err}");
                             }
                         }, 
                         DataMappingCmd::VolumesToJson(
@@ -537,9 +545,9 @@ impl DataMapping {
                                                 msg
                                             )
                                         ), 
-                                    Duration::from_millis(10)
+                                    Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
                                     ).await.err() {
-                                        tracing::error!("DataMapping -> {err}");
+                                        tracing::error!("{{ data_mapping.volumes_to_json.first }} -> {err}");
                                     }
 
                                     let msg_2 = WsClientMessage {
@@ -574,9 +582,9 @@ impl DataMapping {
                                                 msg_2
                                             )
                                         ), 
-                                    Duration::from_millis(10)
+                                    Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
                                     ).await.err() {
-                                        tracing::error!("DataMapping -> {err}");
+                                        tracing::error!("{{ data_mapping.volumes_to_json.last }} -> {err}");
                                     }
                                 }
                             }
