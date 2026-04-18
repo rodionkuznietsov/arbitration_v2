@@ -260,15 +260,17 @@ impl DataMapping {
                                         }, 
                                     };
 
-                                    self.manager_transmitter_tx.send_timeout(
+                                    if let Some(err) = self.manager_transmitter_tx.send_timeout(
                                         ManagerTransmitterCmd::Notify(
                                             NotifyEvent::PayloadJson(
                                                 channel_key,
                                                 msg
                                             )
                                         ), 
-                                    Duration::from_millis(10)
-                                    ).await.ok();
+                                    Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
+                                    ).await.err() {
+                                        tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.last }} -> {err}");
+                                    }
 
                                     let msg_2 = WsClientMessage {
                                         channel: ChannelType::Chart,
@@ -295,15 +297,17 @@ impl DataMapping {
                                         }, 
                                     };
 
-                                    self.manager_transmitter_tx.send_timeout(
+                                    if let Some(err) = self.manager_transmitter_tx.send_timeout(
                                         ManagerTransmitterCmd::Notify(
                                             NotifyEvent::PayloadJson(
                                                 channel_key_2,
                                                 msg_2
                                             )
                                         ), 
-                                    Duration::from_millis(10)
-                                    ).await.ok();
+                                    Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
+                                    ).await.err() {
+                                        tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.last }} -> {err}");
+                                    }
 
                                 }
                             }
@@ -358,7 +362,7 @@ impl DataMapping {
                                                     msg
                                                 )
                                             ), 
-                                        Duration::from_millis(100)
+                                        Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
                                         ).await.err() {
                                             tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.first }} -> {err}");
                                         }
