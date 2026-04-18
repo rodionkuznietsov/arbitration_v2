@@ -94,16 +94,21 @@ impl DataAccessLayer {
 
                                     while watch_aggregator_tx.changed().await.is_ok() {
                                         let (symbol, exchange_data) = watch_aggregator_tx.borrow().clone();
-                                        if let Some(e) = data_aggregator_tx.send_timeout(
-                                            DataAggregatorCmd::UpdateData { 
-                                                exchange_id, 
-                                                symbol,
-                                                data: exchange_data
-                                            }, 
-                                        Duration::from_millis(100)
-                                        ).await.err() {
-                                            tracing::error!("DataAccessLayer(FromExchangeAggregator) -> {e}; capacity: {}", data_aggregator_tx.capacity())
+
+                                        if symbol.to_string() == "btcusdt" {
+                                            tracing::info!("{symbol} -> {:?}", exchange_data.last_price)
                                         }
+                                        
+                                        // if let Some(e) = data_aggregator_tx.send_timeout(
+                                        //     DataAggregatorCmd::UpdateData { 
+                                        //         exchange_id, 
+                                        //         symbol,
+                                        //         data: exchange_data
+                                        //     }, 
+                                        // Duration::from_millis(10)
+                                        // ).await.err() {
+                                        //     tracing::error!("DataAccessLayer(FromExchangeAggregator) -> {e}; capacity: {}", data_aggregator_tx.capacity())
+                                        // }
                                     }
                                 }
                             });

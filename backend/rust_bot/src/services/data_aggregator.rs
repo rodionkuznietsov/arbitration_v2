@@ -111,6 +111,8 @@ impl DataAggregator {
                 mut data
             } => {
 
+                // Сюда приходят опоздавшиеся данные
+
                 if exchange_id == ExchangeType::Gate {
                     if symbol.to_string() == "btcusdt" {
                         tracing::info!("{:?}", data.last_price);
