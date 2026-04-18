@@ -1,6 +1,6 @@
 use std::{collections::{HashMap, HashSet}, sync::Arc, time::Duration};
 use tokio::sync::{mpsc};
-use crate::{models::{aggregator::{ClientAggregatorUse, JsonPairUniqueId}, websocket::{ChannelSubscription, ChannelType, ClientId, WsClientMessage}}, services::cache_aggregator::CacheAggregatorCmd};
+use crate::{models::{aggregator::{ClientAggregatorUse}, websocket::{ChannelSubscription, ChannelType, ClientId, WsClientMessage}}, services::cache_aggregator::CacheAggregatorCmd};
 
 #[derive(Debug)]
 pub enum ClientMpcsChannel {
@@ -119,8 +119,6 @@ impl ClientAggregator {
                         key,
                         msg,
                     ) => {
-                        tracing::info!("{msg:?}");
-
                         if let Some(client_ids) = self.sub_index.get(&key) {
                             for client_id in client_ids {
                                 if let Some(channels) = self.clients.get(&*client_id) {
