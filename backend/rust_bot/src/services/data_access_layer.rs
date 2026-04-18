@@ -90,9 +90,11 @@ impl DataAccessLayer {
                                 while let Some(mut watch_aggregator_tx) = rx.recv().await {
                                     let _new_data = watch_aggregator_tx.borrow().clone();
 
+                                    tracing::info!("{}", _new_data.0);
+
                                     while watch_aggregator_tx.changed().await.is_ok() {
                                         let (symbol, exchange_data) = watch_aggregator_tx.borrow().clone();
-                                        
+
                                         if let Some(e) = data_aggregator_tx.send_timeout(
                                             DataAggregatorCmd::UpdateData { 
                                                 exchange_id, 
