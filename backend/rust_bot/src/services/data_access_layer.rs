@@ -67,7 +67,7 @@ impl DataAccessLayer {
         ).await.ok();
         
         if let Ok(mut watch_rx) = rx.await {
-            let exchanges_count = 2;
+            let exchanges_count = 3;
 
             // Возможно проблема здесь
 
