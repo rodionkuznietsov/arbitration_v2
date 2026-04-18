@@ -81,6 +81,7 @@ impl ExchangeAdapter for GateAdapter {
                 let symbol = symbol.clone();
                 let permit = semaphore.clone().acquire_owned().await;
                 let client = client.clone();
+                let sender_data = sender_data.clone();
 
                 tokio::spawn(async move {
                     let _p = permit;
@@ -90,22 +91,20 @@ impl ExchangeAdapter for GateAdapter {
                     match response {
                         Ok(response) => {
                             if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
-                                let mut asks = parse_levels__(snapshot.asks);
+                                let asks = parse_levels__(snapshot.asks);
                                 let bids = parse_levels__(snapshot.bids);
 
-                                tracing::info!("{} -> {:?}", symbol, asks.first_entry())
-
-                                // sender_data.send(ExchangeStoreCMD::Event(
-                                //     BookEvent::Snapshot { 
-                                //         symbol,
-                                //         snapshot: Snapshot { 
-                                //             a: asks, 
-                                //             b: bids, 
-                                //             last_update_id: None,
-                                //             timestamp: 0
-                                //         }
-                                //     }
-                                // )).await.ok();
+                                sender_data.send(ExchangeStoreCMD::Event(
+                                    BookEvent::Snapshot { 
+                                        symbol,
+                                        snapshot: Snapshot { 
+                                            a: asks, 
+                                            b: bids, 
+                                            last_update_id: None,
+                                            timestamp: 0
+                                        }
+                                    }
+                                )).await.ok();
                             }
                         },
                         Err(e) => {
