@@ -79,17 +79,17 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
             let this = self.clone();
             async move {
                 let tickers = this.adapter.clone().get_tickers(&this.client).await;
-                if let Some(result) = tickers {
-                    this.try_run_ws_session(&result).await;
-                    
+                if let Some(result) = tickers {                    
                     // Загружаем снапшоты
-                    tokio::spawn({
-                        let this = self.clone();
-                        let adapter = this.adapter.clone();
-                        async move {
-                         adapter.get_snapshot_spot_http(&result, &this.client, this.sender_data.clone()).await;
-                        }
-                    });
+                    // tokio::spawn({
+                    //     let this = self.clone();
+                    //     let adapter = this.adapter.clone();
+                    //     async move {
+                    //      adapter.get_snapshot_spot_http(&result, &this.client, this.sender_data.clone()).await;
+                    //     }
+                    // });
+
+                    this.try_run_ws_session(&result).await;
                 }
             }
         });

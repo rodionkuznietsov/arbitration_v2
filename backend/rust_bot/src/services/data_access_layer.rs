@@ -90,6 +90,8 @@ impl DataAccessLayer {
                                 if let Ok(mut watch_aggregator_tx) = rx.await {
                                     let _new_data = watch_aggregator_tx.borrow().clone();
 
+                                    tracing::info!("{} -> {:?}", _new_data.0, _new_data.1.snapshot);
+
                                     while watch_aggregator_tx.changed().await.is_ok() {
                                         let (symbol, exchange_data) = watch_aggregator_tx.borrow().clone();
                                         if let Some(e) = data_aggregator_tx.send_timeout(
