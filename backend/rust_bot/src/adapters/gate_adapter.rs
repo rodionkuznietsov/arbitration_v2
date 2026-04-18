@@ -170,7 +170,9 @@ impl ExchangeAdapter for GateAdapter {
                         // let bids = parse_levels__(bids);
                         
                         if symbol == "btcusdt" {
-                            tracing::info!("{:?}", asks.iter().last())
+                            for ask_vec in asks {
+                                tracing::info!("{:?}", ask_vec.iter().last())
+                            }
                         }
                         
                         // sender_data.send(ExchangeStoreCMD::Event(
