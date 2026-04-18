@@ -198,13 +198,15 @@ impl ExchangeAdapter for GateAdapter {
                         let price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
                         let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
 
-                        sender_data.send(ExchangeStoreCMD::Event(
+                        if let Some(err) = sender_data.send_timeout(ExchangeStoreCMD::Event(
                             BookEvent::TickerUpdate { 
                                 symbol, 
                                 last_price: price, 
                                 volume: volume
                             }
-                        )).await.ok();
+                        ), Duration::from_millis(10)).await.err() {
+                            tracing::error!("{{ gate_adapter.sender_data.orderbook }} {err}")
+                        }
                     }
                 }
             }
