@@ -178,7 +178,7 @@ impl ExchangeAdapter for GateAdapter {
                                 }
                             }
                         )).await.err() {
-                            tracing::error!("{{ gate_adapter.sender_data }} {err}")
+                            tracing::error!("{{ gate_adapter.sender_data.orderbook }} {err}")
                         }
                     }
                 }
