@@ -1,6 +1,4 @@
 use std::{sync::Arc, time::Duration};
-
-use futures_util::{StreamExt, stream};
 use tokio::sync::{Semaphore, mpsc};
 use tokio_tungstenite::tungstenite::Message;
 
