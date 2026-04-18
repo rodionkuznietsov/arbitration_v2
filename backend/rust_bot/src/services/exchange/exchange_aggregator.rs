@@ -146,6 +146,8 @@ impl ExchangeStore {
                                             //     old_snapshot.a.insert(*price, *volume);
                                             // }
                                         }
+                                    } else {
+                                        data.snapshot = Some(snapshot);
                                     }
                                 } else {
                                     data.snapshot = Some(snapshot);
