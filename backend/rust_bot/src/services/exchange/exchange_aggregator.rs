@@ -66,6 +66,7 @@ pub fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
     values
 }
 
+#[derive(Debug)]
 pub enum ExchangeStoreCMD {
     Event(BookEvent),
     RegisterSymbol {
@@ -73,12 +74,13 @@ pub enum ExchangeStoreCMD {
     },
     Subscribe {
         reply: oneshot::Sender<watch::Receiver<(Arc<Symbol>, Arc<BookData>)>>
-    }
+    },
+    Default
 } 
 
 pub struct ExchangeStore {
     pub market_data: LruCache<Symbol, BookData>,
-    pub rx: mpsc::Receiver<ExchangeStoreCMD>,
+    pub rx: watch::Receiver<ExchangeStoreCMD>,
     #[allow(unused)]
     id: ExchangeType,
     watch_tx: watch::Sender<(Arc<Symbol>, Arc<BookData>)>,
@@ -87,7 +89,7 @@ pub struct ExchangeStore {
 
 impl ExchangeStore {
     pub fn new(
-        rx: mpsc::Receiver<ExchangeStoreCMD>,
+        rx: watch::Receiver<ExchangeStoreCMD>,
         id: ExchangeType
     ) -> Self {
         let cache_capacity = std::env::var("ORDERBOOK_CACHE_CAPACITY")
@@ -111,8 +113,9 @@ impl ExchangeStore {
         mut self,
     ) {
         // let mut last_version_id = 0;
-        while let Some(cmd) = self.rx.recv().await {
-            let _ = cmd;
+        while let Ok(_) = self.rx.changed().await {
+            let cmd = self.rx.borrow();
+
         //     match cmd {
         //         ExchangeStoreCMD::RegisterSymbol { 
         //             symbol 

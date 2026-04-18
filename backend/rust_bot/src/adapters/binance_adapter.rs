@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, watch};
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::{models::{exchange::TickerInfo, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::ExchangeStoreCMD}};
@@ -42,7 +42,7 @@ impl ExchangeAdapter for BinanceAdapter {
         self: Arc<Self>,
         tickers: &Vec<TickerInfo>,
         client: &reqwest::Client,
-        sender_data: mpsc::Sender<ExchangeStoreCMD>
+        sender_data: watch::Sender<ExchangeStoreCMD>
     ) {
         
     }
@@ -57,7 +57,7 @@ impl ExchangeAdapter for BinanceAdapter {
     async fn parse_message(
         self: Arc<Self>,
         _msg: String,
-        _data_aggregator_tx: mpsc::Sender<ExchangeStoreCMD>
+        _data_aggregator_tx: watch::Sender<ExchangeStoreCMD>
     ) {
         
     }

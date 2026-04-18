@@ -5,21 +5,23 @@ use crate::{models::exchange::ExchangeType, services::exchange::exchange_aggrega
 pub enum ExchangeChannelStoreCmd {
     RegisterChannel {
         exchange_id: ExchangeType,
-        channel: mpsc::Sender<ExchangeStoreCMD>
+        channel: watch::Sender<ExchangeStoreCMD>
     },
     
     GetExchangesChannel {
-        reply: oneshot::Sender<watch::Receiver<HashMap<ExchangeType, mpsc::Sender<ExchangeStoreCMD>>>>
+        reply: oneshot::Sender<watch::Receiver<HashMap<ExchangeType, watch::Sender<ExchangeStoreCMD>>>>
     },
+
+    Default
 }
 
 pub struct ExchangeChannelStore {
-    exchanges_channel: HashMap<ExchangeType, mpsc::Sender<ExchangeStoreCMD>>,
+    exchanges_channel: HashMap<ExchangeType, watch::Sender<ExchangeStoreCMD>>,
 
     pub sender_channel: mpsc::Sender<ExchangeChannelStoreCmd>,
     receiver_channel: mpsc::Receiver<ExchangeChannelStoreCmd>,
-    watch: watch::Sender<HashMap<ExchangeType, mpsc::Sender<ExchangeStoreCMD>>>,
-    watch_rx: watch::Receiver<HashMap<ExchangeType, mpsc::Sender<ExchangeStoreCMD>>>
+    watch: watch::Sender<HashMap<ExchangeType, watch::Sender<ExchangeStoreCMD>>>,
+    watch_rx: watch::Receiver<HashMap<ExchangeType, watch::Sender<ExchangeStoreCMD>>>
 }
 
 impl ExchangeChannelStore {
@@ -52,6 +54,7 @@ impl ExchangeChannelStore {
                     } => {
                         let _ = reply.send(self.watch_rx.clone());
                     },
+                    ExchangeChannelStoreCmd::Default => {}
                 }
             }
         }

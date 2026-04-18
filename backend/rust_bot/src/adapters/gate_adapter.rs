@@ -1,5 +1,5 @@
 use std::{sync::Arc, time::Duration};
-use tokio::sync::{Semaphore, mpsc};
+use tokio::sync::{Semaphore, mpsc, watch};
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::{models::{exchange::{TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, OrderBookFromHttp, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
@@ -55,7 +55,7 @@ impl ExchangeAdapter for GateAdapter {
         self: Arc<Self>,
         tickers: &Vec<TickerInfo>,
         client: &reqwest::Client,
-        sender_data: mpsc::Sender<ExchangeStoreCMD>,
+        sender_data: watch::Sender<ExchangeStoreCMD>,
     ) {
         // Загружать лениво, только когда юзер просит(один раз)
         // Избегают повторную загрузку во время двух запросов одновременно для даного тикера
@@ -102,7 +102,7 @@ impl ExchangeAdapter for GateAdapter {
                                             timestamp: 0
                                         }
                                     }
-                                )).await.ok();
+                                )).ok();
                             }
                         },
                         Err(e) => {
@@ -144,7 +144,7 @@ impl ExchangeAdapter for GateAdapter {
     async fn parse_message(
         self: Arc<Self>,
         msg: String,
-        sender_data: mpsc::Sender<ExchangeStoreCMD>
+        sender_data: watch::Sender<ExchangeStoreCMD>
     ) {
         if !msg.contains("update") {
             return;
@@ -167,7 +167,7 @@ impl ExchangeAdapter for GateAdapter {
                         let asks = parse_levels__(asks);
                         let bids = parse_levels__(bids);
                         
-                        if let Some(err) = sender_data.send_timeout(ExchangeStoreCMD::Event(
+                        if let Some(err) = sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::Snapshot { 
                                 symbol,
                                 snapshot: Snapshot { 
@@ -177,7 +177,7 @@ impl ExchangeAdapter for GateAdapter {
                                     timestamp,
                                 }
                             },
-                        ), Duration::from_millis(10)).await.err() {
+                        )).err() {
                             tracing::error!("{{ gate_adapter.sender_data.orderbook }} {err}")
                         }
                     }
@@ -198,13 +198,13 @@ impl ExchangeAdapter for GateAdapter {
                         let price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
                         let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
 
-                        if let Some(err) = sender_data.send_timeout(ExchangeStoreCMD::Event(
+                        if let Some(err) = sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::TickerUpdate { 
                                 symbol, 
                                 last_price: price, 
                                 volume: volume
                             }
-                        ), Duration::from_millis(10)).await.err() {
+                        )).err() {
                             tracing::error!("{{ gate_adapter.sender_data.last_price }} {err}")
                         }
                     }

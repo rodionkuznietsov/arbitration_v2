@@ -85,7 +85,7 @@ impl DataAccessLayer {
                             tokio::spawn(async move {
                                 let data_aggregator_tx = data_aggregator_tx.clone();
                                 let (tx, rx) = oneshot::channel();
-                                exchange_aggregator_tx.send(ExchangeStoreCMD::Subscribe { reply: tx }).await.ok();
+                                exchange_aggregator_tx.send(ExchangeStoreCMD::Subscribe { reply: tx }).ok();
 
                                 if let Ok(mut watch_aggregator_tx) = rx.await {
                                     let _new_data = watch_aggregator_tx.borrow().clone();

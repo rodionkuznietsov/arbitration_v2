@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 use futures_util::{SinkExt, StreamExt};
-use tokio::sync::{mpsc};
+use tokio::sync::{mpsc, watch};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{info};
@@ -25,7 +25,7 @@ pub struct ExchangeSetup<T: ExchangeAdapter> {
     #[allow(unused)]
     pub ticker_rx: async_channel::Receiver<(String, String)>,
     pub client: reqwest::Client,
-    pub sender_data: mpsc::Sender<ExchangeStoreCMD>,
+    pub sender_data: watch::Sender<ExchangeStoreCMD>,
     exchange_id: ExchangeType,
 
     data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>
@@ -42,7 +42,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
         let title = format!("{}Websocket", exchange_id);
         let (ticker_tx, ticker_rx) = async_channel::bounded(64);
         let client = reqwest::Client::new();
-        let (sender_data, rx_data) = mpsc::channel::<ExchangeStoreCMD>(1000);
+        let (sender_data, rx_data) = watch::channel(ExchangeStoreCMD::Default);
 
         let store = ExchangeStore::new(rx_data, exchange_id);
         let sender_data_cl = sender_data.clone();
@@ -120,7 +120,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                     let symbol = Arc::new(symbol);
 
                     // Регистрируем тикеры в exchange aggregator
-                    self.sender_data.send(ExchangeStoreCMD::RegisterSymbol { symbol: symbol.clone() }).await.ok();
+                    self.sender_data.send(ExchangeStoreCMD::RegisterSymbol { symbol: symbol.clone() }).ok();
 
                     // Регистрируем тикеры с exchange_id в общем аггрегаторе
                     self.data_aggregator_tx.send(
