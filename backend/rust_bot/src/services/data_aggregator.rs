@@ -110,8 +110,6 @@ impl DataAggregator {
                 symbol,
                 mut data
             } => {
-                tracing::info!("{data:?}");
-
                 if let Some(exchanges) = self.markets.get_mut(&symbol) {
                     if let Some(old_data) = exchanges.get_mut(&exchange_id) {
                         let data_mut = Arc::make_mut(&mut data);
