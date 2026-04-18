@@ -112,7 +112,9 @@ impl DataAggregator {
             } => {
 
                 if exchange_id == ExchangeType::Gate {
-                    tracing::info!("{:?}", data.last_price);
+                    if symbol.to_string() == "btcusdt" {
+                        tracing::info!("{:?}", data.last_price);
+                    }
                 }
 
                 if let Some(exchanges) = self.markets.get_mut(&symbol) {
