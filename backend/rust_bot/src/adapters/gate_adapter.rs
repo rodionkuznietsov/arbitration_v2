@@ -205,7 +205,7 @@ impl ExchangeAdapter for GateAdapter {
                                 volume: volume
                             }
                         ), Duration::from_millis(10)).await.err() {
-                            tracing::error!("{{ gate_adapter.sender_data.orderbook }} {err}")
+                            tracing::error!("{{ gate_adapter.sender_data.last_price }} {err}")
                         }
                     }
                 }
