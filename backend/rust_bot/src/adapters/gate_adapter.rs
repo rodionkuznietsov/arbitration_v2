@@ -165,15 +165,15 @@ impl ExchangeAdapter for GateAdapter {
                     let asks = data.asks;
                     let bids = data.bids;
 
-                    if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
+                    if symbol == "btcusdt" {
+                        for ask_vec in asks.iter().rev() {
+                            tracing::info!("{:?}", ask_vec)
+                        }
+                    }
+
+                    // if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
                         // let asks = parse_levels__(asks);
                         // let bids = parse_levels__(bids);
-                        
-                        if symbol == "btcusdt" {
-                            for ask_vec in asks.iter().rev() {
-                                tracing::info!("{:?}", ask_vec)
-                            }
-                        }
                         
                         // sender_data.send(ExchangeStoreCMD::Event(
                         //     BookEvent::Snapshot { 
@@ -186,34 +186,34 @@ impl ExchangeAdapter for GateAdapter {
                         //         }
                         //     }
                         // )).await.ok();
-                    }
+                    // }
                 }
             }
         }
 
-        // if msg.contains("spot.tickers") {
-        //     let json: TickerEvent = serde_json::from_str(&msg).unwrap();
-        //     if let Some(result) = json.result {
-        //         let ticker = result.symbol;
-        //         if let Some(symbol) = ticker {
-        //             let symbol = symbol.replace("_", "").to_lowercase();
-        //             let last_price = result.last_price;
-        //             let volume = result.volume;
+        if msg.contains("spot.tickers") {
+            let json: TickerEvent = serde_json::from_str(&msg).unwrap();
+            if let Some(result) = json.result {
+                let ticker = result.symbol;
+                if let Some(symbol) = ticker {
+                    let symbol = symbol.replace("_", "").to_lowercase();
+                    let last_price = result.last_price;
+                    let volume = result.volume;
 
-        //             if let (Some(price_str), Some(vol_str)) = (last_price, volume) {
-        //                 let price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
-        //                 let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
+                    if let (Some(price_str), Some(vol_str)) = (last_price, volume) {
+                        let price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
+                        let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
 
-        //                 sender_data.send(ExchangeStoreCMD::Event(
-        //                     BookEvent::TickerUpdate { 
-        //                         symbol, 
-        //                         last_price: price, 
-        //                         volume: volume
-        //                     }
-        //                 )).await.ok();
-        //             }
-        //         }
-        //     }
-        // }
+                        sender_data.send(ExchangeStoreCMD::Event(
+                            BookEvent::TickerUpdate { 
+                                symbol, 
+                                last_price: price, 
+                                volume: volume
+                            }
+                        )).await.ok();
+                    }
+                }
+            }
+        }
     }
 }
