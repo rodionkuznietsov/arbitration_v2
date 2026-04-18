@@ -110,8 +110,9 @@ impl DataAggregator {
                 symbol,
                 mut data
             } => {
-                
-                tracing::info!("{symbol}");
+                if symbol.to_string() == "btcusdt" {
+                    tracing::info!("{:?}", data);
+                }
 
                 if let Some(exchanges) = self.markets.get_mut(&symbol) {
                     if let Some(old_data) = exchanges.get_mut(&exchange_id) {
