@@ -167,7 +167,7 @@ impl ExchangeAdapter for GateAdapter {
                         let asks = parse_levels__(asks);
                         let bids = parse_levels__(bids);
                         
-                        if let Some(err) = sender_data.send(ExchangeStoreCMD::Event(
+                        if let Some(err) = sender_data.send_timeout(ExchangeStoreCMD::Event(
                             BookEvent::Snapshot { 
                                 symbol,
                                 snapshot: Snapshot { 
@@ -176,8 +176,8 @@ impl ExchangeAdapter for GateAdapter {
                                     last_update_id: None,
                                     timestamp,
                                 }
-                            }
-                        )).await.err() {
+                            },
+                        ), Duration::from_millis(10)).await.err() {
                             tracing::error!("{{ gate_adapter.sender_data.orderbook }} {err}")
                         }
                     }
