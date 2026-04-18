@@ -78,6 +78,7 @@ pub enum ExchangeStoreCMD {
     Default
 } 
 
+#[derive(Clone)]
 pub struct ExchangeStore {
     pub market_data: LruCache<Symbol, BookData>,
     pub rx: watch::Receiver<ExchangeStoreCMD>,
@@ -115,6 +116,8 @@ impl ExchangeStore {
         // let mut last_version_id = 0;
         while let Ok(_) = self.rx.changed().await {
             let cmd = self.rx.borrow();
+
+            tracing::info!("{cmd:?}")
 
         //     match cmd {
         //         ExchangeStoreCMD::RegisterSymbol { 
