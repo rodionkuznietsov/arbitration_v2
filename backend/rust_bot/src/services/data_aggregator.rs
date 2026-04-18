@@ -239,7 +239,7 @@ impl DataAggregator {
                             DataMappingCmd::SpreadPairToJsonPair(long_spread.clone()), 
                             Duration::from_millis(500)
                         ).await.err() {
-                            tracing::error!("DataAggregator(CalculateSpread-LongType) - {err}")
+                            tracing::error!("DataAggregator(CalculateSpread-LongType.{}) - {err}", long_exchange)
                         }
 
                         // // Short - Long
