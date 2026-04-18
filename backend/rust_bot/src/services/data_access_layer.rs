@@ -101,16 +101,16 @@ impl DataAccessLayer {
                                             }
                                         }
                                         
-                                        // if let Some(e) = data_aggregator_tx.send_timeout(
-                                        //     DataAggregatorCmd::UpdateData { 
-                                        //         exchange_id, 
-                                        //         symbol,
-                                        //         data: exchange_data
-                                        //     }, 
-                                        // Duration::from_millis(10)
-                                        // ).await.err() {
-                                        //     tracing::error!("DataAccessLayer(FromExchangeAggregator) -> {e}; capacity: {}", data_aggregator_tx.capacity())
-                                        // }
+                                        if let Some(e) = data_aggregator_tx.send_timeout(
+                                            DataAggregatorCmd::UpdateData { 
+                                                exchange_id, 
+                                                symbol,
+                                                data: exchange_data
+                                            }, 
+                                        Duration::from_millis(100)
+                                        ).await.err() {
+                                            tracing::error!("DataAccessLayer(FromExchangeAggregator) -> {e}; capacity: {}", data_aggregator_tx.capacity())
+                                        }
                                     }
                                 }
                             });

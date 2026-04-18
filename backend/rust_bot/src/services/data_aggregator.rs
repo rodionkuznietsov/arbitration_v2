@@ -110,15 +110,6 @@ impl DataAggregator {
                 symbol,
                 mut data
             } => {
-
-                // Сюда приходят опоздавшиеся данные
-
-                if exchange_id == ExchangeType::Gate {
-                    if symbol.to_string() == "btcusdt" {
-                        tracing::info!("{:?}", data.last_price);
-                    }
-                }
-
                 if let Some(exchanges) = self.markets.get_mut(&symbol) {
                     if let Some(old_data) = exchanges.get_mut(&exchange_id) {
                         let data_mut = Arc::make_mut(&mut data);
