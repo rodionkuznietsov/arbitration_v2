@@ -111,7 +111,8 @@ impl ExchangeStore {
         mut self,
     ) {
         // let mut last_version_id = 0;
-        // while let Some(cmd) = self.rx.recv().await {
+        while let Some(cmd) = self.rx.recv().await {
+            let _ = cmd;
         //     match cmd {
         //         ExchangeStoreCMD::RegisterSymbol { 
         //             symbol 
@@ -235,6 +236,6 @@ impl ExchangeStore {
         //             reply.send(self.watch_rx.clone()).ok();
         //         },
         //     }
-        // }
+        }
     }
 }
