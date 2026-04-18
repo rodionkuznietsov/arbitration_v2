@@ -4,7 +4,7 @@ use futures_util::{StreamExt, stream};
 use tokio::sync::{Semaphore, mpsc};
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::{models::{exchange::{TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, OrderBookFromHttp, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, PRICE_TICK, parse_levels__}}};
+use crate::{models::{exchange::{TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, OrderBookFromHttp, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
 
 
 pub struct GateAdapter;
@@ -166,20 +166,26 @@ impl ExchangeAdapter for GateAdapter {
                     let bids = data.bids;
 
                     if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
-                        let asks = parse_levels__(asks);
-                        let bids = parse_levels__(bids);                    
+                        // let asks = parse_levels__(asks);
+                        // let bids = parse_levels__(bids);
                         
-                        sender_data.send(ExchangeStoreCMD::Event(
-                            BookEvent::Snapshot { 
-                                symbol,
-                                snapshot: Snapshot { 
-                                    a: asks, 
-                                    b: bids, 
-                                    last_update_id: None,
-                                    timestamp,
-                                }
+                        if symbol == "btcusdt" {
+                            for ask_vec in asks.iter().rev() {
+                                tracing::info!("{:?}", ask_vec)
                             }
-                        )).await.ok();
+                        }
+                        
+                        // sender_data.send(ExchangeStoreCMD::Event(
+                        //     BookEvent::Snapshot { 
+                        //         symbol,
+                        //         snapshot: Snapshot { 
+                        //             a: asks, 
+                        //             b: bids, 
+                        //             last_update_id: None,
+                        //             timestamp,
+                        //         }
+                        //     }
+                        // )).await.ok();
                     }
                 }
             }
