@@ -49,7 +49,7 @@ impl DataAccessLayer {
                 let data = watch_rx.borrow().clone();
                 self.data_mapping_tx.send_timeout(
                     DataMappingCmd::LinesFromDataAccessLayer(data), 
-                    Duration::from_millis(100)
+                    Duration::from_millis(300)
                 ).await.ok();
             }
         }
@@ -63,7 +63,7 @@ impl DataAccessLayer {
             ExchangeChannelStoreCmd::GetExchangesChannel { 
                 reply: tx
             },
-            Duration::from_millis(100)
+            Duration::from_millis(300)
         ).await.ok();
         
         if let Ok(mut watch_rx) = rx.await {
@@ -99,7 +99,7 @@ impl DataAccessLayer {
                                                 symbol,
                                                 data: exchange_data
                                             }, 
-                                        Duration::from_millis(100)
+                                        Duration::from_millis(300)
                                         ).await.err() {
                                             tracing::error!("DataAccessLayer(FromExchangeAggregator) -> {e}; capacity: {}", data_aggregator_tx.capacity())
                                         }
