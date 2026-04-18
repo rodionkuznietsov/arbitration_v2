@@ -141,8 +141,6 @@ impl ExchangeStore {
                             snapshot  
                         } => {
                             if let Some(data) = self.market_data.get_mut(&*symbol) {
-                                tracing::info!("{:?}", symbol);
-
                                 data.snapshot = Some(snapshot);
                                 let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
                             }

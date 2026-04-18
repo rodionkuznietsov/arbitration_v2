@@ -87,7 +87,7 @@ impl DataAccessLayer {
                                 let (tx, mut rx) = mpsc::channel(1);
                                 exchange_aggregator_tx.send(ExchangeStoreCMD::Subscribe { reply: tx }).ok();
 
-                                if let Some(mut watch_aggregator_tx) = rx.recv().await {
+                                while let Some(mut watch_aggregator_tx) = rx.recv().await {
                                     let _new_data = watch_aggregator_tx.borrow().clone();
 
                                     while watch_aggregator_tx.changed().await.is_ok() {
