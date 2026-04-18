@@ -136,21 +136,7 @@ impl ExchangeStore {
                             snapshot  
                         } => {
                             if let Some(data) = self.market_data.get_mut(&symbol) {
-                                if self.id == ExchangeType::Gate {
-                                    if let Some(old_snapshot) = &mut data.snapshot {
-                                        for (price, volume) in snapshot.a.iter() {
-                                            if *volume == 0.0 {
-                                                tracing::info!("{} -> volume: {}", price, volume)
-                                            } else {
-                                                old_snapshot.a.insert(*price, *volume);
-                                            }
-                                        }
-                                    } else {
-                                        data.snapshot = Some(snapshot);
-                                    }
-                                } else {
-                                    data.snapshot = Some(snapshot);
-                                }
+                                data.snapshot = Some(snapshot);
                             }
                         }
                         BookEvent::Delta { 
