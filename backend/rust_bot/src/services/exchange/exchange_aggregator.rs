@@ -128,15 +128,17 @@ impl ExchangeStore {
                         .map(|c| c.to_ascii_lowercase())
                         .collect();
 
-                    if symbol.to_string() == "btcusdt" {
-                        tracing::info!("sss: {symbol}")
-                    }
-
                     self.market_data.put(symbol, BookData { 
                         snapshot: None, 
                         last_price: None, 
                         volume24h: None
                     });
+
+                    if self.market_data.contains(&symbol) {
+                        if symbol.to_string() == "btcusdt" {
+                            tracing::info!("sss: {symbol}")
+                        }
+                    }
                 },
                 ExchangeStoreCMD::Event(event) => {
                     match event {
