@@ -112,12 +112,6 @@ impl DataAggregator {
             } => {
                 if let Some(exchanges) = self.markets.get_mut(&symbol) {
                     if let Some(old_data) = exchanges.get_mut(&exchange_id) {
-                        if exchange_id == ExchangeType::Bybit {
-                            if symbol.to_string() == "btcusdt" {
-                                tracing::info!("{:?}", old_data);
-                            }
-                        }
-                        
                         let data_mut = Arc::make_mut(&mut data);
                         let snapshot_arc = data_mut.snapshot.take().map(Arc::new);
                         
