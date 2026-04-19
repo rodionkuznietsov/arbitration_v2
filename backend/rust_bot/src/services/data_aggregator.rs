@@ -123,10 +123,11 @@ impl DataAggregator {
                             }
                         );
                         old_data.data = Some(new_data);
+                    }
 
-                        if symbol.to_string() == "btcusdt" {
-                            tracing::info!("{:?}", old_data)
-                        }
+
+                    if symbol.to_string() == "btcusdt" {
+                        tracing::info!("{:?}", exchanges)
                     }
 
                     // Обрабатываем и отправляем снапшот
