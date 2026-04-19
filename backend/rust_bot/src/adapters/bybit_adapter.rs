@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tokio::sync::{mpsc, watch};
+use tokio::sync::{watch};
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::{models::{exchange::{TickerEvent, TickerInfo, TickerResponse}, orderbook::{BookEvent, Delta, OrderBookEvent, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
@@ -50,9 +50,9 @@ impl ExchangeAdapter for BybitAdapter {
 
     async fn get_snapshot_spot_http(
         self: Arc<Self>,
-        tickers: &Vec<TickerInfo>,
-        client: &reqwest::Client,
-        sender_data: watch::Sender<ExchangeStoreCMD>
+        _tickers: &Vec<TickerInfo>,
+        _client: &reqwest::Client,
+        _sender_data: watch::Sender<ExchangeStoreCMD>
     ) {
         
     }
@@ -105,7 +105,7 @@ impl ExchangeAdapter for BybitAdapter {
                                 let asks = parse_levels__(asks);
                                 let bids = parse_levels__(bids);
 
-                                sender_data.send(
+                                let _ = sender_data.send(
                                     ExchangeStoreCMD::Event(
                                         BookEvent::Snapshot { 
                                             symbol: symbol, 
@@ -117,7 +117,7 @@ impl ExchangeAdapter for BybitAdapter {
                                             }
                                         }
                                     )
-                                ).ok();
+                                );
                             }
                         }
                     },
