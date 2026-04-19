@@ -166,12 +166,13 @@ impl ExchangeStore {
                                     delta 
                                 } => {
                                     if let Some(data) = self.market_data.get_mut(&symbol) {
-                                        if self.id == ExchangeType::Bybit {
-                                            if symbol == "btcusdt" {
-                                                tracing::info!("{:?}", data)
-                                            }
-                                        }
                                         if let Some(snapshot) = &mut data.snapshot {
+                                            if self.id == ExchangeType::Bybit {
+                                                if symbol == "btcusdt" {
+                                                    tracing::info!("{:?}", snapshot)
+                                                }
+                                            }
+
                                             match snapshot.last_update_id {
                                                 Some(_) => {
                                                     let from_version = delta.from_version.unwrap();
