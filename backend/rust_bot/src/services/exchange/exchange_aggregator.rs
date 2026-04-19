@@ -160,13 +160,14 @@ impl ExchangeStore {
                                 } => {
                                     if self.id == ExchangeType::Bybit {
                                         if symbol == "btcusdt" {
-                                            if let Some(data) = self.market_data.get_mut(&*symbol) {
-                                                data.snapshot = Some(snapshot);
+                                            tracing::info!("{:?}", snapshot);
 
-                                                tracing::info!("{:?}", data.snapshot);
+                                            // if let Some(data) = self.market_data.get_mut(&*symbol) {
+                                            //     data.snapshot = Some(snapshot);
 
-                                                let _ = self.watch_tx.send((Arc::new(symbol.clone()), Arc::new(data.to_owned())));
-                                            }
+
+                                            //     let _ = self.watch_tx.send((Arc::new(symbol.clone()), Arc::new(data.to_owned())));
+                                            // }
                                         }
                                     }
 
