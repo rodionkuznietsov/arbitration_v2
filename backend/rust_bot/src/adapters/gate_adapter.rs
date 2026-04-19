@@ -1,5 +1,5 @@
 use std::{sync::Arc, time::Duration};
-use tokio::sync::{Semaphore, watch};
+use tokio::sync::{Semaphore, mpsc, watch};
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::{models::{exchange::{TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, OrderBookFromHttp, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
@@ -144,6 +144,7 @@ impl ExchangeAdapter for GateAdapter {
     async fn parse_message(
         self: Arc<Self>,
         msg: String,
+        _snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
         sender_data: watch::Sender<ExchangeStoreCMD>
     ) {
         if !msg.contains("update") {

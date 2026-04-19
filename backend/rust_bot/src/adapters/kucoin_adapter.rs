@@ -116,6 +116,7 @@ impl ExchangeAdapter for KuCoinAdapter {
     async fn parse_message(
         self: Arc<Self>,
         msg: String,
+        _snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
         _data_aggregator_tx: watch::Sender<ExchangeStoreCMD>
     ) {
         // Парсим orderbook

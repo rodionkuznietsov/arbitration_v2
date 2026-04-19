@@ -26,7 +26,7 @@ pub struct ExchangeSetup<T: ExchangeAdapter> {
     pub ticker_rx: async_channel::Receiver<(String, String)>,
     pub client: reqwest::Client,
     pub sender_data: watch::Sender<ExchangeStoreCMD>,
-    register_channel_tx: mpsc::Sender<ExchangeStoreCMD>,
+    sender_data_queue_tx: mpsc::Sender<ExchangeStoreCMD>,
     exchange_id: ExchangeType,
 
     data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>
@@ -44,9 +44,9 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
         let (ticker_tx, ticker_rx) = async_channel::bounded(64);
         let client = reqwest::Client::new();
         let (sender_data, rx_data) = watch::channel(ExchangeStoreCMD::Default);
-        let (register_channel_tx, register_channel_rx) = mpsc::channel(CHUNK_SIZE);
+        let (sender_data_queue_tx, sender_data_queue_rx) = mpsc::channel(CHUNK_SIZE);
 
-        let store = ExchangeStore::new(rx_data, register_channel_rx, exchange_id);
+        let store = ExchangeStore::new(rx_data, sender_data_queue_rx, exchange_id);
         let sender_data_cl = sender_data.clone();
 
         tokio::spawn(async move {
@@ -64,7 +64,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
         let this = Arc::new(Self {
             title, enabled,
             ticker_tx, ticker_rx, client,
-            sender_data, register_channel_tx,
+            sender_data, sender_data_queue_tx,
             exchange_id, data_aggregator_tx, adapter
         });
 
@@ -123,7 +123,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
 
                     // Регистрируем тикеры в exchange aggregator 
                     // обьязательно используеться очередь, чтобы гарантировано зарегистрировать все тикеры
-                    let _ = self.register_channel_tx.send(ExchangeStoreCMD::RegisterSymbol { symbol: symbol.clone() }).await;
+                    let _ = self.sender_data_queue_tx.send(ExchangeStoreCMD::RegisterSymbol { symbol: symbol.clone() }).await;
 
                     // Регистрируем тикеры с exchange_id в общем аггрегаторе
                     self.data_aggregator_tx.send(
@@ -179,7 +179,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                 if let Ok(msg) = result {
                     match msg {
                         Message::Text(channel) => {
-                            adapter.clone().parse_message(channel, self.sender_data.clone()).await;
+                            adapter.clone().parse_message(channel, self.sender_data_queue_tx.clone(), self.sender_data.clone()).await;
                         },
                         Message::Pong(pong) => {
                             println!("{} ответил на Pong: {:?}", self.title, pong)

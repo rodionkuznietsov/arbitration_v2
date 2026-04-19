@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tokio::sync::{watch};
+use tokio::sync::{mpsc, watch};
 use tokio_tungstenite::tungstenite::Message;
 
 use crate::{models::{exchange::{TickerEvent, TickerInfo, TickerResponse}, orderbook::{BookEvent, Delta, OrderBookEvent, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
@@ -81,7 +81,8 @@ impl ExchangeAdapter for BybitAdapter {
     async fn parse_message(
         self: Arc<Self>,
         msg: String,
-        sender_data: watch::Sender<ExchangeStoreCMD>
+        snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
+        sender_data: watch::Sender<ExchangeStoreCMD>,
     ) {
         if msg.contains("orderbook") {
             let json: OrderBookEvent = serde_json::from_str(&msg).unwrap();
@@ -109,7 +110,7 @@ impl ExchangeAdapter for BybitAdapter {
                                     tracing::info!("{asks:?}, bids: {bids:?}");
                                 }
 
-                                let _ = sender_data.send(
+                                let _ = snapshot_channel.send(
                                     ExchangeStoreCMD::Event(
                                         BookEvent::Snapshot { 
                                             symbol: symbol, 
@@ -121,7 +122,7 @@ impl ExchangeAdapter for BybitAdapter {
                                             }
                                         }
                                     )
-                                );
+                                ).await;
                             }
                         }
                     },
