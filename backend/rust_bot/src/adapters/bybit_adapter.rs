@@ -105,7 +105,7 @@ impl ExchangeAdapter for BybitAdapter {
                                 let asks = parse_levels__(asks);
                                 let bids = parse_levels__(bids);
 
-                                let _ = sender_data.send(
+                                if let Some(err) = sender_data.send(
                                     ExchangeStoreCMD::Event(
                                         BookEvent::Snapshot { 
                                             symbol: symbol, 
@@ -117,7 +117,9 @@ impl ExchangeAdapter for BybitAdapter {
                                             }
                                         }
                                     )
-                                );
+                                ).err() {
+                                    tracing::error!("{{ bybit_adapter.snapshot }} -> {err}")
+                                }
                             }
                         }
                     },
