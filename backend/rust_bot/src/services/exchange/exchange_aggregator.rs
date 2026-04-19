@@ -128,9 +128,7 @@ impl ExchangeStore {
                         .map(|c| c.to_ascii_lowercase())
                         .collect();
                     
-                    if symbol.to_string() == "btcusdt" {
-                        tracing::info!("sss: {symbol}")
-                    }
+                    tracing::info!("sss: {symbol}");
 
                     self.market_data.put(symbol.clone(), BookData { 
                         snapshot: None, 
