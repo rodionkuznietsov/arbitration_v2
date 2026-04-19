@@ -175,22 +175,26 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                 }
             }
 
-            while let Some(result) = read.next().await {
-                if let Ok(msg) = result {
-                    match msg {
-                        Message::Text(channel) => {
-                            adapter.clone().parse_message(channel, self.sender_data.clone()).await;
-                        },
-                        Message::Pong(pong) => {
-                            println!("{} ответил на Pong: {:?}", self.title, pong)
-                        },
-                        Message::Close(_) => {
-                            break;
+            tokio::spawn({
+                async move {
+                    while let Some(result) = read.next().await {
+                        if let Ok(msg) = result {
+                            match msg {
+                                Message::Text(channel) => {
+                                    adapter.clone().parse_message(channel, self.sender_data.clone()).await;
+                                },
+                                Message::Pong(pong) => {
+                                    println!("{} ответил на Pong: {:?}", self.title, pong)
+                                },
+                                Message::Close(_) => {
+                                    break;
+                                }
+                                _ => {}
+                            }
                         }
-                        _ => {}
                     }
                 }
-            }
+            });
         }
     }
 
