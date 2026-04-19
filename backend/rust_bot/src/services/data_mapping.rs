@@ -324,7 +324,7 @@ impl DataMapping {
                             markets
                         ) => {
 
-                            tracing::info!("{:#?}", markets);
+                            tracing::info!("{:?}", markets);
                             
                             for (i, (long_ex_id, symbol, (long_snapshot, long_last_price))) in markets.iter().enumerate() {
                                 for (short_ex_id, _, (short_snapshot, short_last_price)) in markets.iter().skip(i+1) {
