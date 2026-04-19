@@ -110,10 +110,6 @@ impl DataAggregator {
                 symbol,
                 mut data
             } => {
-                if symbol.to_string() == "btcusdt" {
-                    tracing::info!("{data:?}");
-                }
-
                 if let Some(exchanges) = self.markets.get_mut(&symbol) {
                     if let Some(old_data) = exchanges.get_mut(&exchange_id) {
                         let data_mut = Arc::make_mut(&mut data);
@@ -127,6 +123,10 @@ impl DataAggregator {
                             }
                         );
                         old_data.data = Some(new_data);
+
+                        if symbol.to_string() == "btcusdt" {
+                            tracing::info!("{:?}", old_data)
+                        }
                     }
 
                     // Обрабатываем и отправляем снапшот
