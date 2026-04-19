@@ -120,7 +120,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                     let symbol = Arc::new(symbol);
 
                     // Регистрируем тикеры в exchange aggregator
-                    self.sender_data.send(ExchangeStoreCMD::RegisterSymbol { symbol: symbol.clone() }).ok();
+                    let _ = self.sender_data.send(ExchangeStoreCMD::RegisterSymbol { symbol: symbol.clone() });
 
                     // Регистрируем тикеры с exchange_id в общем аггрегаторе
                     self.data_aggregator_tx.send(
