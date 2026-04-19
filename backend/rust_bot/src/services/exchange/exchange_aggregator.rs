@@ -128,7 +128,7 @@ impl ExchangeStore {
                         .map(|c| c.to_ascii_lowercase())
                         .collect();
 
-                    self.market_data.put(symbol, BookData { 
+                    self.market_data.put(symbol.clone(), BookData { 
                         snapshot: None, 
                         last_price: None, 
                         volume24h: None
@@ -146,9 +146,9 @@ impl ExchangeStore {
                             symbol, 
                             snapshot  
                         } => {
-                            if symbol == "btcusdt" {
-                                tracing::info!("{:?}", symbol)
-                            }
+                            // if symbol == "btcusdt" {
+                            //     tracing::info!("{:?}", symbol)
+                            // }
                             
                             if let Some(data) = self.market_data.get_mut(&*symbol) {
                                 // data.snapshot = Some(snapshot);
