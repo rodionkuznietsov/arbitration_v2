@@ -158,6 +158,7 @@ impl ExchangeStore {
                                     symbol, 
                                     snapshot  
                                 } => {
+                                    tracing::info!("{:?}", symbol);
                                     // if self.id == ExchangeType::Bybit {
                                         if symbol == "btcusdt" {
                                             tracing::info!("{:?}", snapshot);
