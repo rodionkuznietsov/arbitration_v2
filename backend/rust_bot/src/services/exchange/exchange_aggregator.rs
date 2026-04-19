@@ -128,8 +128,6 @@ impl ExchangeStore {
                         .map(|c| c.to_ascii_lowercase())
                         .collect();
 
-                    tracing::info!("{}", symbol);
-
                     self.market_data.put(symbol.clone(), BookData { 
                         snapshot: None, 
                         last_price: None, 
