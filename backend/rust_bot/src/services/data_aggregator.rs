@@ -132,6 +132,9 @@ impl DataAggregator {
                         .filter_map(|(ex_id, data)| {
                             data.data.as_ref().map(|arc| {
                                 let taken_snapshot = arc.snapshot.clone();
+                                if symbol.to_string() == "btcusdt" {
+                                    tracing::info!("{} -> {} -> {:?}; {:?}", *ex_id, symbol.clone(), taken_snapshot, arc.last_price)
+                                }
                                 (*ex_id, symbol.clone(), (taken_snapshot, arc.last_price))
                             })
                         })
