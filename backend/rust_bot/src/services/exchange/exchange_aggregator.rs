@@ -129,11 +129,7 @@ impl ExchangeStore {
                         .filter(|c| *c != '_' && *c != '-')
                         .map(|c| c.to_ascii_lowercase())
                         .collect();
-                    
-                    if symbol == "btcusdt" {
-                        tracing::info!("sss: {symbol}")
-                    }
-
+                
                     self.market_data.put(symbol.clone(), BookData { 
                         snapshot: None, 
                         last_price: None, 
@@ -141,7 +137,9 @@ impl ExchangeStore {
                     });
 
                     if self.market_data.contains(&symbol) {
-
+                        if symbol == "btcusdt" {
+                            tracing::info!("sss: {symbol}")
+                        }
                     }
                 },
                 _ => {}
