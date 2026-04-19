@@ -1,4 +1,5 @@
 use std::{collections::{BTreeMap}};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use crate::models::websocket::Symbol;
 
@@ -24,16 +25,16 @@ pub struct OrderBookEventData {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Snapshot {
-    pub a: BTreeMap<i64, f64>,
-    pub b: BTreeMap<i64, f64>,
+    pub a: BTreeMap<Decimal, f64>,
+    pub b: BTreeMap<Decimal, f64>,
     pub last_update_id: Option<u64>,
     pub timestamp: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Delta {
-    pub a: BTreeMap<i64, f64>,
-    pub b: BTreeMap<i64, f64>,
+    pub a: BTreeMap<Decimal, f64>,
+    pub b: BTreeMap<Decimal, f64>,
     pub from_version: Option<u64>,
     pub to_version: Option<u64>,
 }

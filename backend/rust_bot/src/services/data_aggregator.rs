@@ -163,34 +163,34 @@ impl DataAggregator {
                         Duration::from_millis(10)
                     ).await.ok();
 
-                    let quotes: Vec<Option<Quote>> = exchanges
-                        .iter()
-                        .filter_map(|(ex_id, data)| {
-                            data.data.as_ref().map(|arc| {
-                                let snapshot = &arc.snapshot;
-                                if let Some(snapshot) = snapshot {
-                                    let best_ask = snapshot.a.iter()
-                                        .min_by_key(|(price, _)| *price)
-                                        .map(|(price, _)| *price as f64 / PRICE_TICK);
+                    // let quotes: Vec<Option<Quote>> = exchanges
+                    //     .iter()
+                    //     .filter_map(|(ex_id, data)| {
+                    //         data.data.as_ref().map(|arc| {
+                    //             let snapshot = &arc.snapshot;
+                    //             if let Some(snapshot) = snapshot {
+                    //                 let best_ask = snapshot.a.iter()
+                    //                     .min_by_key(|(price, _)| *price)
+                    //                     .map(|(price, _)| *price as f64 / PRICE_TICK);
 
-                                    let best_bid = snapshot.b.iter()
-                                        .max_by_key(|(price, _)| *price)
-                                        .map(|(price, _)| *price as f64 / PRICE_TICK);
+                    //                 let best_bid = snapshot.b.iter()
+                    //                     .max_by_key(|(price, _)| *price)
+                    //                     .map(|(price, _)| *price as f64 / PRICE_TICK);
 
-                                    let quote = Quote {
-                                        exchange_id: Some(*ex_id),
-                                        symbol: Some(symbol.clone()),
-                                        ask: best_ask,
-                                        bid: best_bid,
-                                    };
-                                    return Some(quote);
-                                } else {
-                                    return Some(Quote::new());
-                                }
-                            })
-                        }).collect();
+                    //                 let quote = Quote {
+                    //                     exchange_id: Some(*ex_id),
+                    //                     symbol: Some(symbol.clone()),
+                    //                     ask: best_ask,
+                    //                     bid: best_bid,
+                    //                 };
+                    //                 return Some(quote);
+                    //             } else {
+                    //                 return Some(Quote::new());
+                    //             }
+                    //         })
+                    //     }).collect();
 
-                    self.calculate_spread(quotes).await;
+                    // self.calculate_spread(quotes).await;
                 }
             }
         }

@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 
 use lru::LruCache;
+use rust_decimal::{Decimal, prelude::FromPrimitive};
 use tokio::sync::{mpsc, watch};
 use crate::models::{exchange::ExchangeType, exchange_aggregator::BookData, orderbook::{BookEvent, Snapshot, SnapshotUi}, websocket::Symbol};
 
@@ -12,55 +13,56 @@ impl Snapshot {
         last_price: f64,
     ) -> SnapshotUi {
 
-        let mut a = self.a.iter()
-            .filter(|(p, _)| (**p as f64) / PRICE_TICK >= last_price)
-            .scan(0.0, |acc, (p, v)| {
-                *acc += *v;
-                Some(((*p as f64 / PRICE_TICK), *acc))
-            })
-            .take(depth)
-            .collect::<Vec<(f64, f64)>>();
-        a.reverse();
+        // let mut a = self.a.iter()
+        //     .filter(|(p, _)| (**p as f64) / PRICE_TICK >= last_price)
+        //     .scan(0.0, |acc, (p, v)| {
+        //         *acc += *v;
+        //         Some(((*p as f64 / PRICE_TICK), *acc))
+        //     })
+        //     .take(depth)
+        //     .collect::<Vec<(f64, f64)>>();
+        // a.reverse();
 
-        let a_price = a
-            .iter()
-            .min_by(|x, y| x.0.partial_cmp(&y.0).unwrap());
+        // let a_price = a
+        //     .iter()
+        //     .min_by(|x, y| x.0.partial_cmp(&y.0).unwrap());
 
-        let a_price = match a_price {
-            Some(a) => a.0,
-            None => 0.0
-        };
+        // let a_price = match a_price {
+        //     Some(a) => a.0,
+        //     None => 0.0
+        // };
 
-        let b = self.b.iter()
-            .rev()
-            .filter(|(p, _)| (**p as f64) / PRICE_TICK < a_price && (**p as f64) / PRICE_TICK <= last_price)
-            .scan(0.0, |acc, (p, v)| {
-                *acc += *v;
-                Some(((*p as f64 / PRICE_TICK), *acc))
-            })
-            .take(depth)
-            .collect::<Vec<(f64, f64)>>();
+        // let b = self.b.iter()
+        //     .rev()
+        //     .filter(|(p, _)| (**p as f64) / PRICE_TICK < a_price && (**p as f64) / PRICE_TICK <= last_price)
+        //     .scan(0.0, |acc, (p, v)| {
+        //         *acc += *v;
+        //         Some(((*p as f64 / PRICE_TICK), *acc))
+        //     })
+        //     .take(depth)
+        //     .collect::<Vec<(f64, f64)>>();
 
 
         let timestamp = self.timestamp;
 
         SnapshotUi {
-            a,
-            b,
+            a: Vec::new(),
+            b: Vec::new(),
             last_price,
             timestamp,
         }
     }
 }
 
-pub fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<i64, f64> {
+pub fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<Decimal, f64> {
     let mut values = BTreeMap::new();
     for vec in data {
         let price = vec[0].parse::<f64>().expect("[Orderbook] Bad price");
         let volume = vec[1].parse::<f64>().expect("[Orderbook] Bad volume");
-        let price_with_tick = (price * PRICE_TICK).round() as i64;
+        let decimal_price = rust_decimal::Decimal::from_f64(price).unwrap();
+        // let price_with_tick = (price * PRICE_TICK).round() as i64;
 
-        values.insert(price_with_tick, volume);
+        values.insert(decimal_price, volume);
     }
 
     values
