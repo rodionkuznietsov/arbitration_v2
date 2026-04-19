@@ -159,9 +159,6 @@ impl ExchangeStore {
                                     if let Some(data) = self.market_data.get_mut(&*symbol) {
                                         data.snapshot = Some(snapshot);
                                         let _ = self.watch_tx.send((Arc::new(symbol.clone()), Arc::new(data.to_owned())));
-                                        if symbol == "btcusdt" {
-                                            tracing::info!("{:?}", data.snapshot)
-                                        }
                                     }
                                 }
                                 BookEvent::Delta { 
