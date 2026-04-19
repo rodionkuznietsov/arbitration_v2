@@ -121,6 +121,10 @@ impl ExchangeStore {
                 ExchangeStoreCMD::RegisterSymbol { 
                     symbol 
                 } => {                    
+                    if symbol.to_string() == "btcusdt" {
+                        tracing::info!("sss: {symbol}")
+                    }
+
                     // Разобрать с normilize_symbol;
                     let symbol: String = symbol
                         .chars()
@@ -139,11 +143,12 @@ impl ExchangeStore {
                         BookEvent::Snapshot { 
                             symbol, 
                             snapshot  
-                        } => {                            
+                        } => {
+                            if symbol == "btcusdt" {
+                                tracing::info!("{:?}", symbol)
+                            }
+                            
                             if let Some(data) = self.market_data.get_mut(&*symbol) {
-                                if symbol == "btcusdt" {
-                                    tracing::info!("{:?}", symbol)
-                                }
                                 // data.snapshot = Some(snapshot);
                                 // let _ = self.watch_tx.send((Arc::new(symbol.clone()), Arc::new(data.to_owned())));
                             }
