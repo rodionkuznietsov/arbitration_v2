@@ -158,6 +158,13 @@ impl ExchangeStore {
                                 } => {
                                     if let Some(data) = self.market_data.get_mut(&*symbol) {
                                         data.snapshot = Some(snapshot);
+
+                                        if self.id == ExchangeType::Bybit {
+                                            if symbol == "btcusdt" {
+                                                tracing::info!("{:?}", data.snapshot)
+                                            }
+                                        }
+
                                         let _ = self.watch_tx.send((Arc::new(symbol.clone()), Arc::new(data.to_owned())));
                                     }
                                 }
@@ -167,12 +174,6 @@ impl ExchangeStore {
                                 } => {
                                     if let Some(data) = self.market_data.get_mut(&symbol) {
                                         if let Some(snapshot) = &mut data.snapshot {
-                                            if self.id == ExchangeType::Bybit {
-                                                if symbol == "btcusdt" {
-                                                    tracing::info!("{:?}", snapshot)
-                                                }
-                                            }
-
                                             match snapshot.last_update_id {
                                                 Some(_) => {
                                                     let from_version = delta.from_version.unwrap();
