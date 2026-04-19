@@ -105,19 +105,21 @@ impl ExchangeAdapter for BybitAdapter {
                                 let asks = parse_levels__(asks);
                                 let bids = parse_levels__(bids);
 
-                                let _ = sender_data.send(
-                                    ExchangeStoreCMD::Event(
-                                        BookEvent::Snapshot { 
-                                            symbol: symbol, 
-                                            snapshot: Snapshot {
-                                                a: asks,
-                                                b: bids,
-                                                last_update_id: None,
-                                                timestamp,
-                                            }
-                                        }
-                                    )
-                                );
+                                tracing::info!("{} -> {:?}", symbol, asks)
+                                
+                                // let _ = sender_data.send(
+                                //     ExchangeStoreCMD::Event(
+                                //         BookEvent::Snapshot { 
+                                //             symbol: symbol, 
+                                //             snapshot: Snapshot {
+                                //                 a: asks,
+                                //                 b: bids,
+                                //                 last_update_id: None,
+                                //                 timestamp,
+                                //             }
+                                //         }
+                                //     )
+                                // );
                             }
                         }
                     },
