@@ -121,16 +121,16 @@ impl ExchangeStore {
                 ExchangeStoreCMD::RegisterSymbol { 
                     symbol 
                 } => {                    
-                    if symbol.to_string() == "btcusdt" {
-                        tracing::info!("sss: {symbol}")
-                    }
-
                     // Разобрать с normilize_symbol;
                     let symbol: String = symbol
                         .chars()
                         .filter(|c| *c != '_' && *c != '-')
                         .map(|c| c.to_ascii_lowercase())
                         .collect();
+
+                    if symbol.to_string() == "btcusdt" {
+                        tracing::info!("sss: {symbol}")
+                    }
 
                     self.market_data.put(symbol, BookData { 
                         snapshot: None, 
