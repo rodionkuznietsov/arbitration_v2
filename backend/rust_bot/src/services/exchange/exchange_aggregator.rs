@@ -158,8 +158,7 @@ impl ExchangeStore {
                                     symbol, 
                                     snapshot  
                                 } => {
-                                    tracing::info!("{:?}", symbol);
-                                    // if self.id == ExchangeType::Bybit {
+                                    if self.id == ExchangeType::Bybit {
                                         if symbol == "btcusdt" {
                                             tracing::info!("{:?}", snapshot);
 
@@ -170,7 +169,7 @@ impl ExchangeStore {
                                             //     let _ = self.watch_tx.send((Arc::new(symbol.clone()), Arc::new(data.to_owned())));
                                             // }
                                         }
-                                    // }
+                                    }
 
                                     // if let Some(data) = self.market_data.get_mut(&*symbol) {
                                     //     data.snapshot = Some(snapshot);
