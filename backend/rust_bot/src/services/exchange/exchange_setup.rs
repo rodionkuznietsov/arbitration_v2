@@ -121,7 +121,8 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                     
                     let symbol = Arc::new(symbol);
 
-                    // Регистрируем тикеры в exchange aggregator
+                    // Регистрируем тикеры в exchange aggregator 
+                    // обьязательно используеться очередь, чтобы гарантировано зарегистрировать все тикеры
                     let _ = self.register_channel_tx.send(ExchangeStoreCMD::RegisterSymbol { symbol: symbol.clone() }).await;
 
                     // Регистрируем тикеры с exchange_id в общем аггрегаторе
