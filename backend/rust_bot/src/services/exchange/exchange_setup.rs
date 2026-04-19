@@ -26,6 +26,7 @@ pub struct ExchangeSetup<T: ExchangeAdapter> {
     pub ticker_rx: async_channel::Receiver<(String, String)>,
     pub client: reqwest::Client,
     pub sender_data: watch::Sender<ExchangeStoreCMD>,
+    register_channel_tx: mpsc::Sender<ExchangeStoreCMD>,
     exchange_id: ExchangeType,
 
     data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>
@@ -43,8 +44,9 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
         let (ticker_tx, ticker_rx) = async_channel::bounded(64);
         let client = reqwest::Client::new();
         let (sender_data, rx_data) = watch::channel(ExchangeStoreCMD::Default);
+        let (register_channel_tx, register_channel_rx) = mpsc::channel(CHUNK_SIZE);
 
-        let store = ExchangeStore::new(rx_data, exchange_id);
+        let store = ExchangeStore::new(rx_data, register_channel_rx, exchange_id);
         let sender_data_cl = sender_data.clone();
 
         tokio::spawn(async move {
@@ -62,7 +64,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
         let this = Arc::new(Self {
             title, enabled,
             ticker_tx, ticker_rx, client,
-            sender_data,
+            sender_data, register_channel_tx,
             exchange_id, data_aggregator_tx, adapter
         });
 
@@ -120,7 +122,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                     let symbol = Arc::new(symbol);
 
                     // Регистрируем тикеры в exchange aggregator
-                    let _ = self.sender_data.send(ExchangeStoreCMD::RegisterSymbol { symbol: symbol.clone() });
+                    let _ = self.register_channel_tx.send(ExchangeStoreCMD::RegisterSymbol { symbol: symbol.clone() }).await;
 
                     // Регистрируем тикеры с exchange_id в общем аггрегаторе
                     self.data_aggregator_tx.send(

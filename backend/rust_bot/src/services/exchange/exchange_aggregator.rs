@@ -81,6 +81,8 @@ pub enum ExchangeStoreCMD {
 pub struct ExchangeStore {
     pub market_data: LruCache<Symbol, BookData>,
     pub rx: watch::Receiver<ExchangeStoreCMD>,
+    pub register_channel_rx: mpsc::Receiver<ExchangeStoreCMD>,
+    
     #[allow(unused)]
     id: ExchangeType,
     watch_tx: watch::Sender<(Arc<Symbol>, Arc<BookData>)>,
@@ -90,6 +92,7 @@ pub struct ExchangeStore {
 impl ExchangeStore {
     pub fn new(
         rx: watch::Receiver<ExchangeStoreCMD>,
+        register_channel_rx: mpsc::Receiver<ExchangeStoreCMD>,
         id: ExchangeType
     ) -> Self {
         let cache_capacity = std::env::var("ORDERBOOK_CACHE_CAPACITY")
@@ -102,8 +105,10 @@ impl ExchangeStore {
 
         Self {
             market_data,
+
             rx: rx,
             watch_tx, watch_rx,
+            register_channel_rx,
 
             id,
         }
@@ -112,12 +117,9 @@ impl ExchangeStore {
     pub async fn set_data(
         mut self,
     ) {
-        let mut last_version_id = 0;
-        while let Ok(_) = self.rx.changed().await {
-            let cmd = self.rx.borrow().clone();
 
+        while let Some(cmd) = self.register_channel_rx.recv().await {
             match cmd {
-                ExchangeStoreCMD::Default => {}
                 ExchangeStoreCMD::RegisterSymbol { 
                     symbol 
                 } => {                    
@@ -128,7 +130,9 @@ impl ExchangeStore {
                         .map(|c| c.to_ascii_lowercase())
                         .collect();
                     
-                    tracing::info!("sss: {symbol}");
+                    if symbol == "btcusdt" {
+                        tracing::info!("sss: {symbol}")
+                    }
 
                     self.market_data.put(symbol.clone(), BookData { 
                         snapshot: None, 
@@ -140,6 +144,16 @@ impl ExchangeStore {
 
                     }
                 },
+                _ => {}
+            }
+        }
+
+        let mut last_version_id = 0;
+        while let Ok(_) = self.rx.changed().await {
+            let cmd = self.rx.borrow().clone();
+
+            match cmd {
+                ExchangeStoreCMD::Default => {}
                 ExchangeStoreCMD::Event(event) => {
                     match event {
                         BookEvent::Snapshot { 
@@ -249,6 +263,7 @@ impl ExchangeStore {
                 } => {             
                     reply.send(self.watch_rx.clone()).await.ok();
                 },
+                _ => {}
             }
         }
     }
