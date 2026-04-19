@@ -336,6 +336,11 @@ impl DataMapping {
                                         long_json_lines, 
                                         short_json_lines
                                     ) { 
+
+                                        if symbol.to_string() == "btcusdt" {
+                                            tracing::info!("{long:?}");
+                                        }
+                                        
                                         let msg = WsClientMessage {
                                             channel: ChannelType::OrderBook,
                                             result: WsClientMsgResult { 
