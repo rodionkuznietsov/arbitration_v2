@@ -60,22 +60,19 @@ impl ManagerTransmitter {
                             key,
                             msg
                         ) => {
-                            
-                            if msg.result.symbol.to_string() == "btcusdt" {
-                                tracing::info!("{:?}", msg.result.data);
+                            if let Some(err) = self.client_aggregator_chart_tx.send_timeout(
+                                Arc::new(
+                                    ClientAggregatorCmd::Use(
+                                        ClientAggregatorUse::PublishJson(
+                                            key.clone(), 
+                                            msg.clone()
+                                        )
+                                    )
+                                ),
+                                Duration::from_millis(TIMEOUT_DELAY)
+                            ).await.err() {
+                                tracing::error!("{}", err);
                             }
-                            
-                            // self.client_aggregator_chart_tx.send_timeout(
-                            //     Arc::new(
-                            //         ClientAggregatorCmd::Use(
-                            //             ClientAggregatorUse::PublishJson(
-                            //                 key.clone(), 
-                            //                 msg.clone()
-                            //             )
-                            //         )
-                            //     ),
-                            //     Duration::from_millis(TIMEOUT_DELAY)
-                            // ).await.ok();
                         },
                     }
                 },
