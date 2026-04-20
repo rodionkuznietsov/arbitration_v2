@@ -5,8 +5,6 @@ use rust_decimal::{Decimal, prelude::FromPrimitive};
 use tokio::sync::{mpsc, watch};
 use crate::models::{exchange::ExchangeType, exchange_aggregator::BookData, orderbook::{BookEvent, Snapshot, SnapshotUi}, websocket::Symbol};
 
-pub const PRICE_TICK: f64 = 900000000.0;
-
 impl Snapshot {
     pub fn to_ui(&self, 
         depth: usize,
@@ -37,7 +35,7 @@ impl Snapshot {
             .filter(|(p, _)| p.as_f64() < a_price && p.as_f64() <= last_price)
             .scan(0.0, |acc, (p, v)| {
                 *acc += *v;
-                Some(((p.as_f64() / PRICE_TICK), *acc))
+                Some((p.as_f64(), *acc))
             })
             .take(depth)
             .collect::<Vec<(f64, f64)>>();
