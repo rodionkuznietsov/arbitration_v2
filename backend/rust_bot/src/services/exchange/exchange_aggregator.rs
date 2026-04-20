@@ -13,42 +13,40 @@ impl Snapshot {
         last_price: f64,
     ) -> SnapshotUi {
 
-        tracing::info!("{:?}", self.a);
-        
-        // let mut a = self.a.iter()
-        //     .filter(|(p, _)| p.as_f64() / PRICE_TICK >= last_price)
-        //     .scan(0.0, |acc, (p, v)| {
-        //         *acc += *v;
-        //         Some(((p.as_f64() / PRICE_TICK), *acc))
-        //     })
-        //     .take(depth)
-        //     .collect::<Vec<(f64, f64)>>();
-        // a.reverse();
+        let mut a = self.a.iter()
+            .filter(|(p, _)| p.as_f64() >= last_price)
+            .scan(0.0, |acc, (p, v)| {
+                *acc += *v;
+                Some((p.as_f64(), *acc))
+            })
+            .take(depth)
+            .collect::<Vec<(f64, f64)>>();
+        a.reverse();
 
-        // let a_price = a
-        //     .iter()
-        //     .min_by(|x, y| x.0.partial_cmp(&y.0).unwrap());
+        let a_price = a
+            .iter()
+            .min_by(|x, y| x.0.partial_cmp(&y.0).unwrap());
 
-        // let a_price = match a_price {
-        //     Some(a) => a.0,
-        //     None => 0.0
-        // };
+        let a_price = match a_price {
+            Some(a) => a.0,
+            None => 0.0
+        };
 
-        // let b = self.b.iter()
-        //     .rev()
-        //     .filter(|(p, _)| p.as_f64() / PRICE_TICK < a_price && p.as_f64() / PRICE_TICK <= last_price)
-        //     .scan(0.0, |acc, (p, v)| {
-        //         *acc += *v;
-        //         Some(((p.as_f64() / PRICE_TICK), *acc))
-        //     })
-        //     .take(depth)
-        //     .collect::<Vec<(f64, f64)>>();
+        let b = self.b.iter()
+            .rev()
+            .filter(|(p, _)| p.as_f64() < a_price && p.as_f64() <= last_price)
+            .scan(0.0, |acc, (p, v)| {
+                *acc += *v;
+                Some(((p.as_f64() / PRICE_TICK), *acc))
+            })
+            .take(depth)
+            .collect::<Vec<(f64, f64)>>();
 
         let timestamp = self.timestamp;
 
         SnapshotUi {
-            a: Vec::new(),
-            b: Vec::new(),
+            a,
+            b,
             last_price,
             timestamp,
         }
