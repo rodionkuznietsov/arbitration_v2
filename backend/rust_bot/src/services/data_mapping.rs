@@ -336,35 +336,35 @@ impl DataMapping {
                                         long_json_lines, 
                                         short_json_lines
                                     ) { 
-                                        let msg = WsClientMessage {
-                                            channel: ChannelType::OrderBook,
-                                            result: WsClientMsgResult { 
-                                                data: Arc::new(
-                                                    JsonPairData::OrderBook { 
-                                                        long: long.clone(), 
-                                                        short: short.clone(),
-                                                    }
-                                                ), 
-                                                symbol: symbol.clone(),
-                                                unique_id: JsonPairUniqueId::OrderBook
-                                            },
-                                        };
+                                        // let msg = WsClientMessage {
+                                        //     channel: ChannelType::OrderBook,
+                                        //     result: WsClientMsgResult { 
+                                        //         data: Arc::new(
+                                        //             JsonPairData::OrderBook { 
+                                        //                 long: long.clone(), 
+                                        //                 short: short.clone(),
+                                        //             }
+                                        //         ), 
+                                        //         symbol: symbol.clone(),
+                                        //         unique_id: JsonPairUniqueId::OrderBook
+                                        //     },
+                                        // };
 
-                                        let channel_key = ChannelSubscription::OrderBook { 
-                                            long_market_type: KeyMarketType { 
-                                                long_exchange: *long_ex_id, 
-                                                short_exchange: *short_ex_id, 
-                                                symbol: symbol.clone()
-                                            }, 
-                                            short_market_type: KeyMarketType { 
-                                                long_exchange: *short_ex_id, 
-                                                short_exchange: *long_ex_id, 
-                                                symbol: symbol.clone()
-                                            }, 
-                                        };
+                                        // let channel_key = ChannelSubscription::OrderBook { 
+                                        //     long_market_type: KeyMarketType { 
+                                        //         long_exchange: *long_ex_id, 
+                                        //         short_exchange: *short_ex_id, 
+                                        //         symbol: symbol.clone()
+                                        //     }, 
+                                        //     short_market_type: KeyMarketType { 
+                                        //         long_exchange: *short_ex_id, 
+                                        //         short_exchange: *long_ex_id, 
+                                        //         symbol: symbol.clone()
+                                        //     }, 
+                                        // };
 
                                         if symbol.to_string() == "btcusdt" {
-                                            tracing::info!("{msg:?}");
+                                            tracing::info!("{long:?}");
                                         }
 
                                         // if let Some(err) = self.manager_transmitter_tx.send_timeout(
