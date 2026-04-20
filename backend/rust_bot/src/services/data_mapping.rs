@@ -621,15 +621,14 @@ impl DataMapping {
             }, 
         };
 
-        if let Some(err) = self.manager_transmitter_tx.send(
+        let _ = self.manager_transmitter_tx.send(
             ManagerTransmitterCmd::Notify(
                 NotifyEvent::PayloadJson(
                     channel_key, 
                     msg
                 )
             ), 
-        ).err() {
-            tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.first }} -> {err}");
-        }
+        );
+
     }
 }
