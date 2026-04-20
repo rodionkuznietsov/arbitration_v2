@@ -96,16 +96,16 @@ impl DataMapping {
                                                     }, 
                                                 };
 
-                                                if let Some(err) = self.manager_transmitter_tx.send(
-                                                    ManagerTransmitterCmd::Notify(
-                                                        NotifyEvent::PayloadJson(
-                                                            channel_key,
-                                                            msg
-                                                        )
-                                                    ), 
-                                                ).err() {
-                                                    tracing::error!("{{ data_mapping.lines_from_data_access_layer.first }} -> {err}");
-                                                }
+                                                // if let Some(err) = self.manager_transmitter_tx.send(
+                                                //     ManagerTransmitterCmd::Notify(
+                                                //         NotifyEvent::PayloadJson(
+                                                //             channel_key,
+                                                //             msg
+                                                //         )
+                                                //     ), 
+                                                // ).err() {
+                                                //     tracing::error!("{{ data_mapping.lines_from_data_access_layer.first }} -> {err}");
+                                                // }
 
                                                 let msg_2 = WsClientMessage {
                                                     channel: ChannelType::Chart,
@@ -132,16 +132,16 @@ impl DataMapping {
                                                     }, 
                                                 };
 
-                                                if let Some(err) = self.manager_transmitter_tx.send(
-                                                    ManagerTransmitterCmd::Notify(
-                                                        NotifyEvent::PayloadJson(
-                                                            channel_key_2,
-                                                            msg_2
-                                                        )
-                                                    ), 
-                                                ).err() {
-                                                    tracing::error!("{{ data_mapping.lines_from_data_access_layer.last }} -> {err}");
-                                                }                                              
+                                                // if let Some(err) = self.manager_transmitter_tx.send(
+                                                //     ManagerTransmitterCmd::Notify(
+                                                //         NotifyEvent::PayloadJson(
+                                                //             channel_key_2,
+                                                //             msg_2
+                                                //         )
+                                                //     ), 
+                                                // ).err() {
+                                                //     tracing::error!("{{ data_mapping.lines_from_data_access_layer.last }} -> {err}");
+                                                // }                                              
                                             }
                                         }
                                     }
@@ -186,16 +186,16 @@ impl DataMapping {
                                 }, 
                             };
 
-                            if let Some(err) = self.manager_transmitter_tx.send(
-                                ManagerTransmitterCmd::Notify(
-                                    NotifyEvent::PayloadJson(
-                                        channel_key,
-                                        msg
-                                    )
-                                ), 
-                            ).err() {
-                                tracing::error!("{{ data_mapping.lines_to_json_pair.first }} -> {err}");
-                            }
+                            // if let Some(err) = self.manager_transmitter_tx.send(
+                            //     ManagerTransmitterCmd::Notify(
+                            //         NotifyEvent::PayloadJson(
+                            //             channel_key,
+                            //             msg
+                            //         )
+                            //     ), 
+                            // ).err() {
+                            //     tracing::error!("{{ data_mapping.lines_to_json_pair.first }} -> {err}");
+                            // }
 
                             let msg_2 = WsClientMessage {
                                 channel: ChannelType::Chart,
@@ -222,16 +222,16 @@ impl DataMapping {
                                 }, 
                             };
 
-                            if let Some(err) = self.manager_transmitter_tx.send(
-                                ManagerTransmitterCmd::Notify(
-                                    NotifyEvent::PayloadJson(
-                                        channel_key_2,
-                                        msg_2
-                                    )
-                                ), 
-                            ).err() {
-                                tracing::error!("{{ data_mapping.lines_to_json_pair.last }} -> {err}");
-                            }
+                            // if let Some(err) = self.manager_transmitter_tx.send(
+                            //     ManagerTransmitterCmd::Notify(
+                            //         NotifyEvent::PayloadJson(
+                            //             channel_key_2,
+                            //             msg_2
+                            //         )
+                            //     ), 
+                            // ).err() {
+                            //     tracing::error!("{{ data_mapping.lines_to_json_pair.last }} -> {err}");
+                            // }
                         },
                         DataMappingCmd::LinesFromDbToJsonPair(lines) => {
                             for (i, ((long_exchange, short_exchnage, symbol), long_lines)) in lines.iter().enumerate() {
@@ -264,16 +264,16 @@ impl DataMapping {
                                         }, 
                                     };
 
-                                    if let Some(err) = self.manager_transmitter_tx.send(
-                                        ManagerTransmitterCmd::Notify(
-                                            NotifyEvent::PayloadJson(
-                                                channel_key,
-                                                msg
-                                            )
-                                        ), 
-                                    ).err() {
-                                        tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.first }} -> {err}");
-                                    }
+                                    // if let Some(err) = self.manager_transmitter_tx.send(
+                                    //     ManagerTransmitterCmd::Notify(
+                                    //         NotifyEvent::PayloadJson(
+                                    //             channel_key,
+                                    //             msg
+                                    //         )
+                                    //     ), 
+                                    // ).err() {
+                                    //     tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.first }} -> {err}");
+                                    // }
 
                                     let msg_2 = WsClientMessage {
                                         channel: ChannelType::Chart,
@@ -300,16 +300,16 @@ impl DataMapping {
                                         }, 
                                     };
 
-                                    if let Some(err) = self.manager_transmitter_tx.send(
-                                        ManagerTransmitterCmd::Notify(
-                                            NotifyEvent::PayloadJson(
-                                                channel_key_2,
-                                                msg_2
-                                            )
-                                        ), 
-                                    ).err() {
-                                        tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.last }} -> {err}");
-                                    }
+                                    // if let Some(err) = self.manager_transmitter_tx.send(
+                                    //     ManagerTransmitterCmd::Notify(
+                                    //         NotifyEvent::PayloadJson(
+                                    //             channel_key_2,
+                                    //             msg_2
+                                    //         )
+                                    //     ), 
+                                    // ).err() {
+                                    //     tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.last }} -> {err}");
+                                    // }
 
                                 }
                             }
@@ -396,16 +396,16 @@ impl DataMapping {
                                 }, 
                             };
 
-                            if let Some(err) = self.manager_transmitter_tx.send(
-                                ManagerTransmitterCmd::Notify(
-                                    NotifyEvent::PayloadJson(
-                                        channel_key, 
-                                        msg
-                                    )
-                                ), 
-                            ).err() {
-                                tracing::error!("{{ data_mapping.spread_pair_to_json_pair.first }} -> {err}");
-                            }
+                            // if let Some(err) = self.manager_transmitter_tx.send(
+                            //     ManagerTransmitterCmd::Notify(
+                            //         NotifyEvent::PayloadJson(
+                            //             channel_key, 
+                            //             msg
+                            //         )
+                            //     ), 
+                            // ).err() {
+                            //     tracing::error!("{{ data_mapping.spread_pair_to_json_pair.first }} -> {err}");
+                            // }
                             
                             let msg_2 = WsClientMessage {
                                 channel: ChannelType::Chart,
@@ -434,16 +434,16 @@ impl DataMapping {
                                 }, 
                             };
 
-                            if let Some(err) = self.manager_transmitter_tx.send(
-                                ManagerTransmitterCmd::Notify(
-                                    NotifyEvent::PayloadJson(
-                                        channel_key_2, 
-                                        msg_2
-                                    )
-                                ), 
-                            ).err() {
-                                tracing::error!("{{ data_mapping.spread_pair_to_json_pair.last }} -> {err}");
-                            }
+                            // if let Some(err) = self.manager_transmitter_tx.send(
+                            //     ManagerTransmitterCmd::Notify(
+                            //         NotifyEvent::PayloadJson(
+                            //             channel_key_2, 
+                            //             msg_2
+                            //         )
+                            //     ), 
+                            // ).err() {
+                            //     tracing::error!("{{ data_mapping.spread_pair_to_json_pair.last }} -> {err}");
+                            // }
                         }, 
                         DataMappingCmd::VolumesToJson(
                             volumes
@@ -475,16 +475,16 @@ impl DataMapping {
                                         },
                                     };
 
-                                    if let Some(err) = self.manager_transmitter_tx.send(
-                                        ManagerTransmitterCmd::Notify(
-                                            NotifyEvent::PayloadJson(
-                                                channel_key, 
-                                                msg
-                                            )
-                                        ), 
-                                    ).err() {
-                                        tracing::error!("{{ data_mapping.volumes_to_json.first }} -> {err}");
-                                    }
+                                    // if let Some(err) = self.manager_transmitter_tx.send(
+                                    //     ManagerTransmitterCmd::Notify(
+                                    //         NotifyEvent::PayloadJson(
+                                    //             channel_key, 
+                                    //             msg
+                                    //         )
+                                    //     ), 
+                                    // ).err() {
+                                    //     tracing::error!("{{ data_mapping.volumes_to_json.first }} -> {err}");
+                                    // }
 
                                     let msg_2 = WsClientMessage {
                                         channel: ChannelType::Chart,
@@ -511,16 +511,16 @@ impl DataMapping {
                                         },
                                     };
 
-                                    if let Some(err) = self.manager_transmitter_tx.send(
-                                        ManagerTransmitterCmd::Notify(
-                                            NotifyEvent::PayloadJson(
-                                                channel_key_2, 
-                                                msg_2
-                                            )
-                                        ), 
-                                    ).err() {
-                                        tracing::error!("{{ data_mapping.volumes_to_json.last }} -> {err}");
-                                    }
+                                    // if let Some(err) = self.manager_transmitter_tx.send(
+                                    //     ManagerTransmitterCmd::Notify(
+                                    //         NotifyEvent::PayloadJson(
+                                    //             channel_key_2, 
+                                    //             msg_2
+                                    //         )
+                                    //     ), 
+                                    // ).err() {
+                                    //     tracing::error!("{{ data_mapping.volumes_to_json.last }} -> {err}");
+                                    // }
                                 }
                             }
                         }
@@ -620,8 +620,6 @@ impl DataMapping {
                 symbol: symbol.clone()
             }, 
         };
-
-        tracing::info!("{:?}", msg);
 
         let _ = self.manager_transmitter_tx.send(
             ManagerTransmitterCmd::Notify(
