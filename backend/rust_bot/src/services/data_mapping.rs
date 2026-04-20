@@ -336,83 +336,28 @@ impl DataMapping {
                                         long_json_lines, 
                                         short_json_lines
                                     ) { 
-                                        let msg = WsClientMessage {
-                                            channel: ChannelType::OrderBook,
-                                            result: WsClientMsgResult { 
-                                                data: Arc::new(
-                                                    JsonPairData::OrderBook { 
-                                                        long: long.clone(), 
-                                                        short: short.clone(),
-                                                    }
-                                                ), 
-                                                symbol: symbol.clone(),
-                                                unique_id: JsonPairUniqueId::OrderBook
-                                            },
-                                        };
+                                        let long_arc = Arc::new(long);
+                                        let short_arc = Arc::new(short);
 
-                                        let channel_key = ChannelSubscription::OrderBook { 
-                                            long_market_type: KeyMarketType { 
-                                                long_exchange: *long_ex_id, 
-                                                short_exchange: *short_ex_id, 
-                                                symbol: symbol.clone()
-                                            }, 
-                                            short_market_type: KeyMarketType { 
-                                                long_exchange: *short_ex_id, 
-                                                short_exchange: *long_ex_id, 
-                                                symbol: symbol.clone()
-                                            }, 
-                                        };
+                                        self.send_message_with_key(
+                                            ChannelType::OrderBook,
+                                            *long_ex_id,
+                                            long_arc.clone(),
+                                            *short_ex_id,
+                                            short_arc.clone(),
+                                            symbol.clone(),
+                                            JsonPairUniqueId::OrderBook
+                                        ).await;
 
-                                        if let Some(err) = self.manager_transmitter_tx.send_timeout(
-                                            ManagerTransmitterCmd::Notify(
-                                                NotifyEvent::PayloadJson(
-                                                    channel_key, 
-                                                    msg
-                                                )
-                                            ), 
-                                        Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                                        ).await.err() {
-                                            tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.first }} -> {err}");
-                                        }
-
-                                        let msg_2 = WsClientMessage {
-                                            channel: ChannelType::OrderBook,
-                                            result: WsClientMsgResult { 
-                                                data: Arc::new(
-                                                    JsonPairData::OrderBook { 
-                                                        long: short, 
-                                                        short: long,
-                                                    }
-                                                ), 
-                                                symbol: symbol.clone(),
-                                                unique_id: JsonPairUniqueId::OrderBook
-                                            },
-                                        };
-
-                                        let channel_key_2 = ChannelSubscription::OrderBook { 
-                                            long_market_type: KeyMarketType { 
-                                                long_exchange: *short_ex_id, 
-                                                short_exchange: *long_ex_id, 
-                                                symbol: symbol.clone()
-                                            }, 
-                                            short_market_type: KeyMarketType { 
-                                                long_exchange: *long_ex_id, 
-                                                short_exchange: *short_ex_id, 
-                                                symbol: symbol.clone()
-                                            }, 
-                                        };
-
-                                        if let Some(err) = self.manager_transmitter_tx.send_timeout(
-                                            ManagerTransmitterCmd::Notify(
-                                                NotifyEvent::PayloadJson(
-                                                    channel_key_2, 
-                                                    msg_2
-                                                )
-                                            ), 
-                                        Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                                        ).await.err() {
-                                            tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.last }} -> {err}");
-                                        }
+                                        self.send_message_with_key(
+                                            ChannelType::OrderBook,
+                                            *short_ex_id,
+                                            short_arc,
+                                            *long_ex_id,
+                                            long_arc,
+                                            symbol.clone(),
+                                            JsonPairUniqueId::OrderBook
+                                        ).await;
                                     }
                                 }
                             }
@@ -647,5 +592,55 @@ impl DataMapping {
                     "value": line.value
                 })
             }).collect()
+    }
+
+    async fn send_message_with_key(
+        &self,
+        channel: ChannelType,
+        long_exchange: ExchangeType,
+        long_json: Arc<SnapshotJson>,
+        short_exchange: ExchangeType,
+        short_json: Arc<SnapshotJson>,
+        symbol: Arc<Symbol>,
+        unique_id: JsonPairUniqueId
+    ) {
+        let msg = WsClientMessage {
+            channel: channel,
+            result: WsClientMsgResult { 
+                data: Arc::new(
+                    JsonPairData::OrderBook { 
+                        long: long_json, 
+                        short: short_json,
+                    }
+                ), 
+                symbol: symbol.clone(),
+                unique_id: unique_id
+            },
+        };
+
+        let channel_key = ChannelSubscription::OrderBook { 
+            long_market_type: KeyMarketType { 
+                long_exchange: long_exchange, 
+                short_exchange: short_exchange, 
+                symbol: symbol.clone()
+            }, 
+            short_market_type: KeyMarketType { 
+                long_exchange: short_exchange, 
+                short_exchange: long_exchange, 
+                symbol: symbol.clone()
+            }, 
+        };
+
+        if let Some(err) = self.manager_transmitter_tx.send_timeout(
+            ManagerTransmitterCmd::Notify(
+                NotifyEvent::PayloadJson(
+                    channel_key, 
+                    msg
+                )
+            ), 
+        Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
+        ).await.err() {
+            tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.first }} -> {err}");
+        }
     }
 }

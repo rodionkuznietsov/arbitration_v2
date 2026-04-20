@@ -67,8 +67,8 @@ pub enum JsonPairUniqueId {
 #[serde(rename_all="snake_case")]
 pub enum JsonPairData {
     OrderBook {
-        long: SnapshotJson,
-        short: SnapshotJson,
+        long: Arc<SnapshotJson>,
+        short: Arc<SnapshotJson>,
     },
     LinesHistory {
         long: Vec<Value>,
