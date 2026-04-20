@@ -5,3 +5,4 @@ pub mod websocket;
 pub mod aggregator;
 pub mod exchange_key;
 pub mod exchange_aggregator;
+pub mod data_mapping;

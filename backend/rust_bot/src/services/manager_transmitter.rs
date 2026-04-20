@@ -64,8 +64,8 @@ impl ManagerTransmitter {
                                 Arc::new(
                                     ClientAggregatorCmd::Use(
                                         ClientAggregatorUse::PublishJson(
-                                            key.clone(), 
-                                            msg.clone()
+                                            key, 
+                                            msg
                                         )
                                     )
                                 ),

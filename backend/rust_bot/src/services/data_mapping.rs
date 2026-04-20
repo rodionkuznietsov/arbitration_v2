@@ -1,11 +1,11 @@
-use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc, time::Duration};
+use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc};
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::{RwLock, mpsc, watch};
 
-use crate::{models::{aggregator::{JsonPairData, JsonPairUniqueId, KeyMarketType, SpreadPair, Volume}, exchange::ExchangeType, line::{Line}, orderbook::Snapshot, websocket::{ChannelSubscription, ChannelType, Symbol, WsClientMessage, WsClientMsgResult}}, services::manager_transmitter::{ManagerTransmitterCmd, NotifyEvent}};
+use crate::{models::{aggregator::{JsonPairData, JsonPairUniqueId, KeyMarketType, SpreadPair, Volume}, data_mapping::{DataJson, SnapshotJson}, exchange::ExchangeType, line::Line, orderbook::Snapshot, websocket::{ChannelSubscription, ChannelType, Symbol, WsClientMessage, WsClientMsgResult}}, services::manager_transmitter::{ManagerTransmitterCmd, NotifyEvent}};
 
 const MANAGER_TRANSMITTER_TIMEOUT_DELAY: u64 = 10; // ms
 
@@ -21,13 +21,6 @@ pub enum DataMappingCmd {
     SpreadPairToJsonPair(Arc<SpreadPair>),
     /// Это команда приводит `Volumes` в формат JSON и соединяет попарно (`Long Volume & Short Volume`)
     VolumesToJson(Vec<Volume>)
-}
-
-#[derive(Debug, Deserialize, Clone, Serialize, Hash, PartialEq, Eq)]
-pub struct SnapshotJson {
-    pub asks: Vec<Value>,
-    pub bids: Vec<Value>,
-    pub last_price: OrderedFloat<f64>,
 }
 
 pub struct DataMapping {
@@ -71,30 +64,40 @@ impl DataMapping {
                                                 let long_json_lines = self.lines_to_json(&long_vec);
                                                 let short_json_lines = self.lines_to_json(&short_vec);
 
-                                                let msg = WsClientMessage {
-                                                    channel: ChannelType::Chart,
-                                                    result: WsClientMsgResult {
-                                                        data: JsonPairData::LinesHistory { 
-                                                            long: long_json_lines.clone(), 
-                                                            short: short_json_lines.clone()
-                                                        }.into(),
-                                                        symbol: symbol.clone(),
-                                                        unique_id: JsonPairUniqueId::LinesHistory
-                                                    }
-                                                }; 
+                                                self.send_message_with_key(
+                                                    ChannelType::Chart,
+                                                    *long_exchange,
+                                                    DataJson::Lines(long_json_lines),
+                                                    *short_long_exchange,
+                                                    DataJson::Lines(short_json_lines),
+                                                    symbol.clone(),
+                                                    JsonPairUniqueId::LinesHistory
+                                                ).await;
 
-                                                let channel_key = ChannelSubscription::Chart { 
-                                                    long_market_type: KeyMarketType { 
-                                                        long_exchange: *long_exchange, 
-                                                        short_exchange: *short_long_exchange, 
-                                                        symbol: symbol.clone()
-                                                    }, 
-                                                    short_market_type: KeyMarketType { 
-                                                        long_exchange: *short_long_exchange, 
-                                                        short_exchange: *long_exchange, 
-                                                        symbol: symbol.clone()
-                                                    }, 
-                                                };
+                                                // let msg = WsClientMessage {
+                                                //     channel: ChannelType::Chart,
+                                                //     result: WsClientMsgResult {
+                                                //         data: JsonPairData::LinesHistory { 
+                                                //             long: long_json_lines.clone(), 
+                                                //             short: short_json_lines.clone()
+                                                //         }.into(),
+                                                //         symbol: symbol.clone(),
+                                                //         unique_id: JsonPairUniqueId::LinesHistory
+                                                //     }
+                                                // }; 
+
+                                                // let channel_key = ChannelSubscription::Chart { 
+                                                //     long_market_type: KeyMarketType { 
+                                                //         long_exchange: *long_exchange, 
+                                                //         short_exchange: *short_long_exchange, 
+                                                //         symbol: symbol.clone()
+                                                //     }, 
+                                                //     short_market_type: KeyMarketType { 
+                                                //         long_exchange: *short_long_exchange, 
+                                                //         short_exchange: *long_exchange, 
+                                                //         symbol: symbol.clone()
+                                                //     }, 
+                                                // };
 
                                                 // if let Some(err) = self.manager_transmitter_tx.send(
                                                 //     ManagerTransmitterCmd::Notify(
@@ -107,30 +110,30 @@ impl DataMapping {
                                                 //     tracing::error!("{{ data_mapping.lines_from_data_access_layer.first }} -> {err}");
                                                 // }
 
-                                                let msg_2 = WsClientMessage {
-                                                    channel: ChannelType::Chart,
-                                                    result: WsClientMsgResult {
-                                                        data: JsonPairData::LinesHistory { 
-                                                            long: short_json_lines.clone(), 
-                                                            short: long_json_lines.clone()
-                                                        }.into(),
-                                                        symbol: symbol.clone(),
-                                                        unique_id: JsonPairUniqueId::LinesHistory
-                                                    }
-                                                }; 
+                                                // let msg_2 = WsClientMessage {
+                                                //     channel: ChannelType::Chart,
+                                                //     result: WsClientMsgResult {
+                                                //         data: JsonPairData::LinesHistory { 
+                                                //             long: short_json_lines.clone(), 
+                                                //             short: long_json_lines.clone()
+                                                //         }.into(),
+                                                //         symbol: symbol.clone(),
+                                                //         unique_id: JsonPairUniqueId::LinesHistory
+                                                //     }
+                                                // }; 
 
-                                                let channel_key_2 = ChannelSubscription::Chart { 
-                                                    long_market_type: KeyMarketType { 
-                                                        long_exchange: *short_long_exchange, 
-                                                        short_exchange: *long_exchange, 
-                                                        symbol: symbol.clone()
-                                                    }, 
-                                                    short_market_type: KeyMarketType { 
-                                                        long_exchange: *long_exchange, 
-                                                        short_exchange: *short_long_exchange, 
-                                                        symbol: symbol.clone()
-                                                    }, 
-                                                };
+                                                // let channel_key_2 = ChannelSubscription::Chart { 
+                                                //     long_market_type: KeyMarketType { 
+                                                //         long_exchange: *short_long_exchange, 
+                                                //         short_exchange: *long_exchange, 
+                                                //         symbol: symbol.clone()
+                                                //     }, 
+                                                //     short_market_type: KeyMarketType { 
+                                                //         long_exchange: *long_exchange, 
+                                                //         short_exchange: *short_long_exchange, 
+                                                //         symbol: symbol.clone()
+                                                //     }, 
+                                                // };
 
                                                 // if let Some(err) = self.manager_transmitter_tx.send(
                                                 //     ManagerTransmitterCmd::Notify(
@@ -336,9 +339,9 @@ impl DataMapping {
                                         self.send_message_with_key(
                                             ChannelType::OrderBook,
                                             *long_ex_id,
-                                            long_arc.clone(),
+                                            DataJson::Snapshot(long_arc.clone()),
                                             *short_ex_id,
-                                            short_arc.clone(),
+                                            DataJson::Snapshot(short_arc.clone()),
                                             symbol.clone(),
                                             JsonPairUniqueId::OrderBook
                                         ).await;
@@ -346,9 +349,9 @@ impl DataMapping {
                                         self.send_message_with_key(
                                             ChannelType::OrderBook,
                                             *short_ex_id,
-                                            short_arc,
+                                            DataJson::Snapshot(short_arc.clone()),
                                             *long_ex_id,
-                                            long_arc,
+                                            DataJson::Snapshot(long_arc.clone()),
                                             symbol.clone(),
                                             JsonPairUniqueId::OrderBook
                                         ).await;
@@ -588,9 +591,9 @@ impl DataMapping {
         &self,
         channel: ChannelType,
         long_exchange: ExchangeType,
-        long_json: Arc<SnapshotJson>,
+        long_json: DataJson,
         short_exchange: ExchangeType,
-        short_json: Arc<SnapshotJson>,
+        short_json: DataJson,
         symbol: Arc<Symbol>,
         unique_id: JsonPairUniqueId
     ) {
@@ -629,6 +632,5 @@ impl DataMapping {
                 )
             ), 
         );
-
     }
 }

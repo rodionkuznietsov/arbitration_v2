@@ -98,6 +98,8 @@ async fn handle_connection(
                             for result in data.result.values() {
                                 let msg = serde_json::to_string(result).unwrap();
 
+                                tracing::info!("{:?}", msg);
+
                                 if ws_sender.send(Message::Text(msg.to_string())).await.is_err() {
                                     cancel_token.cancel();
                                 }  

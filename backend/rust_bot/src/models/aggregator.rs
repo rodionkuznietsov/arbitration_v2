@@ -2,7 +2,7 @@ use std::{sync::Arc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{models::{exchange::ExchangeType, websocket::{ChannelSubscription, ClientId, Symbol, WsClientMessage}}, services::data_mapping::SnapshotJson};
+use crate::{models::{data_mapping::DataJson, exchange::ExchangeType, websocket::{ChannelSubscription, ClientId, Symbol, WsClientMessage}}};
 
 pub enum ClientAggregatorUse {
     #[allow(unused)]
@@ -67,8 +67,8 @@ pub enum JsonPairUniqueId {
 #[serde(rename_all="snake_case")]
 pub enum JsonPairData {
     OrderBook {
-        long: Arc<SnapshotJson>,
-        short: Arc<SnapshotJson>,
+        long: DataJson,
+        short: DataJson,
     },
     LinesHistory {
         long: Vec<Value>,
