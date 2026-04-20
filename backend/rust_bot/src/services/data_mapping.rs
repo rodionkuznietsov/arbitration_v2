@@ -3,7 +3,7 @@ use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tokio::sync::{RwLock, mpsc};
+use tokio::sync::{RwLock, mpsc, watch};
 
 use crate::{models::{aggregator::{JsonPairData, JsonPairUniqueId, KeyMarketType, SpreadPair, Volume}, exchange::ExchangeType, line::{Line}, orderbook::Snapshot, websocket::{ChannelSubscription, ChannelType, Symbol, WsClientMessage, WsClientMsgResult}}, services::manager_transmitter::{ManagerTransmitterCmd, NotifyEvent}};
 
@@ -33,12 +33,12 @@ pub struct SnapshotJson {
 pub struct DataMapping {
     pub data_mapping_tx: mpsc::Sender<DataMappingCmd>,
     data_mapping_rx: mpsc::Receiver<DataMappingCmd>,
-    manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>
+    manager_transmitter_tx: watch::Sender<ManagerTransmitterCmd>
 }
 
 impl DataMapping {
     pub fn new(
-        manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>
+        manager_transmitter_tx: watch::Sender<ManagerTransmitterCmd>
     ) -> Self {
         let (data_mapping_tx, data_mapping_rx) = mpsc::channel::<DataMappingCmd>(1024);
         Self { 
@@ -96,15 +96,14 @@ impl DataMapping {
                                                     }, 
                                                 };
 
-                                                if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                                                if let Some(err) = self.manager_transmitter_tx.send(
                                                     ManagerTransmitterCmd::Notify(
                                                         NotifyEvent::PayloadJson(
                                                             channel_key,
                                                             msg
                                                         )
                                                     ), 
-                                                Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                                                ).await.err() {
+                                                ).err() {
                                                     tracing::error!("{{ data_mapping.lines_from_data_access_layer.first }} -> {err}");
                                                 }
 
@@ -133,15 +132,14 @@ impl DataMapping {
                                                     }, 
                                                 };
 
-                                                if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                                                if let Some(err) = self.manager_transmitter_tx.send(
                                                     ManagerTransmitterCmd::Notify(
                                                         NotifyEvent::PayloadJson(
                                                             channel_key_2,
                                                             msg_2
                                                         )
                                                     ), 
-                                                Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                                                ).await.err() {
+                                                ).err() {
                                                     tracing::error!("{{ data_mapping.lines_from_data_access_layer.last }} -> {err}");
                                                 }                                              
                                             }
@@ -188,15 +186,14 @@ impl DataMapping {
                                 }, 
                             };
 
-                            if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                            if let Some(err) = self.manager_transmitter_tx.send(
                                 ManagerTransmitterCmd::Notify(
                                     NotifyEvent::PayloadJson(
                                         channel_key,
                                         msg
                                     )
                                 ), 
-                            Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                            ).await.err() {
+                            ).err() {
                                 tracing::error!("{{ data_mapping.lines_to_json_pair.first }} -> {err}");
                             }
 
@@ -225,15 +222,14 @@ impl DataMapping {
                                 }, 
                             };
 
-                            if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                            if let Some(err) = self.manager_transmitter_tx.send(
                                 ManagerTransmitterCmd::Notify(
                                     NotifyEvent::PayloadJson(
                                         channel_key_2,
                                         msg_2
                                     )
                                 ), 
-                            Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                            ).await.err() {
+                            ).err() {
                                 tracing::error!("{{ data_mapping.lines_to_json_pair.last }} -> {err}");
                             }
                         },
@@ -268,15 +264,14 @@ impl DataMapping {
                                         }, 
                                     };
 
-                                    if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                                    if let Some(err) = self.manager_transmitter_tx.send(
                                         ManagerTransmitterCmd::Notify(
                                             NotifyEvent::PayloadJson(
                                                 channel_key,
                                                 msg
                                             )
                                         ), 
-                                    Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                                    ).await.err() {
+                                    ).err() {
                                         tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.first }} -> {err}");
                                     }
 
@@ -305,15 +300,14 @@ impl DataMapping {
                                         }, 
                                     };
 
-                                    if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                                    if let Some(err) = self.manager_transmitter_tx.send(
                                         ManagerTransmitterCmd::Notify(
                                             NotifyEvent::PayloadJson(
                                                 channel_key_2,
                                                 msg_2
                                             )
                                         ), 
-                                    Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                                    ).await.err() {
+                                    ).err() {
                                         tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.last }} -> {err}");
                                     }
 
@@ -402,15 +396,14 @@ impl DataMapping {
                                 }, 
                             };
 
-                            if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                            if let Some(err) = self.manager_transmitter_tx.send(
                                 ManagerTransmitterCmd::Notify(
                                     NotifyEvent::PayloadJson(
                                         channel_key, 
                                         msg
                                     )
                                 ), 
-                            Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                            ).await.err() {
+                            ).err() {
                                 tracing::error!("{{ data_mapping.spread_pair_to_json_pair.first }} -> {err}");
                             }
                             
@@ -441,15 +434,14 @@ impl DataMapping {
                                 }, 
                             };
 
-                            if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                            if let Some(err) = self.manager_transmitter_tx.send(
                                 ManagerTransmitterCmd::Notify(
                                     NotifyEvent::PayloadJson(
                                         channel_key_2, 
                                         msg_2
                                     )
                                 ), 
-                            Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                            ).await.err() {
+                            ).err() {
                                 tracing::error!("{{ data_mapping.spread_pair_to_json_pair.last }} -> {err}");
                             }
                         }, 
@@ -483,15 +475,14 @@ impl DataMapping {
                                         },
                                     };
 
-                                    if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                                    if let Some(err) = self.manager_transmitter_tx.send(
                                         ManagerTransmitterCmd::Notify(
                                             NotifyEvent::PayloadJson(
                                                 channel_key, 
                                                 msg
                                             )
                                         ), 
-                                    Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                                    ).await.err() {
+                                    ).err() {
                                         tracing::error!("{{ data_mapping.volumes_to_json.first }} -> {err}");
                                     }
 
@@ -520,15 +511,14 @@ impl DataMapping {
                                         },
                                     };
 
-                                    if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                                    if let Some(err) = self.manager_transmitter_tx.send(
                                         ManagerTransmitterCmd::Notify(
                                             NotifyEvent::PayloadJson(
                                                 channel_key_2, 
                                                 msg_2
                                             )
                                         ), 
-                                    Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                                    ).await.err() {
+                                    ).err() {
                                         tracing::error!("{{ data_mapping.volumes_to_json.last }} -> {err}");
                                     }
                                 }
@@ -631,15 +621,14 @@ impl DataMapping {
             }, 
         };
 
-        if let Some(err) = self.manager_transmitter_tx.send_timeout(
+        if let Some(err) = self.manager_transmitter_tx.send(
             ManagerTransmitterCmd::Notify(
                 NotifyEvent::PayloadJson(
                     channel_key, 
                     msg
                 )
             ), 
-        Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-        ).await.err() {
+        ).err() {
             tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.first }} -> {err}");
         }
     }

@@ -1,9 +1,8 @@
 use std::{sync::Arc, time::Duration};
-use ordered_float::OrderedFloat;
-use tokio::sync::{mpsc};
+use tokio::sync::{mpsc, watch};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::{models::{aggregator::{JsonPairUniqueId, KeyMarketType}, exchange::ExchangeType, websocket::{ChannelSubscription, WsClientMessage, WsClientMsgResult}}, services::{cache_aggregator::{CacheAggregator, CacheAggregatorCmd}, data_access_layer::DataAccessLayer, data_aggregator::{DataAggregator, DataAggregatorCmd}, data_mapping::{DataMapping, SnapshotJson}, exchange::exchange_channel_store::ExchangeChannelStore, manager_transmitter::{ManagerTransmitter, ManagerTransmitterCmd, NotifyEvent}}, transport::client_aggregator::{ClientAggregator, ClientAggregatorCmd}};
+use crate::{services::{cache_aggregator::{CacheAggregator, CacheAggregatorCmd}, data_access_layer::DataAccessLayer, data_aggregator::{DataAggregator, DataAggregatorCmd}, data_mapping::{DataMapping}, exchange::exchange_channel_store::ExchangeChannelStore, manager_transmitter::{ManagerTransmitter, ManagerTransmitterCmd}}, transport::client_aggregator::{ClientAggregator, ClientAggregatorCmd}};
 
 mod exchanges;
 mod transport;
@@ -31,7 +30,7 @@ async fn main() {
 
     let storage_pool = storage::pool::create_pool().await;
         
-    let (manager_transmitter_tx, manager_transmitter_rx) = mpsc::channel::<ManagerTransmitterCmd>(64);
+    let (manager_transmitter_tx, manager_transmitter_rx) = watch::channel(ManagerTransmitterCmd::Default);
         
     let data_mapping = DataMapping::new(manager_transmitter_tx.clone());
     let data_mapping_tx = data_mapping.data_mapping_tx.clone();
@@ -71,7 +70,9 @@ async fn main() {
         client_aggregator_chart_tx.clone(),
         cache_aggregator_tx.clone(),
     );
-    tokio::spawn(manager_transmitter.run(manager_transmitter_rx));
+    tokio::spawn(async move {
+        manager_transmitter.run(manager_transmitter_rx).await;
+    });
 
     let exchange_channel_store = ExchangeChannelStore::new();
     let exchange_channel_store_tx = exchange_channel_store.sender_channel.clone();

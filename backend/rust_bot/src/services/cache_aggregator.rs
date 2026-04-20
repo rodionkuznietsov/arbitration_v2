@@ -4,7 +4,7 @@ use crate::{models::{aggregator::KeyMarketType, exchange::ExchangeType, line::Li
 
 const MAX_LINES: usize = 100;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CacheAggregatorCmd {
     AddLines {
         lines: Vec<(Line, (ExchangeType, ExchangeType, Arc<std::string::String>))>

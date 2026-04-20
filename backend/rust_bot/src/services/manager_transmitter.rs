@@ -1,10 +1,10 @@
 use std::{sync::Arc, time::Duration};
-use tokio::sync::{mpsc};
+use tokio::sync::{mpsc, watch};
 use crate::{models::{aggregator::{ClientAggregatorUse}, websocket::{ChannelSubscription, WsClientMessage}}, services::cache_aggregator::CacheAggregatorCmd, transport::client_aggregator::ClientAggregatorCmd};
 
 const TIMEOUT_DELAY: u64 = 30;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NotifyEvent {
     #[allow(unused)]
     Cache(CacheAggregatorCmd),
@@ -14,11 +14,13 @@ pub enum NotifyEvent {
     ),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ManagerTransmitterCmd {
-    Notify(NotifyEvent)
+    Notify(NotifyEvent),
+    Default
 }
 
+#[derive(Clone)]
 /// <b>ManagerTransmitter</b> ожидает обработанные данные и затем просто их отсылает далее
 pub struct ManagerTransmitter {
     client_aggregator_chart_tx: mpsc::Sender<Arc<ClientAggregatorCmd>>,
@@ -38,44 +40,42 @@ impl ManagerTransmitter {
 
     pub async fn run(
         self, 
-        mut notify_rx: mpsc::Receiver<ManagerTransmitterCmd>,
+        mut notify_rx: watch::Receiver<ManagerTransmitterCmd>,
     ) {
-        loop {
-            let mut buffer = Vec::new();
-            let _ = notify_rx.recv_many(&mut buffer, 100).await;
+        while notify_rx.changed().await.is_ok() {
+            let cmd = notify_rx.borrow().clone();
 
-            for cmd in buffer {
-                match cmd {
-                    ManagerTransmitterCmd::Notify(event) => {
-                        match event {
-                            NotifyEvent::Cache(cmd) => {
-                                self.cache_aggregator_tx.send_timeout(
-                                    Arc::new(
-                                        cmd
-                                    ),
-                                    Duration::from_millis(TIMEOUT_DELAY)
-                                ).await.ok();
-                            },
-                            NotifyEvent::PayloadJson(
-                                key,
-                                msg
-                            ) => {
-                                self.client_aggregator_chart_tx.send_timeout(
-                                    Arc::new(
-                                        ClientAggregatorCmd::Use(
-                                            ClientAggregatorUse::PublishJson(
-                                                key, 
-                                                msg
-                                            )
+            match cmd {
+                ManagerTransmitterCmd::Notify(event) => {
+                    match event {
+                        NotifyEvent::Cache(cmd) => {
+                            self.cache_aggregator_tx.send_timeout(
+                                Arc::new(
+                                    cmd.clone()
+                                ),
+                                Duration::from_millis(TIMEOUT_DELAY)
+                            ).await.ok();
+                        },
+                        NotifyEvent::PayloadJson(
+                            key,
+                            msg
+                        ) => {
+                            self.client_aggregator_chart_tx.send_timeout(
+                                Arc::new(
+                                    ClientAggregatorCmd::Use(
+                                        ClientAggregatorUse::PublishJson(
+                                            key.clone(), 
+                                            msg.clone()
                                         )
-                                    ),
-                                    Duration::from_millis(TIMEOUT_DELAY)
-                                ).await.ok();
-                            },
-                        }
+                                    )
+                                ),
+                                Duration::from_millis(TIMEOUT_DELAY)
+                            ).await.ok();
+                        },
                     }
-                }
-            }
+                },
+                ManagerTransmitterCmd::Default => {}
+            } 
         }
     }
 }
