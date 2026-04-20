@@ -363,56 +363,60 @@ impl DataMapping {
                                             }, 
                                         };
 
-                                        if let Some(err) = self.manager_transmitter_tx.send_timeout(
-                                            ManagerTransmitterCmd::Notify(
-                                                NotifyEvent::PayloadJson(
-                                                    channel_key, 
-                                                    msg
-                                                )
-                                            ), 
-                                        Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                                        ).await.err() {
-                                            tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.first }} -> {err}");
+                                        if symbol.to_string() == "btcusdt" {
+                                            tracing::info!("{msg:?}");
                                         }
 
-                                        let msg_2 = WsClientMessage {
-                                            channel: ChannelType::OrderBook,
-                                            result: WsClientMsgResult { 
-                                                data: Arc::new(
-                                                    JsonPairData::OrderBook { 
-                                                        long: short, 
-                                                        short: long,
-                                                    }
-                                                ), 
-                                                symbol: symbol.clone(),
-                                                unique_id: JsonPairUniqueId::OrderBook
-                                            },
-                                        };
+                                        // if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                                        //     ManagerTransmitterCmd::Notify(
+                                        //         NotifyEvent::PayloadJson(
+                                        //             channel_key, 
+                                        //             msg
+                                        //         )
+                                        //     ), 
+                                        // Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
+                                        // ).await.err() {
+                                        //     tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.first }} -> {err}");
+                                        // }
 
-                                        let channel_key_2 = ChannelSubscription::OrderBook { 
-                                            long_market_type: KeyMarketType { 
-                                                long_exchange: *short_ex_id, 
-                                                short_exchange: *long_ex_id, 
-                                                symbol: symbol.clone()
-                                            }, 
-                                            short_market_type: KeyMarketType { 
-                                                long_exchange: *long_ex_id, 
-                                                short_exchange: *short_ex_id, 
-                                                symbol: symbol.clone()
-                                            }, 
-                                        };
+                                        // let msg_2 = WsClientMessage {
+                                        //     channel: ChannelType::OrderBook,
+                                        //     result: WsClientMsgResult { 
+                                        //         data: Arc::new(
+                                        //             JsonPairData::OrderBook { 
+                                        //                 long: short, 
+                                        //                 short: long,
+                                        //             }
+                                        //         ), 
+                                        //         symbol: symbol.clone(),
+                                        //         unique_id: JsonPairUniqueId::OrderBook
+                                        //     },
+                                        // };
 
-                                        if let Some(err) = self.manager_transmitter_tx.send_timeout(
-                                            ManagerTransmitterCmd::Notify(
-                                                NotifyEvent::PayloadJson(
-                                                    channel_key_2, 
-                                                    msg_2
-                                                )
-                                            ), 
-                                        Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
-                                        ).await.err() {
-                                            tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.last }} -> {err}");
-                                        }
+                                        // let channel_key_2 = ChannelSubscription::OrderBook { 
+                                        //     long_market_type: KeyMarketType { 
+                                        //         long_exchange: *short_ex_id, 
+                                        //         short_exchange: *long_ex_id, 
+                                        //         symbol: symbol.clone()
+                                        //     }, 
+                                        //     short_market_type: KeyMarketType { 
+                                        //         long_exchange: *long_ex_id, 
+                                        //         short_exchange: *short_ex_id, 
+                                        //         symbol: symbol.clone()
+                                        //     }, 
+                                        // };
+
+                                        // if let Some(err) = self.manager_transmitter_tx.send_timeout(
+                                        //     ManagerTransmitterCmd::Notify(
+                                        //         NotifyEvent::PayloadJson(
+                                        //             channel_key_2, 
+                                        //             msg_2
+                                        //         )
+                                        //     ), 
+                                        // Duration::from_millis(MANAGER_TRANSMITTER_TIMEOUT_DELAY)
+                                        // ).await.err() {
+                                        //     tracing::error!("{{ data_mapping.exchanges_data_to_json_pair.last }} -> {err}");
+                                        // }
                                     }
                                 }
                             }
