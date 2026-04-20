@@ -621,6 +621,8 @@ impl DataMapping {
             }, 
         };
 
+        tracing::info!("{:?}", msg);
+
         let _ = self.manager_transmitter_tx.send(
             ManagerTransmitterCmd::Notify(
                 NotifyEvent::PayloadJson(

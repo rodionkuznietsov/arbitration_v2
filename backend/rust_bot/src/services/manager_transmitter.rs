@@ -60,7 +60,6 @@ impl ManagerTransmitter {
                             key,
                             msg
                         ) => {
-                            tracing::info!("ManagerTransmitter: {msg:?}")
                             
                             // self.client_aggregator_chart_tx.send_timeout(
                             //     Arc::new(
