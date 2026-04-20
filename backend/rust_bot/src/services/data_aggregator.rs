@@ -125,11 +125,6 @@ impl DataAggregator {
                         old_data.data = Some(new_data);
                     }
 
-
-                    if symbol.to_string() == "btcusdt" {
-                        tracing::info!("{:?}", exchanges)
-                    }
-
                     // Обрабатываем и отправляем снапшот
                     let snapshot_data: Vec<(ExchangeType, Arc<Symbol>, (Option<Arc<Snapshot>>, Option<f64>))> = exchanges
                         .iter_mut()

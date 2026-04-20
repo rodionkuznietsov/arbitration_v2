@@ -350,10 +350,6 @@ impl DataMapping {
                                             },
                                         };
 
-                                        if symbol.to_string() == "btcusdt" {
-                                            tracing::info!("{:?}", msg);
-                                        }
-
                                         let channel_key = ChannelSubscription::OrderBook { 
                                             long_market_type: KeyMarketType { 
                                                 long_exchange: *long_ex_id, 
