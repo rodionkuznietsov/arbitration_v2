@@ -336,25 +336,27 @@ impl DataMapping {
                                         let long_arc = Arc::new(long);
                                         let short_arc = Arc::new(short);
 
-                                        self.send_message_with_key(
-                                            ChannelType::OrderBook,
-                                            *long_ex_id,
-                                            DataJson::Snapshot(long_arc.clone()),
-                                            *short_ex_id,
-                                            DataJson::Snapshot(short_arc.clone()),
-                                            symbol.clone(),
-                                            JsonPairUniqueId::OrderBook
-                                        ).await;
+                                        tracing::info!("{:?}", long_arc)
 
-                                        self.send_message_with_key(
-                                            ChannelType::OrderBook,
-                                            *short_ex_id,
-                                            DataJson::Snapshot(short_arc.clone()),
-                                            *long_ex_id,
-                                            DataJson::Snapshot(long_arc.clone()),
-                                            symbol.clone(),
-                                            JsonPairUniqueId::OrderBook
-                                        ).await;
+                                        // self.send_message_with_key(
+                                        //     ChannelType::OrderBook,
+                                        //     *long_ex_id,
+                                        //     DataJson::Snapshot(long_arc.clone()),
+                                        //     *short_ex_id,
+                                        //     DataJson::Snapshot(short_arc.clone()),
+                                        //     symbol.clone(),
+                                        //     JsonPairUniqueId::OrderBook
+                                        // ).await;
+
+                                        // self.send_message_with_key(
+                                        //     ChannelType::OrderBook,
+                                        //     *short_ex_id,
+                                        //     DataJson::Snapshot(short_arc.clone()),
+                                        //     *long_ex_id,
+                                        //     DataJson::Snapshot(long_arc.clone()),
+                                        //     symbol.clone(),
+                                        //     JsonPairUniqueId::OrderBook
+                                        // ).await;
                                     }
                                 }
                             }
@@ -412,17 +414,6 @@ impl DataMapping {
                                         },
                                     };
 
-                                    // if let Some(err) = self.manager_transmitter_tx.send(
-                                    //     ManagerTransmitterCmd::Notify(
-                                    //         NotifyEvent::PayloadJson(
-                                    //             channel_key, 
-                                    //             msg
-                                    //         )
-                                    //     ), 
-                                    // ).err() {
-                                    //     tracing::error!("{{ data_mapping.volumes_to_json.first }} -> {err}");
-                                    // }
-
                                     let msg_2 = WsClientMessage {
                                         channel: ChannelType::Chart,
                                         result: WsClientMsgResult { 
@@ -447,17 +438,6 @@ impl DataMapping {
                                             symbol: long_vol.symbol.clone(),
                                         },
                                     };
-
-                                    // if let Some(err) = self.manager_transmitter_tx.send(
-                                    //     ManagerTransmitterCmd::Notify(
-                                    //         NotifyEvent::PayloadJson(
-                                    //             channel_key_2, 
-                                    //             msg_2
-                                    //         )
-                                    //     ), 
-                                    // ).err() {
-                                    //     tracing::error!("{{ data_mapping.volumes_to_json.last }} -> {err}");
-                                    // }
                                 }
                             }
                         }
