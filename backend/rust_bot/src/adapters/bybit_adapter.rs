@@ -107,7 +107,7 @@ impl ExchangeAdapter for BybitAdapter {
                                 let bids = parse_levels__(bids);
 
                                 if symbol == "btcusdt" {
-                                    tracing::info!("gate_adapter -> {symbol}")
+                                    tracing::info!("bybit_adapter -> {symbol}")
                                 }   
 
                                 let _ = snapshot_channel.send(
@@ -142,7 +142,7 @@ impl ExchangeAdapter for BybitAdapter {
                                 let bids = parse_levels__(bids);
 
                                 if symbol == "btcusdt" {
-                                    tracing::info!("gate_adapter -> {symbol}")
+                                    tracing::info!("bybit_adapter -> {symbol}")
                                 }
 
                                 let _ = sender_data.send(
