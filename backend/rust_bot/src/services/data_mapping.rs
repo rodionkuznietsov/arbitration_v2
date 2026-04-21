@@ -64,15 +64,15 @@ impl DataMapping {
                                                 let long_json_lines = self.lines_to_json(&long_vec);
                                                 let short_json_lines = self.lines_to_json(&short_vec);
 
-                                                self.send_message_with_key(
-                                                    ChannelType::Chart,
-                                                    *long_exchange,
-                                                    DataJson::Lines(long_json_lines),
-                                                    *short_long_exchange,
-                                                    DataJson::Lines(short_json_lines),
-                                                    symbol.clone(),
-                                                    JsonPairUniqueId::LinesHistory
-                                                ).await;
+                                                // self.send_message_with_key(
+                                                //     ChannelType::Chart,
+                                                //     *long_exchange,
+                                                //     DataJson::Lines(long_json_lines),
+                                                //     *short_long_exchange,
+                                                //     DataJson::Lines(short_json_lines),
+                                                //     symbol.clone(),
+                                                //     JsonPairUniqueId::LinesHistory
+                                                // ).await;
 
                                                 // let msg = WsClientMessage {
                                                 //     channel: ChannelType::Chart,
@@ -624,8 +624,6 @@ impl DataMapping {
             }, 
         };
 
-        tracing::info!("{:?}", msg)
-        
         // let _ = self.manager_transmitter_tx.send(
         //     ManagerTransmitterCmd::Notify(
         //         NotifyEvent::PayloadJson(
