@@ -136,11 +136,7 @@ impl DataAggregator {
                         })
                         .collect();
 
-                    let _ = self.data_mapping_tx.send(
-                        DataMappingCmd::ExchangesDataToJsonPair(
-                            snapshot_data
-                        ), 
-                    );
+                    let _ = self.data_mapping_tx.send(DataMappingCmd::ExchangesDataToJsonPair(snapshot_data));
 
                     // let volumes: Vec<Volume> = exchanges
                     //     .iter()
