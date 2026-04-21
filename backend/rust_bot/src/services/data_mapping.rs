@@ -371,82 +371,16 @@ impl DataMapping {
                                 "value": spread_pair.short_spread,
                                 "time": spread_pair.timestamp.clone()
                             });
-                            
-                            let msg = WsClientMessage {
-                                channel: ChannelType::Chart,
-                                result: WsClientMsgResult { 
-                                    data: Arc::new(
-                                        JsonPairData::UpdateLine { 
-                                            long: long.clone(), 
-                                            short: short.clone(),
-                                        }
-                                    ), 
-                                    symbol: spread_pair.symbol.clone(),
-                                    unique_id: JsonPairUniqueId::UpdateLine
-                                },
-                            };
 
-                            let channel_key = ChannelSubscription::OrderBook { 
-                                long_market_type: KeyMarketType { 
-                                    long_exchange: spread_pair.long_exchange, 
-                                    short_exchange: spread_pair.short_exchange, 
-                                    symbol: spread_pair.symbol.clone()
-                                }, 
-                                short_market_type: KeyMarketType { 
-                                    long_exchange: spread_pair.short_exchange, 
-                                    short_exchange: spread_pair.long_exchange, 
-                                    symbol: spread_pair.symbol.clone()
-                                }, 
-                            };
-
-                            // if let Some(err) = self.manager_transmitter_tx.send(
-                            //     ManagerTransmitterCmd::Notify(
-                            //         NotifyEvent::PayloadJson(
-                            //             channel_key, 
-                            //             msg
-                            //         )
-                            //     ), 
-                            // ).err() {
-                            //     tracing::error!("{{ data_mapping.spread_pair_to_json_pair.first }} -> {err}");
-                            // }
-                            
-                            let msg_2 = WsClientMessage {
-                                channel: ChannelType::Chart,
-                                result: WsClientMsgResult { 
-                                    data: Arc::new(
-                                        JsonPairData::UpdateLine { 
-                                            long: short, 
-                                            short: long,
-                                        }
-                                    ), 
-                                    symbol: spread_pair.symbol.clone(),
-                                    unique_id: JsonPairUniqueId::UpdateLine
-                                },
-                            };
-
-                            let channel_key_2 = ChannelSubscription::OrderBook { 
-                                long_market_type: KeyMarketType { 
-                                    long_exchange: spread_pair.short_exchange, 
-                                    short_exchange: spread_pair.long_exchange, 
-                                    symbol: spread_pair.symbol.clone()
-                                }, 
-                                short_market_type: KeyMarketType { 
-                                    long_exchange: spread_pair.long_exchange, 
-                                    short_exchange: spread_pair.short_exchange, 
-                                    symbol: spread_pair.symbol.clone()
-                                }, 
-                            };
-
-                            // if let Some(err) = self.manager_transmitter_tx.send(
-                            //     ManagerTransmitterCmd::Notify(
-                            //         NotifyEvent::PayloadJson(
-                            //             channel_key_2, 
-                            //             msg_2
-                            //         )
-                            //     ), 
-                            // ).err() {
-                            //     tracing::error!("{{ data_mapping.spread_pair_to_json_pair.last }} -> {err}");
-                            // }
+                            self.send_message_with_key(
+                                ChannelType::Chart,
+                                spread_pair.long_exchange,
+                                DataJson::UpdateLine(long),
+                                spread_pair.short_exchange,
+                                DataJson::UpdateLine(short),
+                                spread_pair.symbol.clone(),
+                                JsonPairUniqueId::UpdateLine
+                            ).await;
                         }, 
                         DataMappingCmd::VolumesToJson(
                             volumes
