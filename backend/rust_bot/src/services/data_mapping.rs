@@ -153,25 +153,22 @@ impl DataMapping {
                     DataMappingCmd::ExchangesDataToJsonPair(
                         markets
                     ) => {
-
-                        tracing::info!("{:?}", markets);
-
-                        // for (i, (long_ex_id, symbol, (long_snapshot, long_last_price))) in markets.iter().enumerate() {
-                        //     for (short_ex_id, _, (short_snapshot, short_last_price)) in markets.iter().skip(i+1) {
-                        //         let long_json_lines = self.snapshot_to_json(long_snapshot, &long_last_price);
-                        //         let short_json_lines = self.snapshot_to_json(short_snapshot, &short_last_price);
+                        for (i, (long_ex_id, symbol, (long_snapshot, long_last_price))) in markets.iter().enumerate() {
+                            for (short_ex_id, _, (short_snapshot, short_last_price)) in markets.iter().skip(i+1) {
+                                let long_json_lines = self.snapshot_to_json(long_snapshot, &long_last_price);
+                                let short_json_lines = self.snapshot_to_json(short_snapshot, &short_last_price);
                                 
-                        //         if let (
-                        //             Some(long), 
-                        //             Some(short)
-                        //         ) = (
-                        //             long_json_lines, 
-                        //             short_json_lines
-                        //         ) { 
-                        //             let long_arc = Arc::new(long);
-                        //             let short_arc = Arc::new(short);
+                                if let (
+                                    Some(long), 
+                                    Some(short)
+                                ) = (
+                                    long_json_lines, 
+                                    short_json_lines
+                                ) { 
+                                    let long_arc = Arc::new(long);
+                                    let short_arc = Arc::new(short);
 
-                        //             tracing::info!("{:?}", long_arc);
+                                    tracing::info!("{:?}", long_arc);
                                     
                                     // self.send_message_with_key(
                                     //     ChannelType::OrderBook,
@@ -192,9 +189,9 @@ impl DataMapping {
                                     //     symbol.clone(),
                                     //     JsonPairUniqueId::OrderBook
                                     // ).await;
-                                // }
-                        //     }
-                        // }
+                                }
+                            }
+                        }
                     },
                     DataMappingCmd::SpreadPairToJsonPair(
                         spread_pair
