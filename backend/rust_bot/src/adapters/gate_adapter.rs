@@ -167,6 +167,11 @@ impl ExchangeAdapter for GateAdapter {
                     if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
                         let asks = parse_levels__(asks);
                         let bids = parse_levels__(bids);
+
+                        if symbol == "btcusdt" {
+                            tracing::info!("gate_adapter -> {symbol}")
+                        }
+                        
                         let _ = sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::Snapshot { 
                                 symbol,
@@ -195,7 +200,11 @@ impl ExchangeAdapter for GateAdapter {
                     if let (Some(price_str), Some(vol_str)) = (last_price, volume) {
                         let price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
                         let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
-
+                        
+                        if symbol == "btcusdt" {
+                            tracing::info!("gate_adapter -> {symbol}")
+                        }
+                        
                         let _ = sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::TickerUpdate { 
                                 symbol, 

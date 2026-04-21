@@ -106,6 +106,10 @@ impl ExchangeAdapter for BybitAdapter {
                                 let asks = parse_levels__(asks);
                                 let bids = parse_levels__(bids);
 
+                                if symbol == "btcusdt" {
+                                    tracing::info!("gate_adapter -> {symbol}")
+                                }   
+
                                 let _ = snapshot_channel.send(
                                     ExchangeStoreCMD::Event(
                                         BookEvent::Snapshot { 
@@ -136,6 +140,10 @@ impl ExchangeAdapter for BybitAdapter {
                                 let symbol = symbol.to_lowercase();
                                 let asks = parse_levels__(asks);
                                 let bids = parse_levels__(bids);
+
+                                if symbol == "btcusdt" {
+                                    tracing::info!("gate_adapter -> {symbol}")
+                                }
 
                                 let _ = sender_data.send(
                                     ExchangeStoreCMD::Event(
