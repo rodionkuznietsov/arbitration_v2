@@ -83,10 +83,12 @@ async fn handle_connection(
                         }
                     },
                     Some(payload) = orderbook_rx.recv() => {
-                        if let Some(data) = books.get_mut(&ChannelType::OrderBook) {
-                            let key = &payload.result.unique_id;
-                            data.result.insert(key.clone(), payload);
-                        }
+                        tracing::info!("{payload}");
+                        
+                        // if let Some(data) = books.get_mut(&ChannelType::OrderBook) {
+                        //     let key = &payload.result.unique_id;
+                        //     data.result.insert(key.clone(), payload);
+                        // }
                     },
                     _ = cancel_token.cancelled() => {
                         sender.send(ClientAggregatorCmd::Use(ClientAggregatorUse::UnRegister(new_id))).await.ok();
@@ -97,8 +99,6 @@ async fn handle_connection(
                         for data in books.values() {
                             for result in data.result.values() {
                                 let msg = serde_json::to_string(result).unwrap();
-
-                                tracing::info!("{:?}", msg);
 
                                 if ws_sender.send(Message::Text(msg.to_string())).await.is_err() {
                                     cancel_token.cancel();
