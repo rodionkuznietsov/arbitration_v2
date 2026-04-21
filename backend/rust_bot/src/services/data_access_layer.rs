@@ -89,13 +89,15 @@ impl DataAccessLayer {
                                 while watch_aggregator_tx.changed().await.is_ok() {
                                     let (symbol, exchange_data) = watch_aggregator_tx.borrow().clone();
                                     
-                                    let _ = data_aggregator_tx.send(
-                                        DataAggregatorCmd::UpdateData { 
-                                            exchange_id, 
-                                            symbol,
-                                            data: exchange_data
-                                        }, 
-                                    );
+                                    tracing::info!("{symbol} -> {exchange_id}");
+                                    
+                                    // let _ = data_aggregator_tx.send(
+                                    //     DataAggregatorCmd::UpdateData { 
+                                    //         exchange_id, 
+                                    //         symbol,
+                                    //         data: exchange_data
+                                    //     }, 
+                                    // );
                                 }
                             }
                         });
