@@ -142,7 +142,7 @@ impl Quote {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Volume {
     #[serde(skip_serializing)]
     pub exchange_id: ExchangeType,

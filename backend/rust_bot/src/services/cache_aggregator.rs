@@ -22,7 +22,7 @@ pub struct CacheAggregator {
     initialization_keys: HashSet<KeyMarketType>,
 
     cache_aggregator_rx: mpsc::Receiver<Arc<CacheAggregatorCmd>>,
-    data_mapping_tx: mpsc::Sender<DataMappingCmd>,
+    data_mapping_tx: watch::Sender<DataMappingCmd>,
     watch_tx: watch::Sender<Arc<RwLock<Arc<HashMap<(ExchangeType, ExchangeType), HashMap<Arc<Symbol>, Arc<RwLock<VecDeque<Line>>>>>>>>>,
     watch_rx: watch::Receiver<Arc<RwLock<Arc<HashMap<(ExchangeType, ExchangeType), HashMap<Arc<Symbol>, Arc<RwLock<VecDeque<Line>>>>>>>>>,
 
@@ -32,7 +32,7 @@ pub struct CacheAggregator {
 impl CacheAggregator {
     pub fn new(
         cache_aggregator_rx: mpsc::Receiver<Arc<CacheAggregatorCmd>>,
-        data_mapping_tx: mpsc::Sender<DataMappingCmd>,
+        data_mapping_tx: watch::Sender<DataMappingCmd>,
 
         pool: sqlx::PgPool,
     ) -> Self {
@@ -102,7 +102,7 @@ impl CacheAggregator {
                         let result = get_spread_history(&self.pool, &key.symbol, key.long_exchange, key.short_exchange).await;
                         if let Ok(lines) = result {
                             if !lines.is_empty() {
-                                self.data_mapping_tx.send(DataMappingCmd::LinesFromDbToJsonPair(lines.clone())).await.ok();
+                                let _ = self.data_mapping_tx.send(DataMappingCmd::LinesFromDbToJsonPair(lines.clone()));
                                 self.initialization_keys.insert(key.clone());
                                 
                                 let mut lock = self.cache_lines.write().await;
@@ -164,13 +164,13 @@ impl CacheAggregator {
                                 short_map.get(&key.symbol), 
                                 long_map.get(&key.symbol)
                             ) {
-                                self.data_mapping_tx.send(DataMappingCmd::LinesToJsonPair(
+                                let _ = self.data_mapping_tx.send(DataMappingCmd::LinesToJsonPair(
                                     long_data.clone(), 
                                     short_data.clone(),
                                     key.symbol.clone(),
                                     key.long_exchange,
                                     key.short_exchange
-                                )).await.ok();
+                                ));
                             }
                         }
                     }

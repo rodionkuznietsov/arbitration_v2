@@ -1,5 +1,5 @@
 use std::{sync::Arc, time::Duration};
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{mpsc, oneshot, watch};
 use crate::{services::{cache_aggregator::CacheAggregatorCmd, data_aggregator::DataAggregatorCmd, data_mapping::DataMappingCmd, exchange::{exchange_aggregator::ExchangeStoreCMD, exchange_channel_store::ExchangeChannelStoreCmd}}};
 
 /// Извлекает конкретные данные из:
@@ -10,7 +10,7 @@ use crate::{services::{cache_aggregator::CacheAggregatorCmd, data_aggregator::Da
 /// И после передаёт их в DataMapping
 pub struct DataAccessLayer {
     cache_aggregator_tx: mpsc::Sender<Arc<CacheAggregatorCmd>>,
-    data_mapping_tx: mpsc::Sender<DataMappingCmd>,
+    data_mapping_tx: watch::Sender<DataMappingCmd>,
     exchange_channel_store_tx: mpsc::Sender<ExchangeChannelStoreCmd>,
     data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>
 }
@@ -18,7 +18,7 @@ pub struct DataAccessLayer {
 impl DataAccessLayer {
     pub fn new(
         cache_aggregator_tx: mpsc::Sender<Arc<CacheAggregatorCmd>>,
-        data_mapping_tx: mpsc::Sender<DataMappingCmd>,
+        data_mapping_tx: watch::Sender<DataMappingCmd>,
         exchange_channel_store_tx: mpsc::Sender<ExchangeChannelStoreCmd>,
         data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>
     ) -> Arc<Self> {
@@ -47,10 +47,9 @@ impl DataAccessLayer {
         if let Some(mut watch_rx) = rx.recv().await {
             while let Ok(_) = watch_rx.changed().await {
                 let data = watch_rx.borrow().clone();
-                self.data_mapping_tx.send_timeout(
+                let _ = self.data_mapping_tx.send(
                     DataMappingCmd::LinesFromDataAccessLayer(data), 
-                    Duration::from_millis(300)
-                ).await.ok();
+                );
             }
         }
     }

@@ -9,6 +9,7 @@ use crate::{models::{aggregator::{JsonPairData, JsonPairUniqueId, KeyMarketType,
 
 const MANAGER_TRANSMITTER_TIMEOUT_DELAY: u64 = 10; // ms
 
+#[derive(Clone)]
 pub enum DataMappingCmd {
     #[allow(unused)]
     /// Это команда приводит `lines` в формат JSON и соединяет попарно (`Long Lines & Short Lines`)
@@ -20,12 +21,13 @@ pub enum DataMappingCmd {
     /// Это команда приводит `SpreadPair` в формат JSON и соединяет попарно (`Long Spread & Short Spread`)
     SpreadPairToJsonPair(Arc<SpreadPair>),
     /// Это команда приводит `Volumes` в формат JSON и соединяет попарно (`Long Volume & Short Volume`)
-    VolumesToJson(Vec<Volume>)
+    VolumesToJson(Vec<Volume>),
+    Default
 }
 
 pub struct DataMapping {
-    pub data_mapping_tx: mpsc::Sender<DataMappingCmd>,
-    data_mapping_rx: mpsc::Receiver<DataMappingCmd>,
+    pub data_mapping_tx: watch::Sender<DataMappingCmd>,
+    data_mapping_rx: watch::Receiver<DataMappingCmd>,
     manager_transmitter_tx: watch::Sender<ManagerTransmitterCmd>
 }
 
@@ -33,7 +35,7 @@ impl DataMapping {
     pub fn new(
         manager_transmitter_tx: watch::Sender<ManagerTransmitterCmd>
     ) -> Self {
-        let (data_mapping_tx, data_mapping_rx) = mpsc::channel::<DataMappingCmd>(1024);
+        let (data_mapping_tx, data_mapping_rx) = watch::channel::<DataMappingCmd>(DataMappingCmd::Default);
         Self { 
             data_mapping_tx,
             data_mapping_rx,
@@ -43,206 +45,204 @@ impl DataMapping {
 
     pub fn run(mut self) {
         tokio::spawn(async move {
-            loop {
-                let mut data = Vec::new();
-                let _ = self.data_mapping_rx.recv_many(&mut data, 100).await;
+            while let Ok(_) = self.data_mapping_rx.changed().await {
+                let cmd = self.data_mapping_rx.borrow().clone();
                 
-                for cmd in data.drain(..) {
-                    match cmd {
-                        DataMappingCmd::LinesFromDataAccessLayer(
-                            data
-                        ) => {
-                            let lines = data.read().await;
-                            for (i, ((long_exchange, _), data)) in lines.iter().enumerate() {
-                                for ((short_long_exchange, _), short_data) in lines.iter().skip(i+1) {
-                                    for (symbol, long_vec) in data {
-                                        for (short_symbol, short_vec) in short_data {
-                                            let long_vec = long_vec.read().await;
-                                            let short_vec = short_vec.read().await;
+                match cmd {
+                    DataMappingCmd::LinesFromDataAccessLayer(
+                        data
+                    ) => {
+                        let lines = data.read().await;
+                        for (i, ((long_exchange, _), data)) in lines.iter().enumerate() {
+                            for ((short_long_exchange, _), short_data) in lines.iter().skip(i+1) {
+                                for (symbol, long_vec) in data {
+                                    for (short_symbol, short_vec) in short_data {
+                                        let long_vec = long_vec.read().await;
+                                        let short_vec = short_vec.read().await;
 
-                                            if symbol == short_symbol {
-                                                let long_json_lines = Arc::new(self.lines_to_json(&long_vec));
-                                                let short_json_lines = Arc::new(self.lines_to_json(&short_vec));
+                                        if symbol == short_symbol {
+                                            let long_json_lines = Arc::new(self.lines_to_json(&long_vec));
+                                            let short_json_lines = Arc::new(self.lines_to_json(&short_vec));
 
-                                                // self.send_message_with_key(
-                                                //     ChannelType::Chart,
-                                                //     *long_exchange,
-                                                //     DataJson::LinesHistory(long_json_lines.clone()),
-                                                //     *short_long_exchange,
-                                                //     DataJson::LinesHistory(short_json_lines.clone()),
-                                                //     symbol.clone(),
-                                                //     JsonPairUniqueId::LinesHistory
-                                                // ).await;
+                                            // self.send_message_with_key(
+                                            //     ChannelType::Chart,
+                                            //     *long_exchange,
+                                            //     DataJson::LinesHistory(long_json_lines.clone()),
+                                            //     *short_long_exchange,
+                                            //     DataJson::LinesHistory(short_json_lines.clone()),
+                                            //     symbol.clone(),
+                                            //     JsonPairUniqueId::LinesHistory
+                                            // ).await;
 
-                                                // self.send_message_with_key(
-                                                //     ChannelType::Chart,
-                                                //     *short_long_exchange,
-                                                //     DataJson::LinesHistory(short_json_lines),
-                                                //     *long_exchange,
-                                                //     DataJson::LinesHistory(long_json_lines),
-                                                //     symbol.clone(),
-                                                //     JsonPairUniqueId::LinesHistory
-                                                // ).await;
-                                            }
+                                            // self.send_message_with_key(
+                                            //     ChannelType::Chart,
+                                            //     *short_long_exchange,
+                                            //     DataJson::LinesHistory(short_json_lines),
+                                            //     *long_exchange,
+                                            //     DataJson::LinesHistory(long_json_lines),
+                                            //     symbol.clone(),
+                                            //     JsonPairUniqueId::LinesHistory
+                                            // ).await;
                                         }
                                     }
                                 }
                             }
-                        },
-                        DataMappingCmd::LinesToJsonPair(
-                            long_data,
-                            short_data,
-                            symbol,
-                            long_exchange, 
-                            short_exchange
-                        ) => {
-                            let long_lines = long_data.read().await;
-                            let short_lines = short_data.read().await;
+                        }
+                    },
+                    DataMappingCmd::LinesToJsonPair(
+                        long_data,
+                        short_data,
+                        symbol,
+                        long_exchange, 
+                        short_exchange
+                    ) => {
+                        let long_lines = long_data.read().await;
+                        let short_lines = short_data.read().await;
 
-                            let long_json_lines = Arc::new(self.lines_to_json(&long_lines));
-                            let short_json_lines = Arc::new(self.lines_to_json(&short_lines));
+                        let long_json_lines = Arc::new(self.lines_to_json(&long_lines));
+                        let short_json_lines = Arc::new(self.lines_to_json(&short_lines));
 
-                            // self.send_message_with_key(
-                            //     ChannelType::Chart,
-                            //     long_exchange,
-                            //     DataJson::LinesHistory(long_json_lines.clone()),
-                            //     short_exchange,
-                            //     DataJson::LinesHistory(short_json_lines.clone()),
-                            //     symbol.clone(),
-                            //     JsonPairUniqueId::LinesHistory
-                            // ).await;
+                        // self.send_message_with_key(
+                        //     ChannelType::Chart,
+                        //     long_exchange,
+                        //     DataJson::LinesHistory(long_json_lines.clone()),
+                        //     short_exchange,
+                        //     DataJson::LinesHistory(short_json_lines.clone()),
+                        //     symbol.clone(),
+                        //     JsonPairUniqueId::LinesHistory
+                        // ).await;
 
-                            // self.send_message_with_key(
-                            //     ChannelType::Chart,
-                            //     short_exchange,
-                            //     DataJson::LinesHistory(short_json_lines),
-                            //     long_exchange,
-                            //     DataJson::LinesHistory(long_json_lines),
-                            //     symbol.clone(),
-                            //     JsonPairUniqueId::LinesHistory
-                            // ).await;
-                        },
-                        DataMappingCmd::LinesFromDbToJsonPair(lines) => {
-                            for (i, ((long_exchange, short_exchnage, symbol), long_lines)) in lines.iter().enumerate() {
-                                for (_, short_lines) in lines.iter().skip(i+1) {
-                                    let long_lines = Arc::new(self.lines_to_json(&long_lines));
-                                    let short_lines = Arc::new(self.lines_to_json(&short_lines));
-                                    
-                                    // self.send_message_with_key(
-                                    //     ChannelType::Chart,
-                                    //     *long_exchange,
-                                    //     DataJson::LinesHistory(long_lines.clone()),
-                                    //     *short_exchnage,
-                                    //     DataJson::LinesHistory(short_lines.clone()),
-                                    //     symbol.clone(),
-                                    //     JsonPairUniqueId::LinesHistory
-                                    // ).await;
+                        // self.send_message_with_key(
+                        //     ChannelType::Chart,
+                        //     short_exchange,
+                        //     DataJson::LinesHistory(short_json_lines),
+                        //     long_exchange,
+                        //     DataJson::LinesHistory(long_json_lines),
+                        //     symbol.clone(),
+                        //     JsonPairUniqueId::LinesHistory
+                        // ).await;
+                    },
+                    DataMappingCmd::LinesFromDbToJsonPair(lines) => {
+                        for (i, ((long_exchange, short_exchnage, symbol), long_lines)) in lines.iter().enumerate() {
+                            for (_, short_lines) in lines.iter().skip(i+1) {
+                                let long_lines = Arc::new(self.lines_to_json(&long_lines));
+                                let short_lines = Arc::new(self.lines_to_json(&short_lines));
+                                
+                                // self.send_message_with_key(
+                                //     ChannelType::Chart,
+                                //     *long_exchange,
+                                //     DataJson::LinesHistory(long_lines.clone()),
+                                //     *short_exchnage,
+                                //     DataJson::LinesHistory(short_lines.clone()),
+                                //     symbol.clone(),
+                                //     JsonPairUniqueId::LinesHistory
+                                // ).await;
 
-                                    // self.send_message_with_key(
-                                    //     ChannelType::Chart,
-                                    //     *short_exchnage,
-                                    //     DataJson::LinesHistory(short_lines),
-                                    //     *long_exchange,
-                                    //     DataJson::LinesHistory(long_lines),
-                                    //     symbol.clone(),
-                                    //     JsonPairUniqueId::LinesHistory
-                                    // ).await;
-                                }
+                                // self.send_message_with_key(
+                                //     ChannelType::Chart,
+                                //     *short_exchnage,
+                                //     DataJson::LinesHistory(short_lines),
+                                //     *long_exchange,
+                                //     DataJson::LinesHistory(long_lines),
+                                //     symbol.clone(),
+                                //     JsonPairUniqueId::LinesHistory
+                                // ).await;
                             }
-                        },
-                        DataMappingCmd::ExchangesDataToJsonPair(
-                            markets
-                        ) => {
+                        }
+                    },
+                    DataMappingCmd::ExchangesDataToJsonPair(
+                        markets
+                    ) => {
+                        
+                        for (i, (long_ex_id, symbol, (long_snapshot, long_last_price))) in markets.iter().enumerate() {
+                            for (short_ex_id, _, (short_snapshot, short_last_price)) in markets.iter().skip(i+1) {
+                                let long_json_lines = self.snapshot_to_json(long_snapshot, &long_last_price);
+                                let short_json_lines = self.snapshot_to_json(short_snapshot, &short_last_price);
+                                
+                                if let (
+                                    Some(long), 
+                                    Some(short)
+                                ) = (
+                                    long_json_lines, 
+                                    short_json_lines
+                                ) { 
+                                    let long_arc = Arc::new(long);
+                                    let short_arc = Arc::new(short);
 
-                            for (i, (long_ex_id, symbol, (long_snapshot, long_last_price))) in markets.iter().enumerate() {
-                                for (short_ex_id, _, (short_snapshot, short_last_price)) in markets.iter().skip(i+1) {
-                                    let long_json_lines = self.snapshot_to_json(long_snapshot, &long_last_price);
-                                    let short_json_lines = self.snapshot_to_json(short_snapshot, &short_last_price);
-                                    
-                                    if let (
-                                        Some(long), 
-                                        Some(short)
-                                    ) = (
-                                        long_json_lines, 
-                                        short_json_lines
-                                    ) { 
-                                        let long_arc = Arc::new(long);
-                                        let short_arc = Arc::new(short);
+                                    self.send_message_with_key(
+                                        ChannelType::OrderBook,
+                                        *long_ex_id,
+                                        DataJson::Snapshot(long_arc.clone()),
+                                        *short_ex_id,
+                                        DataJson::Snapshot(short_arc.clone()),
+                                        symbol.clone(),
+                                        JsonPairUniqueId::OrderBook
+                                    ).await;
 
-                                        self.send_message_with_key(
-                                            ChannelType::OrderBook,
-                                            *long_ex_id,
-                                            DataJson::Snapshot(long_arc.clone()),
-                                            *short_ex_id,
-                                            DataJson::Snapshot(short_arc.clone()),
-                                            symbol.clone(),
-                                            JsonPairUniqueId::OrderBook
-                                        ).await;
-
-                                        self.send_message_with_key(
-                                            ChannelType::OrderBook,
-                                            *short_ex_id,
-                                            DataJson::Snapshot(short_arc.clone()),
-                                            *long_ex_id,
-                                            DataJson::Snapshot(long_arc.clone()),
-                                            symbol.clone(),
-                                            JsonPairUniqueId::OrderBook
-                                        ).await;
-                                    }
-                                }
-                            }
-                        },
-                        DataMappingCmd::SpreadPairToJsonPair(
-                            spread_pair
-                        ) => {
-                            let long = serde_json::json!({
-                                "value": spread_pair.long_spread,
-                                "time": spread_pair.timestamp.clone()
-                            });
-
-                            let short = serde_json::json!({
-                                "value": spread_pair.short_spread,
-                                "time": spread_pair.timestamp.clone()
-                            });
-
-                            // self.send_message_with_key(
-                            //     ChannelType::Chart,
-                            //     spread_pair.long_exchange,
-                            //     DataJson::UpdateLine(long),
-                            //     spread_pair.short_exchange,
-                            //     DataJson::UpdateLine(short),
-                            //     spread_pair.symbol.clone(),
-                            //     JsonPairUniqueId::UpdateLine
-                            // ).await;
-                        }, 
-                        DataMappingCmd::VolumesToJson(
-                            volumes
-                        ) => {
-                            for (i, long_vol) in volumes.iter().enumerate() {
-                                for short_vol in volumes.iter().skip(i+1) {
-                                    // self.send_message_with_key(
-                                    //     ChannelType::Chart,
-                                    //     *&long_vol.exchange_id,
-                                    //     DataJson::Volume24h(serde_json::to_value(long_vol).unwrap()),
-                                    //     *&short_vol.exchange_id,
-                                    //     DataJson::Volume24h(serde_json::to_value(short_vol).unwrap()),
-                                    //     long_vol.symbol.clone(),
-                                    //     JsonPairUniqueId::Volume24h
-                                    // ).await;
-
-                                    // self.send_message_with_key(
-                                    //     ChannelType::Chart,
-                                    //     *&short_vol.exchange_id,
-                                    //     DataJson::Volume24h(serde_json::to_value(short_vol).unwrap()),
-                                    //     *&long_vol.exchange_id,
-                                    //     DataJson::Volume24h(serde_json::to_value(long_vol).unwrap()),
-                                    //     short_vol.symbol.clone(),
-                                    //     JsonPairUniqueId::Volume24h
-                                    // ).await;
+                                    self.send_message_with_key(
+                                        ChannelType::OrderBook,
+                                        *short_ex_id,
+                                        DataJson::Snapshot(short_arc.clone()),
+                                        *long_ex_id,
+                                        DataJson::Snapshot(long_arc.clone()),
+                                        symbol.clone(),
+                                        JsonPairUniqueId::OrderBook
+                                    ).await;
                                 }
                             }
                         }
-                    }
+                    },
+                    DataMappingCmd::SpreadPairToJsonPair(
+                        spread_pair
+                    ) => {
+                        let long = serde_json::json!({
+                            "value": spread_pair.long_spread,
+                            "time": spread_pair.timestamp.clone()
+                        });
+
+                        let short = serde_json::json!({
+                            "value": spread_pair.short_spread,
+                            "time": spread_pair.timestamp.clone()
+                        });
+
+                        // self.send_message_with_key(
+                        //     ChannelType::Chart,
+                        //     spread_pair.long_exchange,
+                        //     DataJson::UpdateLine(long),
+                        //     spread_pair.short_exchange,
+                        //     DataJson::UpdateLine(short),
+                        //     spread_pair.symbol.clone(),
+                        //     JsonPairUniqueId::UpdateLine
+                        // ).await;
+                    }, 
+                    DataMappingCmd::VolumesToJson(
+                        volumes
+                    ) => {
+                        for (i, long_vol) in volumes.iter().enumerate() {
+                            for short_vol in volumes.iter().skip(i+1) {
+                                // self.send_message_with_key(
+                                //     ChannelType::Chart,
+                                //     *&long_vol.exchange_id,
+                                //     DataJson::Volume24h(serde_json::to_value(long_vol).unwrap()),
+                                //     *&short_vol.exchange_id,
+                                //     DataJson::Volume24h(serde_json::to_value(short_vol).unwrap()),
+                                //     long_vol.symbol.clone(),
+                                //     JsonPairUniqueId::Volume24h
+                                // ).await;
+
+                                // self.send_message_with_key(
+                                //     ChannelType::Chart,
+                                //     *&short_vol.exchange_id,
+                                //     DataJson::Volume24h(serde_json::to_value(short_vol).unwrap()),
+                                //     *&long_vol.exchange_id,
+                                //     DataJson::Volume24h(serde_json::to_value(long_vol).unwrap()),
+                                //     short_vol.symbol.clone(),
+                                //     JsonPairUniqueId::Volume24h
+                                // ).await;
+                            }
+                        }
+                    }, 
+                    DataMappingCmd::Default => {}
                 }
             }
         });

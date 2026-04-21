@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::{Duration}};
 use chrono::{Timelike, Utc, Duration as ChronoDuration};
-use tokio::{sync::{mpsc}, time::{Instant as TokioInstant, interval_at}};
+use tokio::{sync::{mpsc, watch}, time::{Instant as TokioInstant, interval_at}};
 use crate::{models::{aggregator::{Quote, SpreadPair, Volume}, exchange::ExchangeType, exchange_aggregator::{BookData, BookDataWithArc}, line::{Line, TimeFrame}, orderbook::Snapshot, websocket::Symbol}, services::{cache_aggregator::CacheAggregatorCmd, data_mapping::DataMappingCmd}, storage::line_storage::add_new_lines};
 
 pub enum DataAggregatorCmd {
@@ -26,7 +26,7 @@ pub struct DataAggregator {
     markets: HashMap<Arc<Symbol>, HashMap<ExchangeType, ExchangeBookData>>,
 
     rx: mpsc::Receiver<DataAggregatorCmd>,
-    data_mapping_tx: mpsc::Sender<DataMappingCmd>,
+    data_mapping_tx: watch::Sender<DataMappingCmd>,
     cache_aggregator_tx: mpsc::Sender<Arc<CacheAggregatorCmd>>,
 
     pool: sqlx::PgPool,
@@ -35,7 +35,7 @@ pub struct DataAggregator {
 impl DataAggregator {
     pub fn new(
         aggregator_rx: mpsc::Receiver<DataAggregatorCmd>,
-        data_mapping_tx: mpsc::Sender<DataMappingCmd>,
+        data_mapping_tx: watch::Sender<DataMappingCmd>,
         cache_aggregator_tx: mpsc::Sender<Arc<CacheAggregatorCmd>>,
 
         pool: sqlx::PgPool,
@@ -136,14 +136,11 @@ impl DataAggregator {
                         })
                         .collect();
 
-                    tracing::info!("{:?}", snapshot_data);
-
-                    // self.data_mapping_tx.send_timeout(
-                    //     DataMappingCmd::ExchangesDataToJsonPair(
-                    //         snapshot_data
-                    //     ), 
-                    //     Duration::from_millis(100)
-                    // ).await.ok();
+                    let _ = self.data_mapping_tx.send(
+                        DataMappingCmd::ExchangesDataToJsonPair(
+                            snapshot_data
+                        ), 
+                    );
 
                     // let volumes: Vec<Volume> = exchanges
                     //     .iter()
@@ -239,11 +236,9 @@ impl DataAggregator {
                             symbol.clone()
                         ));
 
-                        if let Some(err) = data_mapping.try_send(
+                        let _ = data_mapping.send(
                             DataMappingCmd::SpreadPairToJsonPair(long_spread.clone()), 
-                        ).err() {
-                            tracing::error!("DataAggregator(CalculateSpread-LongType.{}/{}) - {err}", long_exchange, short_exchange)
-                        }
+                        );
 
                         self.pending_lines.insert((long_exchange, symbol.clone()), long_spread);
                     }
