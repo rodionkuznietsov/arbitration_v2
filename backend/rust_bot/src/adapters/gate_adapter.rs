@@ -167,18 +167,23 @@ impl ExchangeAdapter for GateAdapter {
                     if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
                         let asks = parse_levels__(asks);
                         let bids = parse_levels__(bids);
-                        
-                        let _ = sender_data.send(ExchangeStoreCMD::Event(
-                            BookEvent::Snapshot { 
-                                symbol,
-                                snapshot: Snapshot { 
-                                    a: asks, 
-                                    b: bids, 
-                                    last_update_id: None,
-                                    timestamp,
-                                }
-                            },
-                        ));
+                        let sender_data = sender_data.clone();
+
+                        tokio::spawn(
+                            async move {
+                                let _ = sender_data.send(ExchangeStoreCMD::Event(
+                                    BookEvent::Snapshot { 
+                                        symbol,
+                                        snapshot: Snapshot { 
+                                            a: asks, 
+                                            b: bids, 
+                                            last_update_id: None,
+                                            timestamp,
+                                        }
+                                    },
+                                ));
+                            }
+                        );
                     }
                 }
             }

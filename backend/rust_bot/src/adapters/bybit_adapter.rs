@@ -136,21 +136,25 @@ impl ExchangeAdapter for BybitAdapter {
                                 let symbol = symbol.to_lowercase();
                                 let asks = parse_levels__(asks);
                                 let bids = parse_levels__(bids);
+                                let sender_data = sender_data.clone();
 
-                                sender_data.send(
-                                    ExchangeStoreCMD::Event(
-                                        BookEvent::Delta { 
-                                            symbol: symbol, 
-                                            delta: Delta {
-                                                a: asks,
-                                                b: bids,
-                                                from_version: None,
-                                                to_version: None
-                                            }
-                                        }
-                                    )
-                                ).ok();
-                                
+                                tokio::spawn(
+                                    async move {
+                                        let _ = sender_data.send(
+                                            ExchangeStoreCMD::Event(
+                                                BookEvent::Delta { 
+                                                    symbol: symbol, 
+                                                    delta: Delta {
+                                                        a: asks,
+                                                        b: bids,
+                                                        from_version: None,
+                                                        to_version: None
+                                                    }
+                                                }
+                                            )
+                                        );
+                                    }
+                                );
                             }
                         }
                     },
