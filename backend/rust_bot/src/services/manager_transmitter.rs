@@ -60,19 +60,20 @@ impl ManagerTransmitter {
                             key,
                             msg
                         ) => {
-                            if let Some(err) = self.client_aggregator_chart_tx.send_timeout(
-                                Arc::new(
-                                    ClientAggregatorCmd::Use(
-                                        ClientAggregatorUse::PublishJson(
-                                            key, 
-                                            msg
-                                        )
-                                    )
-                                ),
-                                Duration::from_millis(TIMEOUT_DELAY)
-                            ).await.err() {
-                                tracing::error!("{}", err);
-                            }
+                            tracing::info!("{msg:?}")
+                            // if let Some(err) = self.client_aggregator_chart_tx.send_timeout(
+                            //     Arc::new(
+                            //         ClientAggregatorCmd::Use(
+                            //             ClientAggregatorUse::PublishJson(
+                            //                 key, 
+                            //                 msg
+                            //             )
+                            //         )
+                            //     ),
+                            //     Duration::from_millis(TIMEOUT_DELAY)
+                            // ).await.err() {
+                            //     tracing::error!("{}", err);
+                            // }
                         },
                     }
                 },
