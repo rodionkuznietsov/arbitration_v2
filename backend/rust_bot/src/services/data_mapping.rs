@@ -61,90 +61,28 @@ impl DataMapping {
                                             let short_vec = short_vec.read().await;
 
                                             if symbol == short_symbol {
-                                                let long_json_lines = self.lines_to_json(&long_vec);
-                                                let short_json_lines = self.lines_to_json(&short_vec);
+                                                let long_json_lines = Arc::new(self.lines_to_json(&long_vec));
+                                                let short_json_lines = Arc::new(self.lines_to_json(&short_vec));
 
                                                 // self.send_message_with_key(
                                                 //     ChannelType::Chart,
                                                 //     *long_exchange,
-                                                //     DataJson::Lines(long_json_lines),
+                                                //     DataJson::LinesHistory(long_json_lines.clone()),
                                                 //     *short_long_exchange,
-                                                //     DataJson::Lines(short_json_lines),
+                                                //     DataJson::LinesHistory(short_json_lines.clone()),
                                                 //     symbol.clone(),
                                                 //     JsonPairUniqueId::LinesHistory
                                                 // ).await;
 
-                                                // let msg = WsClientMessage {
-                                                //     channel: ChannelType::Chart,
-                                                //     result: WsClientMsgResult {
-                                                //         data: JsonPairData::LinesHistory { 
-                                                //             long: long_json_lines.clone(), 
-                                                //             short: short_json_lines.clone()
-                                                //         }.into(),
-                                                //         symbol: symbol.clone(),
-                                                //         unique_id: JsonPairUniqueId::LinesHistory
-                                                //     }
-                                                // }; 
-
-                                                // let channel_key = ChannelSubscription::Chart { 
-                                                //     long_market_type: KeyMarketType { 
-                                                //         long_exchange: *long_exchange, 
-                                                //         short_exchange: *short_long_exchange, 
-                                                //         symbol: symbol.clone()
-                                                //     }, 
-                                                //     short_market_type: KeyMarketType { 
-                                                //         long_exchange: *short_long_exchange, 
-                                                //         short_exchange: *long_exchange, 
-                                                //         symbol: symbol.clone()
-                                                //     }, 
-                                                // };
-
-                                                // if let Some(err) = self.manager_transmitter_tx.send(
-                                                //     ManagerTransmitterCmd::Notify(
-                                                //         NotifyEvent::PayloadJson(
-                                                //             channel_key,
-                                                //             msg
-                                                //         )
-                                                //     ), 
-                                                // ).err() {
-                                                //     tracing::error!("{{ data_mapping.lines_from_data_access_layer.first }} -> {err}");
-                                                // }
-
-                                                // let msg_2 = WsClientMessage {
-                                                //     channel: ChannelType::Chart,
-                                                //     result: WsClientMsgResult {
-                                                //         data: JsonPairData::LinesHistory { 
-                                                //             long: short_json_lines.clone(), 
-                                                //             short: long_json_lines.clone()
-                                                //         }.into(),
-                                                //         symbol: symbol.clone(),
-                                                //         unique_id: JsonPairUniqueId::LinesHistory
-                                                //     }
-                                                // }; 
-
-                                                // let channel_key_2 = ChannelSubscription::Chart { 
-                                                //     long_market_type: KeyMarketType { 
-                                                //         long_exchange: *short_long_exchange, 
-                                                //         short_exchange: *long_exchange, 
-                                                //         symbol: symbol.clone()
-                                                //     }, 
-                                                //     short_market_type: KeyMarketType { 
-                                                //         long_exchange: *long_exchange, 
-                                                //         short_exchange: *short_long_exchange, 
-                                                //         symbol: symbol.clone()
-                                                //     }, 
-                                                // };
-
-                                                // if let Some(err) = self.manager_transmitter_tx.send(
-                                                //     ManagerTransmitterCmd::Notify(
-                                                //         NotifyEvent::PayloadJson(
-                                                //             channel_key_2,
-                                                //             msg_2
-                                                //         )
-                                                //     ), 
-                                                // ).err() {
-                                                //     tracing::error!("{{ data_mapping.lines_from_data_access_layer.last }} -> {err}");
-                                                // }                                              
+                                                // self.send_message_with_key(
+                                                //     ChannelType::Chart,
+                                                //     *short_long_exchange,
+                                                //     DataJson::LinesHistory(short_json_lines),
+                                                //     *long_exchange,
+                                                //     DataJson::LinesHistory(long_json_lines),
+                                                //     symbol.clone(),
+                                                //     JsonPairUniqueId::LinesHistory
+                                                // ).await;
                                             }
                                         }
                                     }
@@ -161,159 +99,54 @@ impl DataMapping {
                             let long_lines = long_data.read().await;
                             let short_lines = short_data.read().await;
 
-                            let long_json_lines = self.lines_to_json(&long_lines);
-                            let short_json_lines = self.lines_to_json(&short_lines);
+                            let long_json_lines = Arc::new(self.lines_to_json(&long_lines));
+                            let short_json_lines = Arc::new(self.lines_to_json(&short_lines));
 
-                            let msg = WsClientMessage {
-                                channel: ChannelType::Chart,
-                                result: WsClientMsgResult {
-                                    data: JsonPairData::LinesHistory { 
-                                        long: long_json_lines.clone(), 
-                                        short: short_json_lines.clone()
-                                    }.into(),
-                                    symbol: symbol.clone(),
-                                    unique_id: JsonPairUniqueId::LinesHistory
-                                }
-                            }; 
+                            // self.send_message_with_key(
+                            //     ChannelType::Chart,
+                            //     long_exchange,
+                            //     DataJson::LinesHistory(long_json_lines.clone()),
+                            //     short_exchange,
+                            //     DataJson::LinesHistory(short_json_lines.clone()),
+                            //     symbol.clone(),
+                            //     JsonPairUniqueId::LinesHistory
+                            // ).await;
 
-                            let channel_key = ChannelSubscription::Chart { 
-                                long_market_type: KeyMarketType { 
-                                    long_exchange: long_exchange, 
-                                    short_exchange: short_exchange, 
-                                    symbol: symbol.clone()
-                                }, 
-                                short_market_type: KeyMarketType { 
-                                    long_exchange: short_exchange, 
-                                    short_exchange: long_exchange, 
-                                    symbol: symbol.clone()
-                                }, 
-                            };
-
-                            // if let Some(err) = self.manager_transmitter_tx.send(
-                            //     ManagerTransmitterCmd::Notify(
-                            //         NotifyEvent::PayloadJson(
-                            //             channel_key,
-                            //             msg
-                            //         )
-                            //     ), 
-                            // ).err() {
-                            //     tracing::error!("{{ data_mapping.lines_to_json_pair.first }} -> {err}");
-                            // }
-
-                            let msg_2 = WsClientMessage {
-                                channel: ChannelType::Chart,
-                                result: WsClientMsgResult {
-                                    data: JsonPairData::LinesHistory { 
-                                        long: short_json_lines, 
-                                        short: long_json_lines,
-                                    }.into(),
-                                    symbol: symbol.clone(),
-                                    unique_id: JsonPairUniqueId::LinesHistory
-                                }
-                            }; 
-
-                            let channel_key_2 = ChannelSubscription::Chart { 
-                                long_market_type: KeyMarketType { 
-                                    long_exchange: short_exchange, 
-                                    short_exchange: long_exchange, 
-                                    symbol: symbol.clone()
-                                }, 
-                                short_market_type: KeyMarketType { 
-                                    long_exchange: long_exchange, 
-                                    short_exchange: short_exchange, 
-                                    symbol: symbol.clone()
-                                }, 
-                            };
-
-                            // if let Some(err) = self.manager_transmitter_tx.send(
-                            //     ManagerTransmitterCmd::Notify(
-                            //         NotifyEvent::PayloadJson(
-                            //             channel_key_2,
-                            //             msg_2
-                            //         )
-                            //     ), 
-                            // ).err() {
-                            //     tracing::error!("{{ data_mapping.lines_to_json_pair.last }} -> {err}");
-                            // }
+                            // self.send_message_with_key(
+                            //     ChannelType::Chart,
+                            //     short_exchange,
+                            //     DataJson::LinesHistory(short_json_lines),
+                            //     long_exchange,
+                            //     DataJson::LinesHistory(long_json_lines),
+                            //     symbol.clone(),
+                            //     JsonPairUniqueId::LinesHistory
+                            // ).await;
                         },
                         DataMappingCmd::LinesFromDbToJsonPair(lines) => {
                             for (i, ((long_exchange, short_exchnage, symbol), long_lines)) in lines.iter().enumerate() {
                                 for (_, short_lines) in lines.iter().skip(i+1) {
-                                    let long_lines = self.lines_to_json(&long_lines);
-                                    let short_lines = self.lines_to_json(&short_lines);
+                                    let long_lines = Arc::new(self.lines_to_json(&long_lines));
+                                    let short_lines = Arc::new(self.lines_to_json(&short_lines));
                                     
-                                    let msg = WsClientMessage {
-                                        channel: ChannelType::Chart,
-                                        result: WsClientMsgResult { 
-                                            data: JsonPairData::LinesHistory { 
-                                                long: long_lines.clone(), 
-                                                short: short_lines.clone() 
-                                            }.into(), 
-                                            symbol: symbol.clone(), 
-                                            unique_id: JsonPairUniqueId::LinesHistory
-                                        },
-                                    };
+                                    // self.send_message_with_key(
+                                    //     ChannelType::Chart,
+                                    //     *long_exchange,
+                                    //     DataJson::LinesHistory(long_lines.clone()),
+                                    //     *short_exchnage,
+                                    //     DataJson::LinesHistory(short_lines.clone()),
+                                    //     symbol.clone(),
+                                    //     JsonPairUniqueId::LinesHistory
+                                    // ).await;
 
-                                    let channel_key = ChannelSubscription::Chart { 
-                                        long_market_type: KeyMarketType { 
-                                            long_exchange: *long_exchange, 
-                                            short_exchange: *short_exchnage, 
-                                            symbol: symbol.clone() 
-                                        }, 
-                                        short_market_type: KeyMarketType { 
-                                            long_exchange: *short_exchnage, 
-                                            short_exchange: *long_exchange, 
-                                            symbol: symbol.clone() 
-                                        }, 
-                                    };
-
-                                    // if let Some(err) = self.manager_transmitter_tx.send(
-                                    //     ManagerTransmitterCmd::Notify(
-                                    //         NotifyEvent::PayloadJson(
-                                    //             channel_key,
-                                    //             msg
-                                    //         )
-                                    //     ), 
-                                    // ).err() {
-                                    //     tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.first }} -> {err}");
-                                    // }
-
-                                    let msg_2 = WsClientMessage {
-                                        channel: ChannelType::Chart,
-                                        result: WsClientMsgResult { 
-                                            data: JsonPairData::LinesHistory { 
-                                                long: short_lines, 
-                                                short: long_lines 
-                                            }.into(), 
-                                            symbol: symbol.clone(), 
-                                            unique_id: JsonPairUniqueId::LinesHistory
-                                        },
-                                    };
-
-                                    let channel_key_2 = ChannelSubscription::Chart { 
-                                        long_market_type: KeyMarketType { 
-                                            long_exchange: *short_exchnage, 
-                                            short_exchange: *long_exchange, 
-                                            symbol: symbol.clone() 
-                                        }, 
-                                        short_market_type: KeyMarketType { 
-                                            long_exchange: *long_exchange, 
-                                            short_exchange: *short_exchnage, 
-                                            symbol: symbol.clone() 
-                                        }, 
-                                    };
-
-                                    // if let Some(err) = self.manager_transmitter_tx.send(
-                                    //     ManagerTransmitterCmd::Notify(
-                                    //         NotifyEvent::PayloadJson(
-                                    //             channel_key_2,
-                                    //             msg_2
-                                    //         )
-                                    //     ), 
-                                    // ).err() {
-                                    //     tracing::error!("{{ data_mapping.lines_from_db_to_json_pair.last }} -> {err}");
-                                    // }
-
+                                    // self.send_message_with_key(
+                                    //     ChannelType::Chart,
+                                    //     *short_exchnage,
+                                    //     DataJson::LinesHistory(short_lines),
+                                    //     *long_exchange,
+                                    //     DataJson::LinesHistory(long_lines),
+                                    //     symbol.clone(),
+                                    //     JsonPairUniqueId::LinesHistory
+                                    // ).await;
                                 }
                             }
                         },
@@ -336,27 +169,25 @@ impl DataMapping {
                                         let long_arc = Arc::new(long);
                                         let short_arc = Arc::new(short);
 
-                                        tracing::info!("{:?}", long_arc)
+                                        self.send_message_with_key(
+                                            ChannelType::OrderBook,
+                                            *long_ex_id,
+                                            DataJson::Snapshot(long_arc.clone()),
+                                            *short_ex_id,
+                                            DataJson::Snapshot(short_arc.clone()),
+                                            symbol.clone(),
+                                            JsonPairUniqueId::OrderBook
+                                        ).await;
 
-                                        // self.send_message_with_key(
-                                        //     ChannelType::OrderBook,
-                                        //     *long_ex_id,
-                                        //     DataJson::Snapshot(long_arc.clone()),
-                                        //     *short_ex_id,
-                                        //     DataJson::Snapshot(short_arc.clone()),
-                                        //     symbol.clone(),
-                                        //     JsonPairUniqueId::OrderBook
-                                        // ).await;
-
-                                        // self.send_message_with_key(
-                                        //     ChannelType::OrderBook,
-                                        //     *short_ex_id,
-                                        //     DataJson::Snapshot(short_arc.clone()),
-                                        //     *long_ex_id,
-                                        //     DataJson::Snapshot(long_arc.clone()),
-                                        //     symbol.clone(),
-                                        //     JsonPairUniqueId::OrderBook
-                                        // ).await;
+                                        self.send_message_with_key(
+                                            ChannelType::OrderBook,
+                                            *short_ex_id,
+                                            DataJson::Snapshot(short_arc.clone()),
+                                            *long_ex_id,
+                                            DataJson::Snapshot(long_arc.clone()),
+                                            symbol.clone(),
+                                            JsonPairUniqueId::OrderBook
+                                        ).await;
                                     }
                                 }
                             }
@@ -374,70 +205,40 @@ impl DataMapping {
                                 "time": spread_pair.timestamp.clone()
                             });
 
-                            self.send_message_with_key(
-                                ChannelType::Chart,
-                                spread_pair.long_exchange,
-                                DataJson::UpdateLine(long),
-                                spread_pair.short_exchange,
-                                DataJson::UpdateLine(short),
-                                spread_pair.symbol.clone(),
-                                JsonPairUniqueId::UpdateLine
-                            ).await;
+                            // self.send_message_with_key(
+                            //     ChannelType::Chart,
+                            //     spread_pair.long_exchange,
+                            //     DataJson::UpdateLine(long),
+                            //     spread_pair.short_exchange,
+                            //     DataJson::UpdateLine(short),
+                            //     spread_pair.symbol.clone(),
+                            //     JsonPairUniqueId::UpdateLine
+                            // ).await;
                         }, 
                         DataMappingCmd::VolumesToJson(
                             volumes
                         ) => {
                             for (i, long_vol) in volumes.iter().enumerate() {
                                 for short_vol in volumes.iter().skip(i+1) {
-                                    let msg = WsClientMessage {
-                                        channel: ChannelType::Chart,
-                                        result: WsClientMsgResult { 
-                                            data: JsonPairData::Volume24h { 
-                                                long: serde_json::to_value(long_vol).unwrap(), 
-                                                short: serde_json::to_value(short_vol).unwrap()
-                                            }.into(), 
-                                            symbol: long_vol.symbol.clone(), 
-                                            unique_id: JsonPairUniqueId::Volume24h
-                                        },
-                                    };
+                                    // self.send_message_with_key(
+                                    //     ChannelType::Chart,
+                                    //     *&long_vol.exchange_id,
+                                    //     DataJson::Volume24h(serde_json::to_value(long_vol).unwrap()),
+                                    //     *&short_vol.exchange_id,
+                                    //     DataJson::Volume24h(serde_json::to_value(short_vol).unwrap()),
+                                    //     long_vol.symbol.clone(),
+                                    //     JsonPairUniqueId::Volume24h
+                                    // ).await;
 
-                                    let channel_key = ChannelSubscription::Chart { 
-                                        long_market_type: KeyMarketType { 
-                                            long_exchange: long_vol.exchange_id, 
-                                            short_exchange: short_vol.exchange_id, 
-                                            symbol: long_vol.symbol.clone(),
-                                        }, 
-                                        short_market_type: KeyMarketType { 
-                                            long_exchange: short_vol.exchange_id, 
-                                            short_exchange: long_vol.exchange_id, 
-                                            symbol: short_vol.symbol.clone(),
-                                        },
-                                    };
-
-                                    let msg_2 = WsClientMessage {
-                                        channel: ChannelType::Chart,
-                                        result: WsClientMsgResult { 
-                                            data: JsonPairData::Volume24h { 
-                                                long: serde_json::to_value(short_vol).unwrap(), 
-                                                short: serde_json::to_value(long_vol).unwrap()
-                                            }.into(), 
-                                            symbol: short_vol.symbol.clone(), 
-                                            unique_id: JsonPairUniqueId::Volume24h
-                                        },
-                                    };
-
-                                    let channel_key_2 = ChannelSubscription::Chart { 
-                                        long_market_type: KeyMarketType { 
-                                            long_exchange: short_vol.exchange_id, 
-                                            short_exchange: long_vol.exchange_id, 
-                                            symbol: short_vol.symbol.clone(),
-                                        }, 
-                                        short_market_type: KeyMarketType { 
-                                            long_exchange: long_vol.exchange_id, 
-                                            short_exchange: short_vol.exchange_id, 
-                                            symbol: long_vol.symbol.clone(),
-                                        },
-                                    };
+                                    // self.send_message_with_key(
+                                    //     ChannelType::Chart,
+                                    //     *&short_vol.exchange_id,
+                                    //     DataJson::Volume24h(serde_json::to_value(short_vol).unwrap()),
+                                    //     *&long_vol.exchange_id,
+                                    //     DataJson::Volume24h(serde_json::to_value(long_vol).unwrap()),
+                                    //     short_vol.symbol.clone(),
+                                    //     JsonPairUniqueId::Volume24h
+                                    // ).await;
                                 }
                             }
                         }

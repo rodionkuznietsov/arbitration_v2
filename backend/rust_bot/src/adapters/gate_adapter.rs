@@ -168,7 +168,7 @@ impl ExchangeAdapter for GateAdapter {
                         let asks = parse_levels__(asks);
                         let bids = parse_levels__(bids);
                         
-                        if let Some(err) = sender_data.send(ExchangeStoreCMD::Event(
+                        let _ = sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::Snapshot { 
                                 symbol,
                                 snapshot: Snapshot { 
@@ -178,9 +178,7 @@ impl ExchangeAdapter for GateAdapter {
                                     timestamp,
                                 }
                             },
-                        )).err() {
-                            tracing::error!("{{ gate_adapter.sender_data.orderbook }} {err}")
-                        }
+                        ));
                     }
                 }
             }
@@ -199,15 +197,13 @@ impl ExchangeAdapter for GateAdapter {
                         let price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
                         let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
 
-                        if let Some(err) = sender_data.send(ExchangeStoreCMD::Event(
+                        let _ = sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::TickerUpdate { 
                                 symbol, 
                                 last_price: price, 
                                 volume: volume
                             }
-                        )).err() {
-                            tracing::error!("{{ gate_adapter.sender_data.last_price }} {err}")
-                        }
+                        ));
                     }
                 }
             }

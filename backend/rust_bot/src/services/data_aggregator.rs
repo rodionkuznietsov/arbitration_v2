@@ -136,32 +136,34 @@ impl DataAggregator {
                         })
                         .collect();
 
-                    self.data_mapping_tx.send_timeout(
-                        DataMappingCmd::ExchangesDataToJsonPair(
-                            snapshot_data
-                        ), 
-                        Duration::from_millis(100)
-                    ).await.ok();
+                    tracing::info!("{:?}", snapshot_data);
 
-                    let volumes: Vec<Volume> = exchanges
-                        .iter()
-                        .filter_map(|(ex_id, data)| {
-                            data.data.as_ref().map(|arc| {
-                                Volume { 
-                                    exchange_id: *ex_id, 
-                                    value: arc.volume24h,
-                                    symbol: symbol.clone()
-                                }
-                            })
-                        })
-                        .collect();
+                    // self.data_mapping_tx.send_timeout(
+                    //     DataMappingCmd::ExchangesDataToJsonPair(
+                    //         snapshot_data
+                    //     ), 
+                    //     Duration::from_millis(100)
+                    // ).await.ok();
 
-                    self.data_mapping_tx.send_timeout(
-                        DataMappingCmd::VolumesToJson(
-                            volumes
-                        ), 
-                        Duration::from_millis(10)
-                    ).await.ok();
+                    // let volumes: Vec<Volume> = exchanges
+                    //     .iter()
+                    //     .filter_map(|(ex_id, data)| {
+                    //         data.data.as_ref().map(|arc| {
+                    //             Volume { 
+                    //                 exchange_id: *ex_id, 
+                    //                 value: arc.volume24h,
+                    //                 symbol: symbol.clone()
+                    //             }
+                    //         })
+                    //     })
+                    //     .collect();
+
+                    // self.data_mapping_tx.send_timeout(
+                    //     DataMappingCmd::VolumesToJson(
+                    //         volumes
+                    //     ), 
+                    //     Duration::from_millis(10)
+                    // ).await.ok();
 
                     // let quotes: Vec<Option<Quote>> = exchanges
                     //     .iter()
@@ -210,10 +212,10 @@ impl DataAggregator {
                         Some(symbol),
                         Some(long_exchange),
                         Some(long_ask),
-                        Some(long_bid),
+                        Some(_long_bid),
 
                         Some(short_exchange),
-                        Some(short_ask), 
+                        Some(_short_ask), 
                         Some(short_bid),
                     ) = (
                         lq.symbol.clone(),
@@ -225,6 +227,8 @@ impl DataAggregator {
                         sq.ask,
                         sq.bid
                     ) {
+                        // Доделать для второй стороны
+                        
                         // Long - Short
                         let long_spread = Arc::new(self.spread_type(
                             long_exchange,
@@ -241,24 +245,7 @@ impl DataAggregator {
                             tracing::error!("DataAggregator(CalculateSpread-LongType.{}/{}) - {err}", long_exchange, short_exchange)
                         }
 
-                        // // Short - Long
-                        // let short_spread = Arc::new(self.spread_type(
-                        //     short_exchange,
-                        //     long_bid,
-
-                        //     long_exchange,
-                        //     short_ask,
-                        //     symbol.clone()
-                        // ));
-
-                        // if let Some(err) = data_mapping.send(
-                        //     DataMappingCmd::SpreadPairToJsonPair(short_spread.clone()), 
-                        // ).await.err() {
-                        //     tracing::error!("DataAggregator(CalculateSpread-ShortType) - {err}")
-                        // }
-
                         self.pending_lines.insert((long_exchange, symbol.clone()), long_spread);
-                        // self.pending_lines.insert((short_exchange, symbol.clone()), short_spread);
                     }
                 }
             }

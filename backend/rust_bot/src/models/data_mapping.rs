@@ -14,6 +14,7 @@ pub struct SnapshotJson {
 #[derive(Deserialize, Serialize, Debug,  Hash, PartialEq, Eq)]
 pub enum DataJson {
     Snapshot(Arc<SnapshotJson>),
-    Lines(Vec<Value>),
-    UpdateLine(Value)
+    LinesHistory(Arc<Vec<Value>>),
+    UpdateLine(Value),
+    Volume24h(Value)
 }
