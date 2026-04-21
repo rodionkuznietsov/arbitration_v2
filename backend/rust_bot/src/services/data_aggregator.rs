@@ -3,6 +3,7 @@ use chrono::{Timelike, Utc, Duration as ChronoDuration};
 use tokio::{sync::{mpsc, watch}, time::{Instant as TokioInstant, interval_at}};
 use crate::{models::{aggregator::{Quote, SpreadPair, Volume}, exchange::ExchangeType, exchange_aggregator::{BookData, BookDataWithArc}, line::{Line, TimeFrame}, orderbook::Snapshot, websocket::Symbol}, services::{cache_aggregator::CacheAggregatorCmd, data_mapping::DataMappingCmd}, storage::line_storage::add_new_lines};
 
+#[derive(Clone)]
 pub enum DataAggregatorCmd {
     MarketRegister {
         symbol: Arc<Symbol>,
@@ -12,7 +13,8 @@ pub enum DataAggregatorCmd {
         exchange_id: ExchangeType,
         symbol: Arc<Symbol>,
         data: Arc<BookData>
-    }
+    },
+    Default
 }
 
 #[derive(Debug, Clone)]
@@ -25,7 +27,7 @@ pub struct DataAggregator {
     pending_lines: HashMap<(ExchangeType, Arc<Symbol>), Arc<SpreadPair>>,
     markets: HashMap<Arc<Symbol>, HashMap<ExchangeType, ExchangeBookData>>,
 
-    rx: mpsc::Receiver<DataAggregatorCmd>,
+    rx: watch::Receiver<DataAggregatorCmd>,
     data_mapping_tx: watch::Sender<DataMappingCmd>,
     cache_aggregator_tx: mpsc::Sender<Arc<CacheAggregatorCmd>>,
 
@@ -34,7 +36,7 @@ pub struct DataAggregator {
 
 impl DataAggregator {
     pub fn new(
-        aggregator_rx: mpsc::Receiver<DataAggregatorCmd>,
+        aggregator_rx: watch::Receiver<DataAggregatorCmd>,
         data_mapping_tx: watch::Sender<DataMappingCmd>,
         cache_aggregator_tx: mpsc::Sender<Arc<CacheAggregatorCmd>>,
 
@@ -72,7 +74,8 @@ impl DataAggregator {
 
         loop {
             tokio::select! {
-                Some(cmd) = self.rx.recv() => {
+                Ok(_) = self.rx.changed() => {
+                    let cmd = self.rx.borrow().clone();
                     self.handle_command(cmd).await;
                 }
 
@@ -187,7 +190,8 @@ impl DataAggregator {
 
                     // self.calculate_spread(quotes).await;
                 }
-            }
+            },
+            DataAggregatorCmd::Default => {}
         }
         
     }

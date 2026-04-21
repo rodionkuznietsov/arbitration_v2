@@ -29,7 +29,7 @@ pub struct ExchangeSetup<T: ExchangeAdapter> {
     sender_data_queue_tx: mpsc::Sender<ExchangeStoreCMD>,
     exchange_id: ExchangeType,
 
-    data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>
+    data_aggregator_tx: watch::Sender<DataAggregatorCmd>
 }
 
 impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
@@ -37,7 +37,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
         exchange_id: ExchangeType,
         adapter: Arc<A>,
         enabled: bool,
-        data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>,
+        data_aggregator_tx: watch::Sender<DataAggregatorCmd>,
         exchange_channel_store_tx: mpsc::Sender<ExchangeChannelStoreCmd>
     ) -> Arc<Self> {
         let title = format!("{}Websocket", exchange_id);
@@ -126,12 +126,12 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                     let _ = self.sender_data_queue_tx.send(ExchangeStoreCMD::RegisterSymbol { symbol: symbol.clone() }).await;
 
                     // Регистрируем тикеры с exchange_id в общем аггрегаторе
-                    self.data_aggregator_tx.send(
+                    let _ = self.data_aggregator_tx.send(
                         DataAggregatorCmd::MarketRegister { 
                             symbol: symbol.clone(), 
                             exchange_id: self.exchange_id 
                         }
-                    ).await.ok();
+                    );
 
                     let messages = adapter.clone().create_subscribe_messages(symbol);
                     cmd_tx.send(WsCmd::Subscribe(messages)).await.ok();

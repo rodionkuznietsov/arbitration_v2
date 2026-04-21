@@ -58,7 +58,7 @@ async fn main() {
     );
     tokio::spawn(client_aggregator.run());
     
-    let (data_aggregator_tx, data_aggregator_rx) = mpsc::channel::<DataAggregatorCmd>(64);
+    let (data_aggregator_tx, data_aggregator_rx) = watch::channel::<DataAggregatorCmd>(DataAggregatorCmd::Default);
     let data_aggregator = DataAggregator::new(
         data_aggregator_rx, 
         data_mapping_tx.clone(),

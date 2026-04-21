@@ -12,7 +12,7 @@ pub struct DataAccessLayer {
     cache_aggregator_tx: mpsc::Sender<Arc<CacheAggregatorCmd>>,
     data_mapping_tx: watch::Sender<DataMappingCmd>,
     exchange_channel_store_tx: mpsc::Sender<ExchangeChannelStoreCmd>,
-    data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>
+    data_aggregator_tx: watch::Sender<DataAggregatorCmd>
 }
 
 impl DataAccessLayer {
@@ -20,7 +20,7 @@ impl DataAccessLayer {
         cache_aggregator_tx: mpsc::Sender<Arc<CacheAggregatorCmd>>,
         data_mapping_tx: watch::Sender<DataMappingCmd>,
         exchange_channel_store_tx: mpsc::Sender<ExchangeChannelStoreCmd>,
-        data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>
+        data_aggregator_tx: watch::Sender<DataAggregatorCmd>
     ) -> Arc<Self> {
         Arc::new(
             Self { 
@@ -70,46 +70,38 @@ impl DataAccessLayer {
 
             // Возможно проблема здесь
 
-            if watch_rx.borrow().len() == exchanges_count {
+            
+            while watch_rx.changed().await.is_ok() {
                 let data = watch_rx.borrow_and_update().clone();
-            } else {
-                while watch_rx.changed().await.is_ok() {
-                    let data = watch_rx.borrow_and_update().clone();
-                    
-                    if data.len() == exchanges_count {
-                        for (exchange_id, exchange_aggregator_tx) in data.into_iter() {
-                            let data_aggregator_tx = self.data_aggregator_tx.clone();
+                
+                if data.len() == exchanges_count {
+                    for (exchange_id, exchange_aggregator_tx) in data.into_iter() {
+                        let data_aggregator_tx = self.data_aggregator_tx.clone();
 
-                            tokio::spawn(async move {
-                                let data_aggregator_tx = data_aggregator_tx.clone();
-                                let (tx, mut rx) = mpsc::channel(1);
-                                exchange_aggregator_tx.send(ExchangeStoreCMD::Subscribe { reply: tx }).ok();
+                        tokio::spawn(async move {
+                            let data_aggregator_tx = data_aggregator_tx.clone();
+                            let (tx, mut rx) = mpsc::channel(1);
+                            exchange_aggregator_tx.send(ExchangeStoreCMD::Subscribe { reply: tx }).ok();
 
-                                if let Some(mut watch_aggregator_tx) = rx.recv().await {
-                                    let _new_data = watch_aggregator_tx.borrow().clone();
+                            if let Some(mut watch_aggregator_tx) = rx.recv().await {
+                                let _new_data = watch_aggregator_tx.borrow().clone();
 
-                                    while watch_aggregator_tx.changed().await.is_ok() {
-                                        let (symbol, exchange_data) = watch_aggregator_tx.borrow().clone();
-                                        
-                                        tracing::info!("{} -> {:?}", symbol, exchange_data);
-
-                                        // if let Some(e) = data_aggregator_tx.send_timeout(
-                                        //     DataAggregatorCmd::UpdateData { 
-                                        //         exchange_id, 
-                                        //         symbol,
-                                        //         data: exchange_data
-                                        //     }, 
-                                        // Duration::from_millis(10)
-                                        // ).await.err() {
-                                        //     tracing::error!("DataAccessLayer(FromExchangeAggregator) -> {e};")
-                                        // }
-                                    }
+                                while watch_aggregator_tx.changed().await.is_ok() {
+                                    let (symbol, exchange_data) = watch_aggregator_tx.borrow().clone();
+                                    
+                                    let _ = data_aggregator_tx.send(
+                                        DataAggregatorCmd::UpdateData { 
+                                            exchange_id, 
+                                            symbol,
+                                            data: exchange_data
+                                        }, 
+                                    );
                                 }
-                            });
-                        }
-                        
-                        break;
+                            }
+                        });
                     }
+                    
+                    break;
                 }
             }
         }

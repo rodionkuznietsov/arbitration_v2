@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use tokio::sync::{mpsc};
+use tokio::sync::{mpsc, watch};
 
 use crate::{adapters::{bybit_adapter::BybitAdapter, gate_adapter::GateAdapter, kucoin_adapter::KuCoinAdapter}, models::exchange::ExchangeType, services::{data_aggregator::DataAggregatorCmd, exchange::{exchange_channel_store::ExchangeChannelStoreCmd, exchange_setup::ExchangeSetup}}};
 
 pub async fn run_ws_exchanges(
-    data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>,
+    data_aggregator_tx: watch::Sender<DataAggregatorCmd>,
     exchange_channel_store_tx: mpsc::Sender<ExchangeChannelStoreCmd>
 ) {
     ExchangeSetup::new(
