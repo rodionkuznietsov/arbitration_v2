@@ -153,7 +153,7 @@ impl DataMapping {
                     DataMappingCmd::ExchangesDataToJsonPair(
                         markets
                     ) => {
-                        
+
                         for (i, (long_ex_id, symbol, (long_snapshot, long_last_price))) in markets.iter().enumerate() {
                             for (short_ex_id, _, (short_snapshot, short_last_price)) in markets.iter().skip(i+1) {
                                 let long_json_lines = self.snapshot_to_json(long_snapshot, &long_last_price);
@@ -169,25 +169,27 @@ impl DataMapping {
                                     let long_arc = Arc::new(long);
                                     let short_arc = Arc::new(short);
 
-                                    self.send_message_with_key(
-                                        ChannelType::OrderBook,
-                                        *long_ex_id,
-                                        DataJson::Snapshot(long_arc.clone()),
-                                        *short_ex_id,
-                                        DataJson::Snapshot(short_arc.clone()),
-                                        symbol.clone(),
-                                        JsonPairUniqueId::OrderBook
-                                    ).await;
+                                    tracing::info!("{:?}", long_arc);
+                                    
+                                    // self.send_message_with_key(
+                                    //     ChannelType::OrderBook,
+                                    //     *long_ex_id,
+                                    //     DataJson::Snapshot(long_arc.clone()),
+                                    //     *short_ex_id,
+                                    //     DataJson::Snapshot(short_arc.clone()),
+                                    //     symbol.clone(),
+                                    //     JsonPairUniqueId::OrderBook
+                                    // ).await;
 
-                                    self.send_message_with_key(
-                                        ChannelType::OrderBook,
-                                        *short_ex_id,
-                                        DataJson::Snapshot(short_arc.clone()),
-                                        *long_ex_id,
-                                        DataJson::Snapshot(long_arc.clone()),
-                                        symbol.clone(),
-                                        JsonPairUniqueId::OrderBook
-                                    ).await;
+                                    // self.send_message_with_key(
+                                    //     ChannelType::OrderBook,
+                                    //     *short_ex_id,
+                                    //     DataJson::Snapshot(short_arc.clone()),
+                                    //     *long_ex_id,
+                                    //     DataJson::Snapshot(long_arc.clone()),
+                                    //     symbol.clone(),
+                                    //     JsonPairUniqueId::OrderBook
+                                    // ).await;
                                 }
                             }
                         }
