@@ -106,7 +106,7 @@ impl DataAccessLayer {
                             });
                         }
                         
-                        break;
+                        // break;
                     }
                 }
             }
