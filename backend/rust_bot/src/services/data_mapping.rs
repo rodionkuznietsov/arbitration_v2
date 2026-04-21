@@ -624,13 +624,15 @@ impl DataMapping {
             }, 
         };
 
-        let _ = self.manager_transmitter_tx.send(
-            ManagerTransmitterCmd::Notify(
-                NotifyEvent::PayloadJson(
-                    channel_key, 
-                    msg
-                )
-            ), 
-        );
+        tracing::info!("{:?}", msg)
+        
+        // let _ = self.manager_transmitter_tx.send(
+        //     ManagerTransmitterCmd::Notify(
+        //         NotifyEvent::PayloadJson(
+        //             channel_key, 
+        //             msg
+        //         )
+        //     ), 
+        // );
     }
 }
