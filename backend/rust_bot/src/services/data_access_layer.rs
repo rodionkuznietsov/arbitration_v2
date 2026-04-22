@@ -89,10 +89,6 @@ impl DataAccessLayer {
                                 while watch_aggregator_tx.changed().await.is_ok() {
                                     let (symbol, exchange_data) = watch_aggregator_tx.borrow().clone();
                                     
-                                    if symbol.to_string() == "btcusdt" {
-                                        tracing::info!("{symbol} -> {exchange_id}");
-                                    }
-
                                     // Доработать функционал с watch
                                     
                                     // let _ = data_aggregator_tx.send(
