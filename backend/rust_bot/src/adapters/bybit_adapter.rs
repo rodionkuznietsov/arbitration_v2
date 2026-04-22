@@ -106,10 +106,6 @@ impl ExchangeAdapter for BybitAdapter {
                                 let asks = parse_levels__(asks);
                                 let bids = parse_levels__(bids);
 
-                                if symbol == "btcusdt" {
-                                    tracing::info!("bybit_adapter -> {bids:?}")
-                                }   
-
                                 let _ = snapshot_channel.send(
                                     ExchangeStoreCMD::Event(
                                         BookEvent::Snapshot { 
@@ -142,9 +138,9 @@ impl ExchangeAdapter for BybitAdapter {
                                 let bids = parse_levels__(bids);
 
                                 if !asks.is_empty() && !bids.is_empty() {
-                                    // if symbol == "btcusdt" {
-                                    //     tracing::info!("bybit_adapter -> {bids:?}")
-                                    // }   
+                                    if symbol == "btcusdt" {
+                                        tracing::info!("bybit_adapter -> {bids:?}")
+                                    }   
 
                                     let _ = sender_data.send(
                                         ExchangeStoreCMD::Event(
