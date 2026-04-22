@@ -86,6 +86,7 @@ impl ExchangeAdapter for BybitAdapter {
     ) {
         
         if msg.contains("orderbook") {
+            self.parse_orderbook(msg);
         //     let json: OrderBookEvent = serde_json::from_str(&msg).unwrap();
         //         let data = json.data;
         //         let ts = json.timestamp;
