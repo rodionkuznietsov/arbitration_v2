@@ -167,10 +167,6 @@ impl ExchangeAdapter for GateAdapter {
                     if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
                         let asks = parse_levels__(asks);
                         let bids = parse_levels__(bids);
-
-                        if symbol == "btcusdt" {
-                            tracing::info!("gate_adapter -> {symbol}")
-                        }
                         
                         let _ = sender_data.send(ExchangeStoreCMD::Event(
                             BookEvent::Snapshot { 
