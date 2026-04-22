@@ -28,7 +28,7 @@ async fn main() {
         .with(fmt_layer)
         .init();
 
-    let storage_pool = storage::pool::create_pool().await;
+    let storage_pool = storage::pool::create_pool().await.ok();
         
     let (manager_transmitter_tx, manager_transmitter_rx) = watch::channel(ManagerTransmitterCmd::Default);
         

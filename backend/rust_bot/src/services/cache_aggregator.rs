@@ -26,7 +26,7 @@ pub struct CacheAggregator {
     watch_tx: watch::Sender<Arc<RwLock<Arc<HashMap<(ExchangeType, ExchangeType), HashMap<Arc<Symbol>, Arc<RwLock<VecDeque<Line>>>>>>>>>,
     watch_rx: watch::Receiver<Arc<RwLock<Arc<HashMap<(ExchangeType, ExchangeType), HashMap<Arc<Symbol>, Arc<RwLock<VecDeque<Line>>>>>>>>>,
 
-    pool: sqlx::PgPool,
+    pool: Option<sqlx::PgPool>,
 }
 
 impl CacheAggregator {
@@ -34,7 +34,7 @@ impl CacheAggregator {
         cache_aggregator_rx: mpsc::Receiver<Arc<CacheAggregatorCmd>>,
         data_mapping_tx: watch::Sender<DataMappingCmd>,
 
-        pool: sqlx::PgPool,
+        pool: Option<sqlx::PgPool>,
     ) -> Self {
         let (watch_tx, watch_rx) = watch::channel(Arc::new(RwLock::new(Arc::new(HashMap::new()))));
         

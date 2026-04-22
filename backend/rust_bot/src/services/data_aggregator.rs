@@ -31,7 +31,7 @@ pub struct DataAggregator {
     data_mapping_tx: watch::Sender<DataMappingCmd>,
     cache_aggregator_tx: mpsc::Sender<Arc<CacheAggregatorCmd>>,
 
-    pool: sqlx::PgPool,
+    pool: Option<sqlx::PgPool>,
 }
 
 impl DataAggregator {
@@ -40,7 +40,7 @@ impl DataAggregator {
         data_mapping_tx: watch::Sender<DataMappingCmd>,
         cache_aggregator_tx: mpsc::Sender<Arc<CacheAggregatorCmd>>,
 
-        pool: sqlx::PgPool,
+        pool: Option<sqlx::PgPool>,
     ) -> Self {
         let markets = HashMap::new();
         Self {
