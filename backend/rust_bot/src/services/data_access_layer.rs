@@ -92,6 +92,8 @@ impl DataAccessLayer {
                                     if symbol.to_string() == "btcusdt" {
                                         tracing::info!("{symbol} -> {exchange_id}");
                                     }
+
+                                    // Доработать функционал с watch
                                     
                                     // let _ = data_aggregator_tx.send(
                                     //     DataAggregatorCmd::UpdateData { 
