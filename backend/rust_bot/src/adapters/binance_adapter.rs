@@ -54,7 +54,7 @@ impl ExchangeAdapter for BinanceAdapter {
         todo!()
     }
 
-    fn parse_message(
+    async fn parse_message(
         self: Arc<Self>,
         _msg: String,
         _snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
@@ -63,7 +63,7 @@ impl ExchangeAdapter for BinanceAdapter {
         
     }
 
-    fn parse_tickers(
+    async fn parse_tickers(
         self: Arc<Self>,
         msg: Arc<String>
     ) {

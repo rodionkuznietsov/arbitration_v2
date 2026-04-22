@@ -78,7 +78,7 @@ impl ExchangeAdapter for BybitAdapter {
         vec![message]
     }
 
-    fn parse_message(
+    async fn parse_message(
         self: Arc<Self>,
         msg: String,
         snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
@@ -168,9 +168,20 @@ impl ExchangeAdapter for BybitAdapter {
         }
 
         if msg_arc.contains("tickers") {
-            self.parse_tickers(msg_arc);
-        //     let json: TickerEvent = serde_json::from_str(&msg).unwrap();
-        //     let result = json.result;
+            self.parse_tickers(msg_arc).await;
+        }
+    }
+
+    async fn parse_tickers(
+        self: Arc<Self>,
+        msg: Arc<String>
+    ) {
+        let _ = tokio::task::spawn_blocking(move || {
+            let json: TickerEvent<'_> = serde_json::from_str(&msg).unwrap();
+            let result = json.result;
+            tracing::info!("{result:?}")
+        }).await;
+        // let result = json.result;
 
         //     if let Some(data) = result {
         //         if let (
@@ -198,16 +209,6 @@ impl ExchangeAdapter for BybitAdapter {
                     
         //         }
         //     }
-        }
-    }
-
-    fn parse_tickers(
-        self: Arc<Self>,
-        msg: Arc<String>
-    ) {
-        if msg.contains("BTCUSDT") {
-            tracing::info!("{msg:?}")
-        }
     }
 
     fn parse_orderbook(
