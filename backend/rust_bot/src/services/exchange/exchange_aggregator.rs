@@ -120,8 +120,6 @@ impl ExchangeStore {
 
         loop {
             tokio::select! {
-                biased;
-
                 Some(cmd) = self.register_channel_rx.recv() => {
                     match cmd {
                         ExchangeStoreCMD::RegisterSymbol { 
@@ -247,7 +245,7 @@ impl ExchangeStore {
                                                             }
                                                         }
                                                     }
-                                                    
+
                                                     if symbol == "btcusdt" {    
                                                         tracing::info!("ExchangeAggregator: {} -> {symbol}", self.id)
                                                     }
