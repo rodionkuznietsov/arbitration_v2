@@ -148,9 +148,9 @@ impl ExchangeStore {
                                 } => {
                                     if let Some(data) = self.market_data.get_mut(&*symbol) {
                                         data.snapshot = Some(snapshot);
-                                        
+
                                         if symbol == "btcusdt" {
-                                            tracing::info!("bybit_adapter -> {symbol}")
+                                            tracing::info!("ExchangeAggregator: {} -> {symbol}", self.id)
                                         }
 
 
