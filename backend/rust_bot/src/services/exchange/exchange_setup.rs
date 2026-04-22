@@ -13,7 +13,7 @@ use crate::services::exchange::exchange_adapter::ExchangeAdapter;
 use crate::services::exchange::exchange_aggregator::{ExchangeStore, ExchangeStoreCMD};
 use crate::services::exchange::exchange_channel_store::ExchangeChannelStoreCmd;
 
-const CHUNK_SIZE: usize = 50;
+const CHUNK_SIZE: usize = 55;
 
 /// <b>ExchangeSetup</b> инициализирует WebSocket с помощью `ExchangeAdapter`
 pub struct ExchangeSetup<T: ExchangeAdapter> {
@@ -86,21 +86,20 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                     
                     tokio::spawn({
                         let this = self.clone();
-                        let result = result.clone();
                         async move {
                             this.try_run_ws_session(&result).await;
                         }
                     });
                     
-                    // Загружаем снапшоты
-                    tokio::spawn({
-                        let this = self.clone();
-                        let result = result.clone();
-                        let adapter = this.adapter.clone();
-                        async move {
-                         adapter.get_snapshot_spot_http(&result, &this.client, this.sender_data.clone()).await;
-                        }
-                    });
+                    // // Загружаем снапшоты
+                    // tokio::spawn({
+                    //     let this = self.clone();
+                    //     let result = result.clone();
+                    //     let adapter = this.adapter.clone();
+                    //     async move {
+                    //      adapter.get_snapshot_spot_http(&result, &this.client, this.sender_data.clone()).await;
+                    //     }
+                    // });
                 }
             }
         });
@@ -179,7 +178,8 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                 if let Ok(msg) = result {
                     match msg {
                         Message::Text(channel) => {
-                            adapter.clone().parse_message(channel, self.sender_data_queue_tx.clone(), self.sender_data.clone()).await;
+                            tracing::info!("{:?}", channel);
+                            // adapter.clone().parse_message(channel, self.sender_data_queue_tx.clone(), self.sender_data.clone()).await;
                         },
                         Message::Pong(pong) => {
                             println!("{} ответил на Pong: {:?}", self.title, pong)
