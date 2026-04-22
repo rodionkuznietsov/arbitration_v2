@@ -195,7 +195,9 @@ impl ExchangeAdapter for BybitAdapter {
                     let last_price = price_str.parse::<f64>().expect("BybitAdapter -> Не удалось преобразовать price_str в f64");
                     let volume = vol_str.parse::<f64>().expect("BybitAdapter -> Не удалось преобразовать vol_str в f64");
 
-                    tracing::info!("{}/{symbol}", symbol);
+                    if symbol == "btcusdt" {
+                        tracing::info!("{}/{}", symbol, last_price);
+                    }
 
                     // let _ = sender_data.send(
                     //     ExchangeStoreCMD::Event(
