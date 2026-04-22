@@ -141,7 +141,7 @@ impl ExchangeAdapter for GateAdapter {
         vec![message1, message2]
     }
 
-    async fn parse_message(
+    fn parse_message(
         self: Arc<Self>,
         msg: String,
         _snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
@@ -208,5 +208,19 @@ impl ExchangeAdapter for GateAdapter {
                 }
             }
         }
+    }
+
+    fn parse_tickers(
+        self: Arc<Self>,
+        msg: String
+    ) {
+
+    }
+
+    fn parse_orderbook(
+        self: Arc<Self>,
+        msg: String
+    ) {
+        
     }
 }
