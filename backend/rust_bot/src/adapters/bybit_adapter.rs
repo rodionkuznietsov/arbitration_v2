@@ -84,115 +84,120 @@ impl ExchangeAdapter for BybitAdapter {
         snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
         sender_data: watch::Sender<ExchangeStoreCMD>,
     ) {
-        if msg.contains("orderbook") {
-            let json: OrderBookEvent = serde_json::from_str(&msg).unwrap();
-                let data = json.data;
-                let ts = json.timestamp;
 
-                match json.order_type.as_deref() {
-                    Some("snapshot") => {
-                        if let Some(data) = data {
-                            let ticker = data.symbol;
-                            let asks = data.asks;
-                            let bids = data.bids;
-
-                            if let (
-                                Some(symbol), 
-                                Some(asks), 
-                                Some(bids),
-                                Some(timestamp)
-                            ) = (ticker, asks, bids, ts) {
-                                let symbol = symbol.to_lowercase();
-                                let asks = parse_levels__(asks);
-                                let bids = parse_levels__(bids);
-
-                                let _ = snapshot_channel.send(
-                                    ExchangeStoreCMD::Event(
-                                        BookEvent::Snapshot { 
-                                            symbol: symbol, 
-                                            snapshot: Snapshot {
-                                                a: asks,
-                                                b: bids,
-                                                last_update_id: None,
-                                                timestamp,
-                                            }
-                                        }
-                                    )
-                                ).await;
-                            }
-                        }
-                    },
-                    Some("delta") => {
-                        if let Some(data) = data {
-                            let ticker = data.symbol;
-                            let asks = data.asks;
-                            let bids = data.bids;
-
-                            if let (
-                                Some(symbol), 
-                                Some(asks), 
-                                Some(bids
-                            )) = (ticker, asks, bids) {
-                                let symbol = symbol.to_lowercase();
-                                let asks = parse_levels__(asks);
-                                let bids = parse_levels__(bids);
-
-                                if !asks.is_empty() && !bids.is_empty() {
-                                    if symbol == "btcusdt" {
-                                        tracing::info!("bybit_adapter -> {bids:?}")
-                                    }   
-
-                                    let _ = sender_data.send(
-                                        ExchangeStoreCMD::Event(
-                                            BookEvent::Delta { 
-                                                symbol: symbol, 
-                                                delta: Delta {
-                                                    a: asks,
-                                                    b: bids,
-                                                    from_version: None,
-                                                    to_version: None
-                                                }
-                                            }
-                                        )
-                                    );
-                                }
-                            }
-                        }
-                    },
-                    _ => {}
-                }
+        if msg.contains("BTCUSDT") {
+            tracing::info!("{msg:?}")
         }
+        
+        // if msg.contains("orderbook") {
+        //     let json: OrderBookEvent = serde_json::from_str(&msg).unwrap();
+        //         let data = json.data;
+        //         let ts = json.timestamp;
 
-        if msg.contains("tickers") {
-            let json: TickerEvent = serde_json::from_str(&msg).unwrap();
-            let result = json.result;
+        //         match json.order_type.as_deref() {
+        //             Some("snapshot") => {
+        //                 if let Some(data) = data {
+        //                     let ticker = data.symbol;
+        //                     let asks = data.asks;
+        //                     let bids = data.bids;
 
-            if let Some(data) = result {
-                if let (
-                    Some(symbol),
-                    Some(price_str), 
-                    Some(vol_str)
-                ) = (
-                    data.symbol, 
-                    data.last_price, 
-                    data.volume
-                ) {
-                    let symbol = symbol.to_lowercase();
-                    let last_price = price_str.parse().expect("BybitAdapter -> Не удалось преобразовать price_str в f64");
-                    let volume = vol_str.parse().expect("BybitAdapter -> Не удалось преобразовать vol_str в f64");
+        //                     if let (
+        //                         Some(symbol), 
+        //                         Some(asks), 
+        //                         Some(bids),
+        //                         Some(timestamp)
+        //                     ) = (ticker, asks, bids, ts) {
+        //                         let symbol = symbol.to_lowercase();
+        //                         let asks = parse_levels__(asks);
+        //                         let bids = parse_levels__(bids);
 
-                    sender_data.send(
-                        ExchangeStoreCMD::Event(
-                            BookEvent::TickerUpdate { 
-                                symbol, 
-                                last_price, 
-                                volume 
-                            }
-                        )
-                    ).ok();
+        //                         let _ = snapshot_channel.send(
+        //                             ExchangeStoreCMD::Event(
+        //                                 BookEvent::Snapshot { 
+        //                                     symbol: symbol, 
+        //                                     snapshot: Snapshot {
+        //                                         a: asks,
+        //                                         b: bids,
+        //                                         last_update_id: None,
+        //                                         timestamp,
+        //                                     }
+        //                                 }
+        //                             )
+        //                         ).await;
+        //                     }
+        //                 }
+        //             },
+        //             Some("delta") => {
+        //                 if let Some(data) = data {
+        //                     let ticker = data.symbol;
+        //                     let asks = data.asks;
+        //                     let bids = data.bids;
+
+        //                     if let (
+        //                         Some(symbol), 
+        //                         Some(asks), 
+        //                         Some(bids
+        //                     )) = (ticker, asks, bids) {
+        //                         let symbol = symbol.to_lowercase();
+        //                         let asks = parse_levels__(asks);
+        //                         let bids = parse_levels__(bids);
+
+        //                         if !asks.is_empty() && !bids.is_empty() {
+        //                             if symbol == "btcusdt" {
+        //                                 tracing::info!("bybit_adapter -> {bids:?}")
+        //                             }   
+
+        //                             let _ = sender_data.send(
+        //                                 ExchangeStoreCMD::Event(
+        //                                     BookEvent::Delta { 
+        //                                         symbol: symbol, 
+        //                                         delta: Delta {
+        //                                             a: asks,
+        //                                             b: bids,
+        //                                             from_version: None,
+        //                                             to_version: None
+        //                                         }
+        //                                     }
+        //                                 )
+        //                             );
+        //                         }
+        //                     }
+        //                 }
+        //             },
+        //             _ => {}
+        //         }
+        // }
+
+        // if msg.contains("tickers") {
+        //     let json: TickerEvent = serde_json::from_str(&msg).unwrap();
+        //     let result = json.result;
+
+        //     if let Some(data) = result {
+        //         if let (
+        //             Some(symbol),
+        //             Some(price_str), 
+        //             Some(vol_str)
+        //         ) = (
+        //             data.symbol, 
+        //             data.last_price, 
+        //             data.volume
+        //         ) {
+        //             let symbol = symbol.to_lowercase();
+        //             let last_price = price_str.parse().expect("BybitAdapter -> Не удалось преобразовать price_str в f64");
+        //             let volume = vol_str.parse().expect("BybitAdapter -> Не удалось преобразовать vol_str в f64");
+
+        //             sender_data.send(
+        //                 ExchangeStoreCMD::Event(
+        //                     BookEvent::TickerUpdate { 
+        //                         symbol, 
+        //                         last_price, 
+        //                         volume 
+        //                     }
+        //                 )
+        //             ).ok();
                     
-                }
-            }
-        }
+        //         }
+        //     }
+        // }
     }
 }

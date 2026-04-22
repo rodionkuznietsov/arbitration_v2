@@ -178,8 +178,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                 if let Ok(msg) = result {
                     match msg {
                         Message::Text(channel) => {
-                            tracing::info!("{:?}", channel);
-                            // adapter.clone().parse_message(channel, self.sender_data_queue_tx.clone(), self.sender_data.clone()).await;
+                            adapter.clone().parse_message(channel, self.sender_data_queue_tx.clone(), self.sender_data.clone()).await;
                         },
                         Message::Pong(pong) => {
                             println!("{} ответил на Pong: {:?}", self.title, pong)
