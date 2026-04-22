@@ -141,21 +141,21 @@ impl ExchangeAdapter for BybitAdapter {
                                     if symbol == "btcusdt" {
                                         tracing::info!("bybit_adapter -> {bids:?}")
                                     }   
-                                }
 
-                                let _ = sender_data.send(
-                                    ExchangeStoreCMD::Event(
-                                        BookEvent::Delta { 
-                                            symbol: symbol, 
-                                            delta: Delta {
-                                                a: asks,
-                                                b: bids,
-                                                from_version: None,
-                                                to_version: None
+                                    let _ = sender_data.send(
+                                        ExchangeStoreCMD::Event(
+                                            BookEvent::Delta { 
+                                                symbol: symbol, 
+                                                delta: Delta {
+                                                    a: asks,
+                                                    b: bids,
+                                                    from_version: None,
+                                                    to_version: None
+                                                }
                                             }
-                                        }
-                                    )
-                                );
+                                        )
+                                    );
+                                }
                             }
                         }
                     },
