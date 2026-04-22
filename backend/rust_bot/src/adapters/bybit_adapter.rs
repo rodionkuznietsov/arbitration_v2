@@ -84,9 +84,11 @@ impl ExchangeAdapter for BybitAdapter {
         snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
         sender_data: watch::Sender<ExchangeStoreCMD>,
     ) {
+
+        let msg_arc = Arc::new(msg);
         
-        if msg.contains("orderbook") {
-            self.parse_orderbook(msg);
+        if msg_arc.contains("orderbook") {
+            self.clone().parse_orderbook(msg_arc.clone());
         //     let json: OrderBookEvent = serde_json::from_str(&msg).unwrap();
         //         let data = json.data;
         //         let ts = json.timestamp;
@@ -165,8 +167,8 @@ impl ExchangeAdapter for BybitAdapter {
         //         }
         }
 
-        if msg.contains("tickers") {
-            self.parse_tickers(msg);
+        if msg_arc.contains("tickers") {
+            self.parse_tickers(msg_arc);
         //     let json: TickerEvent = serde_json::from_str(&msg).unwrap();
         //     let result = json.result;
 
@@ -201,14 +203,14 @@ impl ExchangeAdapter for BybitAdapter {
 
     fn parse_tickers(
         self: Arc<Self>,
-        msg: String
+        msg: Arc<String>
     ) {
         tracing::info!("{msg:?}")
     }
 
     fn parse_orderbook(
         self: Arc<Self>,
-        msg: String
+        msg: Arc<String>
     ) {
         
     }

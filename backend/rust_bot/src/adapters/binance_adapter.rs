@@ -65,14 +65,14 @@ impl ExchangeAdapter for BinanceAdapter {
 
     fn parse_tickers(
         self: Arc<Self>,
-        msg: String
+        msg: Arc<String>
     ) {
 
     }
 
     fn parse_orderbook(
         self: Arc<Self>,
-        msg: String
+        msg: Arc<String>
     ) {
         
     }
