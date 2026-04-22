@@ -57,7 +57,6 @@ pub fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<Decimal, f64> {
         let price = vec[0].parse::<f64>().expect("[Orderbook] Bad price");
         let volume = vec[1].parse::<f64>().expect("[Orderbook] Bad volume");
         let decimal_price = rust_decimal::Decimal::from_f64(price).unwrap();
-        // let price_with_tick = (price * PRICE_TICK).round() as i64;
 
         values.insert(decimal_price, volume);
     }
