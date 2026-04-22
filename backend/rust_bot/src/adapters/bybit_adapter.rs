@@ -205,7 +205,9 @@ impl ExchangeAdapter for BybitAdapter {
         self: Arc<Self>,
         msg: Arc<String>
     ) {
-        tracing::info!("{msg:?}")
+        if msg.contains("BTCUSDT") {
+            tracing::info!("{msg:?}")
+        }
     }
 
     fn parse_orderbook(
