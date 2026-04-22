@@ -212,7 +212,8 @@ impl ExchangeAdapter for GateAdapter {
 
     async fn parse_tickers(
         self: Arc<Self>,
-        msg: Arc<String>
+        msg: Arc<String>,
+        sender_data: watch::Sender<ExchangeStoreCMD>
     ) {
 
     }

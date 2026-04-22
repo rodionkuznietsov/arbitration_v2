@@ -168,47 +168,47 @@ impl ExchangeAdapter for BybitAdapter {
         }
 
         if msg_arc.contains("tickers") {
-            self.parse_tickers(msg_arc).await;
+            self.parse_tickers(msg_arc, sender_data.clone()).await;
         }
     }
 
     async fn parse_tickers(
         self: Arc<Self>,
-        msg: Arc<String>
+        msg: Arc<String>,
+        sender_data: watch::Sender<ExchangeStoreCMD>
     ) {
         let _ = tokio::task::spawn_blocking(move || {
             let json: TickerEvent<'_> = serde_json::from_str(&msg).unwrap();
             let result = json.result;
-            tracing::info!("{result:?}")
+            
+            if let Some(data) = result {
+                if let (
+                    Some(symbol),
+                    Some(price_str), 
+                    Some(vol_str)
+                ) = (
+                    data.symbol, 
+                    data.last_price, 
+                    data.volume
+                ) {
+                    let symbol = symbol.to_lowercase();
+                    let last_price = price_str.parse::<f64>().expect("BybitAdapter -> Не удалось преобразовать price_str в f64");
+                    let volume = vol_str.parse::<f64>().expect("BybitAdapter -> Не удалось преобразовать vol_str в f64");
+
+                    tracing::info!("{}/{symbol}", symbol);
+
+                    // let _ = sender_data.send(
+                    //     ExchangeStoreCMD::Event(
+                    //         BookEvent::TickerUpdate { 
+                    //             symbol, 
+                    //             last_price, 
+                    //             volume 
+                    //         }
+                    //     )
+                    // );
+                }
+            }
         }).await;
-        // let result = json.result;
-
-        //     if let Some(data) = result {
-        //         if let (
-        //             Some(symbol),
-        //             Some(price_str), 
-        //             Some(vol_str)
-        //         ) = (
-        //             data.symbol, 
-        //             data.last_price, 
-        //             data.volume
-        //         ) {
-        //             let symbol = symbol.to_lowercase();
-        //             let last_price = price_str.parse().expect("BybitAdapter -> Не удалось преобразовать price_str в f64");
-        //             let volume = vol_str.parse().expect("BybitAdapter -> Не удалось преобразовать vol_str в f64");
-
-        //             sender_data.send(
-        //                 ExchangeStoreCMD::Event(
-        //                     BookEvent::TickerUpdate { 
-        //                         symbol, 
-        //                         last_price, 
-        //                         volume 
-        //                     }
-        //                 )
-        //             ).ok();
-                    
-        //         }
-        //     }
     }
 
     fn parse_orderbook(
