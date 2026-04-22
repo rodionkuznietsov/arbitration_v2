@@ -137,6 +137,10 @@ impl ExchangeAdapter for BybitAdapter {
                                 let asks = parse_levels__(asks);
                                 let bids = parse_levels__(bids);
 
+                                if symbol == "btcusdt" {
+                                    tracing::info!("bybit_adapter -> {bids:?}")
+                                }   
+
                                 let _ = sender_data.send(
                                     ExchangeStoreCMD::Event(
                                         BookEvent::Delta { 

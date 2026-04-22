@@ -167,10 +167,6 @@ impl DataMapping {
                                 ) { 
                                     let long_arc = Arc::new(long);
                                     let short_arc = Arc::new(short);
-
-                                    if symbol.to_string() == "btcusdt" {
-                                        tracing::info!("{:?}", long_arc);
-                                    }
                                     
                                     self.send_message_with_key(
                                         ChannelType::OrderBook,
