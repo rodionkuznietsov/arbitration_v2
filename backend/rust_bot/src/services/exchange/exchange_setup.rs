@@ -13,7 +13,7 @@ use crate::services::exchange::exchange_adapter::ExchangeAdapter;
 use crate::services::exchange::exchange_aggregator::{ExchangeStore, ExchangeStoreCMD};
 use crate::services::exchange::exchange_channel_store::ExchangeChannelStoreCmd;
 
-const CHUNK_SIZE: usize = 55;
+const CHUNK_SIZE: usize = 50;
 
 /// <b>ExchangeSetup</b> инициализирует WebSocket с помощью `ExchangeAdapter`
 pub struct ExchangeSetup<T: ExchangeAdapter> {
@@ -29,7 +29,7 @@ pub struct ExchangeSetup<T: ExchangeAdapter> {
     sender_data_queue_tx: mpsc::Sender<ExchangeStoreCMD>,
     exchange_id: ExchangeType,
 
-    data_aggregator_tx: watch::Sender<DataAggregatorCmd>
+    data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>
 }
 
 impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
@@ -37,7 +37,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
         exchange_id: ExchangeType,
         adapter: Arc<A>,
         enabled: bool,
-        data_aggregator_tx: watch::Sender<DataAggregatorCmd>,
+        data_aggregator_tx: mpsc::Sender<DataAggregatorCmd>,
         exchange_channel_store_tx: mpsc::Sender<ExchangeChannelStoreCmd>
     ) -> Arc<Self> {
         let title = format!("{}Websocket", exchange_id);
@@ -130,7 +130,7 @@ impl<A: ExchangeAdapter + Send + Sync + 'static> ExchangeSetup<A> {
                             symbol: symbol.clone(), 
                             exchange_id: self.exchange_id 
                         }
-                    );
+                    ).await;
 
                     let messages = adapter.clone().create_subscribe_messages(symbol);
                     cmd_tx.send(WsCmd::Subscribe(messages)).await.ok();

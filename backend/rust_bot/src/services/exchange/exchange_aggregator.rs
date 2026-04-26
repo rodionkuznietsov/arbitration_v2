@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 use lru::LruCache;
 use rust_decimal::{Decimal, prelude::FromPrimitive};
 use tokio::sync::{mpsc, watch};
-use crate::models::{exchange::ExchangeType, exchange_aggregator::BookData, orderbook::{BookEvent, Snapshot, SnapshotUi}, websocket::Symbol};
+use crate::models::{exchange::ExchangeType, exchange_aggregator::BookData, orderbook::{BookEvent, Delta, Snapshot, SnapshotUi}, websocket::Symbol};
 
 impl Snapshot {
     pub fn to_ui(&self, 
@@ -40,18 +40,15 @@ impl Snapshot {
             .take(depth)
             .collect::<Vec<(f64, f64)>>();
 
-        let timestamp = self.timestamp;
-
         SnapshotUi {
             a,
             b,
             last_price,
-            timestamp,
         }
     }
 }
 
-pub fn parse_levels__(data: Vec<Vec<String>>) -> BTreeMap<Decimal, f64> {
+pub fn parse_levels__<'a>(data: Vec<Vec<&'a str>>) -> BTreeMap<Decimal, f64> {
     let mut values = BTreeMap::new();
     for vec in data {
         let price = vec[0].parse::<f64>().expect("[Orderbook] Bad price");
@@ -71,7 +68,7 @@ pub enum ExchangeStoreCMD {
         symbol: Arc<Symbol>
     },
     Subscribe {
-        reply: mpsc::Sender<watch::Receiver<(Arc<Symbol>, Arc<BookData>)>>
+        reply: mpsc::Sender<watch::Receiver<Arc<BookData>>>
     },
     Default
 } 
@@ -83,8 +80,8 @@ pub struct ExchangeStore {
     
     #[allow(unused)]
     id: ExchangeType,
-    watch_tx: watch::Sender<(Arc<Symbol>, Arc<BookData>)>,
-    watch_rx: watch::Receiver<(Arc<Symbol>, Arc<BookData>)>
+    watch_tx: watch::Sender<Arc<BookData>>,
+    watch_rx: watch::Receiver<Arc<BookData>>
 }
 
 impl ExchangeStore {
@@ -99,7 +96,7 @@ impl ExchangeStore {
             .expect("ORDERBOOK_CACHE_CAPACITY must be a number");
 
         let market_data = LruCache::new(NonZeroUsize::new(cache_capacity).unwrap());
-        let (watch_tx, watch_rx) = watch::channel((Arc::new(Symbol::new()), Arc::new(BookData::new())));
+        let (watch_tx, watch_rx) = watch::channel(Arc::new(BookData::new()));
 
         Self {
             market_data,
@@ -115,7 +112,7 @@ impl ExchangeStore {
     pub async fn set_data(
         mut self,
     ) {
-        let mut last_version_id = 0;
+        let last_version_id = 0;
 
         loop {
             tokio::select! {
@@ -131,11 +128,7 @@ impl ExchangeStore {
                                 .map(|c| c.to_ascii_lowercase())
                                 .collect();
                         
-                            self.market_data.put(symbol.clone(), BookData { 
-                                snapshot: None, 
-                                last_price: None, 
-                                volume24h: None
-                            });
+                            self.market_data.put(symbol.clone(), BookData::new());
                         },
                         ExchangeStoreCMD::Event(event) => {
                             match event {
@@ -143,10 +136,7 @@ impl ExchangeStore {
                                     symbol, 
                                     snapshot  
                                 } => {
-                                    if let Some(data) = self.market_data.get_mut(&*symbol) {
-                                        data.snapshot = Some(snapshot);
-                                        let _ = self.watch_tx.send((Arc::new(symbol.clone()), Arc::new(data.to_owned())));
-                                    }
+                                    self.handle_snaphsot(symbol, snapshot);
                                 },
                                 _ => {}
                             }
@@ -163,100 +153,19 @@ impl ExchangeStore {
                         ExchangeStoreCMD::Event(event) => {
                             match event {
                                 BookEvent::Snapshot { 
-                                    symbol, 
-                                    snapshot  
+                                    symbol, snapshot  
                                 } => {
-                                    if let Some(data) = self.market_data.get_mut(&*symbol) {
-                                        data.snapshot = Some(snapshot);
-                                        let _ = self.watch_tx.send((Arc::new(symbol.clone()), Arc::new(data.to_owned())));
-                                    }
+                                    self.handle_snaphsot(symbol, snapshot);
                                 }
                                 BookEvent::Delta { 
-                                    symbol, 
-                                    delta 
+                                    symbol, delta 
                                 } => {
-                                    if let Some(data) = self.market_data.get_mut(&symbol) {
-                                        if let Some(snapshot) = &mut data.snapshot {
-                                            match snapshot.last_update_id {
-                                                Some(_) => {
-                                                    let from_version = delta.from_version.unwrap();
-                                                    let to_version = delta.to_version.unwrap();
-
-                                                    for (price, volume) in delta.a {
-                                                        if volume == 0.0 {
-                                                            snapshot.a.remove(&price);
-                                                        } else {
-                                                            if let Some(v) = snapshot.a.get_mut(&price) {
-                                                                *v = volume;
-                                                            } else {
-                                                                snapshot.a.insert(price, volume);
-                                                            }
-                                                        }
-                                                    }
-
-                                                    for (price, volume) in delta.b {
-                                                        if volume == 0.0 {
-                                                            snapshot.b.remove(&price);
-                                                        } else {
-                                                            if let Some(v) = snapshot.b.get_mut(&price) {
-                                                                *v = volume;
-                                                            } else {
-                                                                snapshot.b.insert(price, volume);
-                                                            }
-                                                        }
-                                                    }
-
-                                                    if last_version_id == 0 {
-                                                        continue;
-                                                    }
-
-                                                    if from_version != last_version_id {
-                                                        println!("[OrderBookManager]: Packet loss detected");
-                                                        continue;
-                                                    }
-                                                    last_version_id = to_version + 1;  
-                                                    let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
-                                                }
-                                                None => {
-                                                    for (price, volume) in delta.a {
-                                                        if volume == 0.0 {
-                                                            snapshot.a.remove(&price);
-                                                        } else {
-                                                            if let Some(v) = snapshot.a.get_mut(&price) {
-                                                                *v = volume;
-                                                            } else {
-                                                                snapshot.a.insert(price, volume);
-                                                            }
-                                                        }
-                                                    }
-
-                                                    for (price, volume) in delta.b {
-                                                        if volume == 0.0 {
-                                                            snapshot.b.remove(&price);
-                                                        } else {
-                                                            if let Some(v) = snapshot.b.get_mut(&price) {
-                                                                *v = volume;
-                                                            } else {
-                                                                snapshot.b.insert(price, volume);
-                                                            }
-                                                        }
-                                                    }
-                                                    let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
-                                                }
-                                            } 
-                                        }
-                                    }
+                                    self.handle_delta(symbol, delta, last_version_id);
                                 },
                                 BookEvent::TickerUpdate { 
-                                    symbol, 
-                                    last_price, 
-                                    volume 
+                                    symbol, last_price, volume 
                                 } => {
-                                    if let Some(data) = self.market_data.get_mut(&symbol) {
-                                        data.last_price = Some(last_price);
-                                        data.volume24h = Some(volume);
-                                        let _ = self.watch_tx.send((Arc::new(symbol), Arc::new(data.to_owned())));
-                                    }
+                                    self.ticker_updater(symbol, last_price, volume);
                                 },
                             }
                         },
@@ -269,6 +178,95 @@ impl ExchangeStore {
                     }
                 }
             }
+        }
+    }
+
+    fn handle_snaphsot(
+        &mut self,
+        symbol: Symbol,
+        snapshot: Snapshot
+    ) {
+        if let Some(data) = self.market_data.get_mut(&*symbol) {
+            data.snapshot = Some(snapshot);
+            data.symbol = Arc::new(symbol);
+            let _ = self.watch_tx.send(Arc::new(data.to_owned()));
+        }
+    }
+
+    fn handle_delta(
+        &mut self,
+        symbol: Symbol,
+        delta: Delta,
+        mut _last_version_id: u64
+    ) {
+        if let Some(data) = self.market_data.get_mut(&symbol) {
+            if let Some(snapshot) = &mut data.snapshot {
+                match snapshot.last_update_id {
+                    Some(_) => {
+                        let from_version = delta.from_version.unwrap();
+                        let to_version = delta.to_version.unwrap();
+                        _last_version_id = to_version + 1;  
+
+                        if _last_version_id == 0 {   
+                            return;
+                        }
+                        
+                        Self::handle_delta_data(delta, snapshot);
+                        
+                        if from_version != _last_version_id {
+                            tracing::error!("[OrderBookManager]: Packet loss detected");
+                            return;
+                        }
+                        let _ = self.watch_tx.send(Arc::new(data.to_owned())); 
+                    }
+                    None => {
+                        Self::handle_delta_data(delta, snapshot);
+                        let _ = self.watch_tx.send(Arc::new(data.to_owned()));
+                    }
+                } 
+            }
+        }
+    }
+
+    fn handle_delta_data(
+        delta: Delta,
+        snapshot: &mut Snapshot
+    ) {
+        for (price, volume) in delta.a {
+            if volume == 0.0 {
+                snapshot.a.remove(&price);
+            } else {
+                if let Some(v) = snapshot.a.get_mut(&price) {
+                    *v = volume;
+                } else {
+                    snapshot.a.insert(price, volume);
+                }
+            }
+        }
+
+        for (price, volume) in delta.b {
+            if volume == 0.0 {
+                snapshot.b.remove(&price);
+            } else {
+                if let Some(v) = snapshot.b.get_mut(&price) {
+                    *v = volume;
+                } else {
+                    snapshot.b.insert(price, volume);
+                }
+            }
+        }
+    }    
+
+    fn ticker_updater(
+        &mut self,
+        symbol: Symbol,
+        last_price: f64,
+        volume: f64
+    ) {
+        if let Some(data) = self.market_data.get_mut(&symbol) {
+            data.last_price = Some(last_price);
+            data.volume24h = Some(volume);
+            let _ = self.watch_tx.send(Arc::new(data.to_owned()));
         }
     }
 }

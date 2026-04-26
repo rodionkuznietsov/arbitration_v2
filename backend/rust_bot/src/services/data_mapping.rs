@@ -157,7 +157,7 @@ impl DataMapping {
                             for (short_ex_id, _, (short_snapshot, short_last_price)) in markets.iter().skip(i+1) {
                                 let long_json_lines = self.snapshot_to_json(long_snapshot, &long_last_price);
                                 let short_json_lines = self.snapshot_to_json(short_snapshot, &short_last_price);
-                                
+
                                 if let (
                                     Some(long), 
                                     Some(short)
@@ -338,13 +338,13 @@ impl DataMapping {
             }, 
         };
 
-        // let _ = self.manager_transmitter_tx.send(
-        //     ManagerTransmitterCmd::Notify(
-        //         NotifyEvent::PayloadJson(
-        //             channel_key, 
-        //             msg
-        //         )
-        //     ), 
-        // );
+        let _ = self.manager_transmitter_tx.send(
+            ManagerTransmitterCmd::Notify(
+                NotifyEvent::PayloadJson(
+                    channel_key, 
+                    msg
+                )
+            ), 
+        );
     }
 }

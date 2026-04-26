@@ -65,6 +65,7 @@ async fn main() {
         cache_aggregator_tx.clone(),
         storage_pool.clone(),
     );
+    let register_symbol_tx = data_aggregator.register_symbol_tx.clone();
 
     let manager_transmitter = ManagerTransmitter::new(
         client_aggregator_chart_tx.clone(),
@@ -92,10 +93,9 @@ async fn main() {
 
     // Запуск биржевых вебсокетов
     tokio::spawn({
-        let data_aggregator_tx = data_aggregator_tx.clone();
         async move {
             services::exchange::exchanges_run::run_ws_exchanges(
-                data_aggregator_tx,
+                register_symbol_tx,
                 exchange_channel_store_tx
             ).await;
         }

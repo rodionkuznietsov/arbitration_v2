@@ -1,12 +1,21 @@
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
-use tokio::sync::{mpsc, watch};
+use rust_decimal::Decimal;
+use tokio::sync::{Mutex, mpsc, watch};
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::{models::{exchange::TickerInfo, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::ExchangeStoreCMD}};
+use crate::{models::{exchange::{PriceCache, TickerInfo}, orderbook::OrderBookEventData, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::ExchangeStoreCMD}};
 
 #[allow(unused)]
-pub struct BinanceAdapter;
+pub struct BinanceAdapter {
+    price_cache: Arc<Mutex<PriceCache>>
+}
+
+impl BinanceAdapter {
+    pub fn new() -> Arc<Self> {
+        Arc::new(Self { price_cache: Arc::new(Mutex::new(PriceCache::new())) })
+    }
+}
 
 #[async_trait::async_trait]
 impl ExchangeAdapter for BinanceAdapter {
@@ -54,6 +63,12 @@ impl ExchangeAdapter for BinanceAdapter {
         todo!()
     }
 
+    fn cache(
+        &self,
+    ) -> &Arc<Mutex<PriceCache>> {
+        &self.price_cache
+    }
+
     async fn parse_message(
         self: Arc<Self>,
         _msg: String,
@@ -71,10 +86,37 @@ impl ExchangeAdapter for BinanceAdapter {
 
     }
 
-    fn parse_orderbook(
+    async fn is_valid_price(    
         self: Arc<Self>,
-        msg: Arc<String>
+        last_price: f64,
+        symbol: &Symbol
+    ) -> bool {
+        true
+    }
+
+    async fn parse_orderbook(
+        self: Arc<Self>,
+        _msg: Arc<String>,
+        _snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
+        _sender_data: watch::Sender<ExchangeStoreCMD>
     ) {
         
+    }
+
+    async fn handle_snapshot<'a>(
+        self: Arc<Self>,
+        _data: Option<OrderBookEventData<'a>>,
+        _snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
+        _sender_data: watch::Sender<ExchangeStoreCMD>
+    ) {
+
+    }
+
+    async fn handle_delta<'a>(
+        self: Arc<Self>,
+        _data: Option<OrderBookEventData<'a>>,
+        _sender_data: watch::Sender<ExchangeStoreCMD>
+    ) {
+
     }
 }

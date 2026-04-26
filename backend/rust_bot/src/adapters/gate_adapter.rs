@@ -1,11 +1,18 @@
 use std::{sync::Arc, time::Duration};
-use tokio::sync::{Semaphore, mpsc, watch};
+use tokio::sync::{Mutex, Semaphore, mpsc, watch};
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::{models::{exchange::{TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, OrderBookFromHttp, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
+use crate::{models::{exchange::{PriceCache, TickerEvent, TickerInfo}, orderbook::{BookEvent, OrderBookEvent, OrderBookEventData, Snapshot}, websocket::Symbol}, services::exchange::{exchange_adapter::ExchangeAdapter, exchange_aggregator::{ExchangeStoreCMD, parse_levels__}}};
 
+pub struct GateAdapter {
+    price_cache: Arc<Mutex<PriceCache>>
+}
 
-pub struct GateAdapter;
+impl GateAdapter {
+    pub fn new() -> Arc<Self> {
+        Arc::new(Self { price_cache: Arc::new(Mutex::new(PriceCache::new())) })
+    }
+}
 
 #[async_trait::async_trait]
 impl ExchangeAdapter for GateAdapter {
@@ -79,36 +86,37 @@ impl ExchangeAdapter for GateAdapter {
                 let symbol = symbol.clone();
                 let permit = semaphore.clone().acquire_owned().await;
                 let client = client.clone();
-                let sender_data = sender_data.clone();
+                let _sender_data = sender_data.clone();
 
                 tokio::spawn(async move {
                     let _p = permit;
                     tracing::info!("Запрос {}", symbol);
 
-                    let response = client.get(url).send().await;
-                    match response {
-                        Ok(response) => {
-                            if let Ok(snapshot) = response.json::<OrderBookFromHttp>().await {
-                                let asks = parse_levels__(snapshot.asks);
-                                let bids = parse_levels__(snapshot.bids);
+                    let _response = client.get(url).send().await;
+                    // match response {
+                    //     Ok(response) => {
+                    //         let data: Result<OrderBookFromHttp<'_>, reqwest::Error> = response.json().await;
+                    //         if let Ok(snapshot) = data {
+                    //             let asks = parse_levels__(snapshot.asks);
+                    //             let bids = parse_levels__(snapshot.bids);
 
-                                sender_data.send(ExchangeStoreCMD::Event(
-                                    BookEvent::Snapshot { 
-                                        symbol,
-                                        snapshot: Snapshot { 
-                                            a: asks, 
-                                            b: bids, 
-                                            last_update_id: None,
-                                            timestamp: 0
-                                        }
-                                    }
-                                )).ok();
-                            }
-                        },
-                        Err(e) => {
-                            tracing::error!("{e}")
-                        }
-                    }
+                    //             sender_data.send(ExchangeStoreCMD::Event(
+                    //                 BookEvent::Snapshot { 
+                    //                     symbol,
+                    //                     snapshot: Snapshot { 
+                    //                         a: asks, 
+                    //                         b: bids, 
+                    //                         last_update_id: None,
+                    //                         timestamp: 0
+                    //                     }
+                    //                 }
+                    //             )).ok();
+                    //         }
+                    //     },
+                    //     Err(e) => {
+                    //         tracing::error!("{e}")
+                    //     }
+                    // }
 
                     tracing::info!("Запрос завершен");
                 });
@@ -141,72 +149,29 @@ impl ExchangeAdapter for GateAdapter {
         vec![message1, message2]
     }
 
+    fn cache(
+        &self,
+    ) -> &Arc<Mutex<PriceCache>> {
+        &self.price_cache
+    }
+
     async fn parse_message(
         self: Arc<Self>,
         msg: String,
-        _snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
+        snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
         sender_data: watch::Sender<ExchangeStoreCMD>
     ) {
-        if !msg.contains("update") {
+        let msg_arc = Arc::new(msg);
+        if !msg_arc.contains("update") {
             return;
         }
         
-        if msg.contains("spot.order_book") {
-            let json: OrderBookEvent = serde_json::from_str(&msg).unwrap();
-            let data = json.data;
-            let ts = json.timestamp;
-
-            if let Some(data) = data {
-                let ticker = data.symbol;
-                if let Some(symbol) = ticker {
-                    let symbol = symbol.replace("_", "").to_lowercase();
-
-                    let asks = data.asks;
-                    let bids = data.bids;
-
-                    if let (Some(asks), Some(bids), Some(timestamp)) = (asks, bids, ts) {
-                        let asks = parse_levels__(asks);
-                        let bids = parse_levels__(bids);
-                        
-                        let _ = sender_data.send(ExchangeStoreCMD::Event(
-                            BookEvent::Snapshot { 
-                                symbol,
-                                snapshot: Snapshot { 
-                                    a: asks, 
-                                    b: bids, 
-                                    last_update_id: None,
-                                    timestamp,
-                                }
-                            },
-                        ));
-                    }
-                }
-            }
+        if msg_arc.contains("spot.order_book") {
+            self.clone().parse_orderbook(msg_arc.clone(), snapshot_channel, sender_data.clone()).await;
         }
 
-        if msg.contains("spot.tickers") {
-            let json: TickerEvent = serde_json::from_str(&msg).unwrap();
-            if let Some(result) = json.result {
-                let ticker = result.symbol;
-                if let Some(symbol) = ticker {
-                    let symbol = symbol.replace("_", "").to_lowercase();
-                    let last_price = result.last_price;
-                    let volume = result.volume;
-
-                    if let (Some(price_str), Some(vol_str)) = (last_price, volume) {
-                        let price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
-                        let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
-                        
-                        let _ = sender_data.send(ExchangeStoreCMD::Event(
-                            BookEvent::TickerUpdate { 
-                                symbol, 
-                                last_price: price, 
-                                volume: volume
-                            }
-                        ));
-                    }
-                }
-            }
+        if msg_arc.contains("spot.tickers") {
+            self.parse_tickers(msg_arc, sender_data).await;
         }
     }
 
@@ -215,13 +180,94 @@ impl ExchangeAdapter for GateAdapter {
         msg: Arc<String>,
         sender_data: watch::Sender<ExchangeStoreCMD>
     ) {
+        let json: TickerEvent<'_> = serde_json::from_str(&msg).unwrap();
+        if let Some(result) = json.result {
+            let ticker = result.symbol;
+            let last_price = result.last_price;
+            let volume = result.volume;
 
+            if let (
+                Some(symbol), 
+                Some(price_str), 
+                Some(vol_str)
+            ) = (
+                ticker, 
+                last_price, 
+                volume
+            ) {
+                let symbol = symbol.replace("_", "").to_lowercase();
+                let last_price = price_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать last_price в f64");
+                let volume = vol_str.parse::<f64>().expect("GateAdapter -> Не удалось преобразовать volume в f64");
+                
+                let is_valid_price = self.is_valid_price(last_price, &symbol).await;
+                if is_valid_price {
+                    let _ = sender_data.send(ExchangeStoreCMD::Event(
+                        BookEvent::TickerUpdate { 
+                            symbol, 
+                            last_price: last_price, 
+                            volume: volume
+                        }
+                    ));
+                }
+            }
+        }
     }
 
-    fn parse_orderbook(
+    async fn parse_orderbook(
         self: Arc<Self>,
-        msg: Arc<String>
+        msg: Arc<String>,
+        snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
+        sender_data: watch::Sender<ExchangeStoreCMD>
     ) {
-        
+        let json: OrderBookEvent<'_> = serde_json::from_str(&msg).unwrap();
+        let data = json.data;
+        self.handle_snapshot(data, snapshot_channel, sender_data.clone()).await;
+    }
+
+    async fn handle_snapshot<'a>(
+        self: Arc<Self>,
+        data: Option<OrderBookEventData<'a>>,
+        _snapshot_channel: mpsc::Sender<ExchangeStoreCMD>,
+        sender_data: watch::Sender<ExchangeStoreCMD>
+    ) {
+        if let Some(data) = data {
+            let ticker = data.symbol;
+            if let Some(symbol) = ticker {
+                let symbol = symbol.replace("_", "").to_lowercase();
+
+                let asks = data.asks;
+                let bids = data.bids;
+
+                if let (
+                    Some(asks), 
+                    Some(bids)
+                ) = (asks, bids) {
+                    let asks = parse_levels__(asks);
+                    let bids = parse_levels__(bids);
+                    
+                    let is_valid_book = self.is_valid_book(&asks, &bids);
+                    if is_valid_book {
+                        let _ = sender_data.send(ExchangeStoreCMD::Event(
+                            BookEvent::Snapshot { 
+                                symbol,
+                                snapshot: Snapshot { 
+                                    a: asks, 
+                                    b: bids, 
+                                    last_update_id: None,
+                                }
+                            },
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    async fn handle_delta<'a>(
+        self: Arc<Self>,
+        _data: Option<OrderBookEventData<'a>>,
+        _sender_data: watch::Sender<ExchangeStoreCMD>
+    ) {
+
     }
 }

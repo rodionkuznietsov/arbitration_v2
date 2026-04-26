@@ -4,23 +4,23 @@ use serde::{Deserialize, Serialize};
 use crate::models::websocket::Symbol;
 
 #[derive(Deserialize, Debug, Serialize)]
-pub struct OrderBookEvent {
+pub struct OrderBookEvent<'a> {
     #[serde(rename="cts", alias="time_ms")]
     pub timestamp: Option<i64>,
     #[serde(rename="type")]
-    pub order_type: Option<String>,
+    pub order_type: Option<&'a str>,
     #[serde(rename="data", alias="result")]
-    pub data: Option<OrderBookEventData>
+    pub data: Option<OrderBookEventData<'a>>
 }
 
 #[derive(Deserialize, Debug, Serialize, Clone)]
-pub struct OrderBookEventData {
+pub struct OrderBookEventData<'a> {
     #[serde(rename="s")]
-    pub symbol: Option<String>,
+    pub symbol: Option<&'a str>,
     #[serde(rename="a", alias="asks")]
-    pub asks: Option<Vec<Vec<String>>>,
+    pub asks: Option<Vec<Vec<&'a str>>>,
     #[serde(rename="b", alias="bids")]
-    pub bids: Option<Vec<Vec<String>>>,
+    pub bids: Option<Vec<Vec<&'a str>>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -28,7 +28,6 @@ pub struct Snapshot {
     pub a: BTreeMap<Decimal, f64>,
     pub b: BTreeMap<Decimal, f64>,
     pub last_update_id: Option<u64>,
-    pub timestamp: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -44,7 +43,6 @@ pub struct SnapshotUi {
     pub a: Vec<(f64, f64)>,
     pub b: Vec<(f64, f64)>,
     pub last_price: f64,
-    pub timestamp: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -65,9 +63,10 @@ pub enum BookEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct OrderBookFromHttp {
-    pub asks: Vec<Vec<String>>,
-    pub bids: Vec<Vec<String>>,
+#[serde(bound(deserialize="'de: 'a"))]
+pub struct OrderBookFromHttp<'a> {
+    pub asks: Vec<Vec<&'a str>>,
+    pub bids: Vec<Vec<&'a str>>,
     pub current: i64,
     pub update: i64
 }

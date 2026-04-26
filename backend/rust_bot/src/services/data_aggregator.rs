@@ -11,7 +11,6 @@ pub enum DataAggregatorCmd {
     },
     UpdateData {
         exchange_id: ExchangeType,
-        symbol: Arc<Symbol>,
         data: Arc<BookData>
     },
     Default
@@ -26,6 +25,9 @@ pub struct ExchangeBookData {
 pub struct DataAggregator {
     pending_lines: HashMap<(ExchangeType, Arc<Symbol>), Arc<SpreadPair>>,
     markets: HashMap<Arc<Symbol>, HashMap<ExchangeType, ExchangeBookData>>,
+
+    pub register_symbol_tx: mpsc::Sender<DataAggregatorCmd>,
+    register_symbol_rx: mpsc::Receiver<DataAggregatorCmd>,
 
     rx: watch::Receiver<DataAggregatorCmd>,
     data_mapping_tx: watch::Sender<DataMappingCmd>,
@@ -42,10 +44,15 @@ impl DataAggregator {
 
         pool: Option<sqlx::PgPool>,
     ) -> Self {
+        let (register_symbol_tx, register_symbol_rx) = mpsc::channel(50);
+
         let markets = HashMap::new();
         Self {
             pending_lines: HashMap::new(),
             markets,
+
+            register_symbol_tx,
+            register_symbol_rx,
 
             rx: aggregator_rx,
             data_mapping_tx,
@@ -74,6 +81,9 @@ impl DataAggregator {
 
         loop {
             tokio::select! {
+                Some(cmd) = self.register_symbol_rx.recv() => {
+                    self.handle_command(cmd).await;
+                }
                 Ok(_) = self.rx.changed() => {
                     let cmd = self.rx.borrow().clone();
                     self.handle_command(cmd).await;
@@ -110,35 +120,11 @@ impl DataAggregator {
             },
             DataAggregatorCmd::UpdateData { 
                 exchange_id,
-                symbol,
-                mut data
+                data
             } => {
-                if let Some(exchanges) = self.markets.get_mut(&symbol) {
-                    if let Some(old_data) = exchanges.get_mut(&exchange_id) {
-                        let data_mut = Arc::make_mut(&mut data);
-                        let snapshot_arc = data_mut.snapshot.take().map(Arc::new);
-                        
-                        let new_data = Arc::new(
-                            BookDataWithArc {
-                                snapshot: snapshot_arc,
-                                last_price: data.last_price,
-                                volume24h: data.volume24h
-                            }
-                        );
-                        old_data.data = Some(new_data);
-                    }
-
-                    // Обрабатываем и отправляем снапшот
-                    let snapshot_data: Vec<(ExchangeType, Arc<Symbol>, (Option<Arc<Snapshot>>, Option<f64>))> = exchanges
-                        .iter_mut()
-                        .filter_map(|(ex_id, data)| {
-                            data.data.as_ref().map(|arc| {
-                                let taken_snapshot = arc.snapshot.clone();
-                                (*ex_id, symbol.clone(), (taken_snapshot, arc.last_price))
-                            })
-                        })
-                        .collect();
-
+                if let Some(exchanges) = self.markets.get_mut(&data.symbol) {
+                    Self::update_exchange_data(exchanges, exchange_id, data.clone());
+                    let snapshot_data = Self::snapshot_to_vec(exchanges, data.symbol.clone());
                     let _ = self.data_mapping_tx.send(DataMappingCmd::ExchangesDataToJsonPair(snapshot_data));
 
                     // let volumes: Vec<Volume> = exchanges
@@ -194,6 +180,43 @@ impl DataAggregator {
             DataAggregatorCmd::Default => {}
         }
         
+    }
+
+    fn update_exchange_data(
+        exchanges: &mut HashMap<ExchangeType, ExchangeBookData>,
+        exchange_id: ExchangeType,
+        mut data: Arc<BookData>
+    ) {
+        if let Some(old_data) = exchanges.get_mut(&exchange_id) {
+            let data_mut = Arc::make_mut(&mut data);
+            let snapshot_arc = data_mut.snapshot.take().map(Arc::new);
+
+            let new_data = Arc::new(
+                BookDataWithArc {
+                    snapshot: snapshot_arc,
+                    last_price: data.last_price,
+                    volume24h: data.volume24h
+                }
+            );
+            old_data.data = Some(new_data);
+        }
+    }
+
+    fn snapshot_to_vec(
+        exchanges: &mut HashMap<ExchangeType, ExchangeBookData>,
+        symbol: Arc<Symbol>
+    ) -> Vec<(ExchangeType, Arc<Symbol>, (Option<Arc<Snapshot>>, Option<f64>))> {
+        let snapshot_data: Vec<(ExchangeType, Arc<Symbol>, (Option<Arc<Snapshot>>, Option<f64>))> = exchanges
+            .iter_mut()
+            .filter_map(|(ex_id, data)| {
+                data.data.as_ref().map(|arc| {
+                    let taken_snapshot = arc.snapshot.clone();
+                    (*ex_id, symbol.clone(), (taken_snapshot, arc.last_price))
+                })
+            })
+            .collect();
+
+        return snapshot_data;
     }
 
     async fn calculate_spread(

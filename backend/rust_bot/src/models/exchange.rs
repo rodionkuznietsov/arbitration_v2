@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use get_size::GetSize;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::Type;
 use strum_macros::Display;
 
-use crate::models::{websocket::Symbol};
+use crate::models::websocket::Symbol;
 
 #[derive(Display, Debug, Clone, Type, PartialEq, Deserialize, Serialize, Copy, Eq, Hash, PartialOrd, GetSize)]
 #[serde(rename_all="snake_case")]
@@ -55,4 +57,30 @@ pub struct TickerResult {
 pub struct TickerInfo {
     #[serde(rename="symbol", alias="id")]
     pub symbol: Option<String>
+}
+
+#[derive(Debug, Clone)]
+pub struct PriceCache {
+    pub old_prices: HashMap<String, f64>
+}
+
+impl PriceCache {
+    pub fn new() -> Self {
+        Self { old_prices: HashMap::new() }
+    }
+
+    pub fn exists_price(
+        &self,
+        symbol: Symbol
+    ) -> Option<&f64> {
+        self.old_prices.get(&symbol)
+    }
+
+    pub fn add(
+        &mut self,
+        symbol: Symbol, 
+        last_price: f64
+    ) {
+        self.old_prices.insert(symbol, last_price);
+    }
 }
