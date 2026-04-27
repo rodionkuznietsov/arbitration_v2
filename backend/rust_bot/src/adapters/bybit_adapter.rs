@@ -132,6 +132,9 @@ impl ExchangeAdapter for BybitAdapter {
 
                 let is_new_price = self.is_valid_price(last_price, &symbol).await;
                 if is_new_price {
+                    if symbol == "btcusdt" {
+                        tracing::info!("BybitAdapter -> {}", last_price)
+                    }
                     let _ = sender_data.send(
                         ExchangeStoreCMD::Event(
                             BookEvent::TickerUpdate { 
