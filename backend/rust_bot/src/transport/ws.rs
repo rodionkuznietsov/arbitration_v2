@@ -83,7 +83,6 @@ async fn handle_connection(
                         }
                     },
                     Some(payload) = orderbook_rx.recv() => {
-                        tracing::info!("{:?}", payload.result.data);
                         if let Some(data) = books.get_mut(&ChannelType::OrderBook) {
                             let key = &payload.result.unique_id;
                             data.result.insert(key.clone(), payload);
