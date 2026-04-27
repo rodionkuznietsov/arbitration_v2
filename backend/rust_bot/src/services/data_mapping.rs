@@ -1,4 +1,5 @@
 use std::{collections::{HashMap, HashSet, VecDeque}, sync::Arc};
+use futures_util::future::join_all;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -28,12 +29,12 @@ pub enum DataMappingCmd {
 pub struct DataMapping {
     pub data_mapping_tx: watch::Sender<DataMappingCmd>,
     data_mapping_rx: watch::Receiver<DataMappingCmd>,
-    manager_transmitter_tx: watch::Sender<ManagerTransmitterCmd>
+    manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>
 }
 
 impl DataMapping {
     pub fn new(
-        manager_transmitter_tx: watch::Sender<ManagerTransmitterCmd>
+        manager_transmitter_tx: mpsc::Sender<ManagerTransmitterCmd>
     ) -> Self {
         let (data_mapping_tx, data_mapping_rx) = watch::channel::<DataMappingCmd>(DataMappingCmd::Default);
         Self { 
@@ -153,8 +154,9 @@ impl DataMapping {
                     DataMappingCmd::ExchangesDataToJsonPair(
                         markets
                     ) => {
+                        let mut futures = Vec::new();
                         for (i, (long_ex_id, symbol, (long_snapshot, long_last_price))) in markets.iter().enumerate() {
-                            for (short_ex_id, _, (short_snapshot, short_last_price)) in markets.iter().skip(i+1) {
+                            for (short_ex_id, short_symbol, (short_snapshot, short_last_price)) in markets.iter().skip(i+1) {
                                 let long_json_lines = self.snapshot_to_json(long_snapshot, &long_last_price);
                                 let short_json_lines = self.snapshot_to_json(short_snapshot, &short_last_price);
 
@@ -168,28 +170,46 @@ impl DataMapping {
                                     let long_arc = Arc::new(long);
                                     let short_arc = Arc::new(short);
                                     
-                                    self.send_message_with_key(
-                                        ChannelType::OrderBook,
-                                        *long_ex_id,
-                                        DataJson::Snapshot(long_arc.clone()),
-                                        *short_ex_id,
-                                        DataJson::Snapshot(short_arc.clone()),
-                                        symbol.clone(),
-                                        JsonPairUniqueId::OrderBook
-                                    ).await;
+                                    // self.send_message_with_key(
+                                    //     ChannelType::OrderBook,
+                                    //     *long_ex_id,
+                                    //     JsonPairData::OrderBook { long: long_arc.clone(), short: short_arc.clone() },
+                                    //     *short_ex_id,
+                                    //     symbol.clone(),
+                                    //     JsonPairUniqueId::OrderBook,
+                                    // ).await;
 
-                                    self.send_message_with_key(
+                                    // self.send_message_with_key(
+                                    //     ChannelType::OrderBook,
+                                    //     *short_ex_id,
+                                    //     JsonPairData::OrderBook { long: short_arc.clone(), short: long_arc.clone() },
+                                    //     *long_ex_id,
+                                    //     short_symbol.clone(),
+                                    //     JsonPairUniqueId::OrderBook,
+                                    // ).await;
+
+                                    futures.push(self.send_message_with_key(
+                                        ChannelType::OrderBook,
+                                        *long_ex_id,
+                                        JsonPairData::OrderBook { long: long_arc.clone(), short: short_arc.clone() },
+                                        *short_ex_id,
+                                        symbol.clone(),
+                                        JsonPairUniqueId::OrderBook,
+                                    ));
+
+                                    futures.push(self.send_message_with_key(
                                         ChannelType::OrderBook,
                                         *short_ex_id,
-                                        DataJson::Snapshot(short_arc.clone()),
+                                        JsonPairData::OrderBook { long: short_arc.clone(), short: long_arc.clone() },
                                         *long_ex_id,
-                                        DataJson::Snapshot(long_arc.clone()),
-                                        symbol.clone(),
-                                        JsonPairUniqueId::OrderBook
-                                    ).await;
+                                        short_symbol.clone(),
+                                        JsonPairUniqueId::OrderBook,
+                                    ));
                                 }
                             }
                         }
+
+                        let _ = join_all(futures).await;
                     },
                     DataMappingCmd::SpreadPairToJsonPair(
                         spread_pair
@@ -305,21 +325,15 @@ impl DataMapping {
         &self,
         channel: ChannelType,
         long_exchange: ExchangeType,
-        long_json: DataJson,
+        data: JsonPairData,
         short_exchange: ExchangeType,
-        short_json: DataJson,
         symbol: Arc<Symbol>,
-        unique_id: JsonPairUniqueId
+        unique_id: JsonPairUniqueId,
     ) {
         let msg = WsClientMessage {
             channel: channel,
             result: WsClientMsgResult { 
-                data: Arc::new(
-                    JsonPairData::OrderBook { 
-                        long: long_json, 
-                        short: short_json,
-                    }
-                ), 
+                data: Arc::new(data), 
                 symbol: symbol.clone(),
                 unique_id: unique_id
             },
@@ -341,10 +355,10 @@ impl DataMapping {
         let _ = self.manager_transmitter_tx.send(
             ManagerTransmitterCmd::Notify(
                 NotifyEvent::PayloadJson(
-                    channel_key, 
-                    msg
+                    channel_key.clone(), 
+                    msg.clone()
                 )
             ), 
-        );
+        ).await;
     }
 }

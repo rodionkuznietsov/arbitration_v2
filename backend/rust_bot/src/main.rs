@@ -30,7 +30,7 @@ async fn main() {
 
     let storage_pool = storage::pool::create_pool().await.ok();
         
-    let (manager_transmitter_tx, manager_transmitter_rx) = watch::channel(ManagerTransmitterCmd::Default);
+    let (manager_transmitter_tx, manager_transmitter_rx) = mpsc::channel(1024);
         
     let data_mapping = DataMapping::new(manager_transmitter_tx.clone());
     let data_mapping_tx = data_mapping.data_mapping_tx.clone();

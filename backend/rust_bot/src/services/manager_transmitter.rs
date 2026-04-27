@@ -1,5 +1,5 @@
 use std::{sync::Arc, time::Duration};
-use tokio::sync::{mpsc, watch};
+use tokio::sync::{mpsc};
 use crate::{models::{aggregator::{ClientAggregatorUse}, websocket::{ChannelSubscription, WsClientMessage}}, services::cache_aggregator::CacheAggregatorCmd, transport::client_aggregator::ClientAggregatorCmd};
 
 const TIMEOUT_DELAY: u64 = 30;
@@ -17,7 +17,6 @@ pub enum NotifyEvent {
 #[derive(Debug, Clone)]
 pub enum ManagerTransmitterCmd {
     Notify(NotifyEvent),
-    Default
 }
 
 #[derive(Clone)]
@@ -40,11 +39,9 @@ impl ManagerTransmitter {
 
     pub async fn run(
         self, 
-        mut notify_rx: watch::Receiver<ManagerTransmitterCmd>,
+        mut notify_rx: mpsc::Receiver<ManagerTransmitterCmd>,
     ) {
-        while notify_rx.changed().await.is_ok() {
-            let cmd = notify_rx.borrow().clone();
-
+        while let Some(cmd) = notify_rx.recv().await {
             match cmd {
                 ManagerTransmitterCmd::Notify(event) => {
                     match event {
@@ -60,9 +57,6 @@ impl ManagerTransmitter {
                             key,
                             msg
                         ) => {
-                            if msg.result.symbol.as_str() == "btcusdt" {
-                                tracing::info!("{msg:?}")
-                            }
                             if let Some(err) = self.client_aggregator_chart_tx.send_timeout(
                                 Arc::new(
                                     ClientAggregatorCmd::Use(
@@ -79,7 +73,6 @@ impl ManagerTransmitter {
                         },
                     }
                 },
-                ManagerTransmitterCmd::Default => {}
             } 
         }
     }
